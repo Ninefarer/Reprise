@@ -1,0 +1,22 @@
+{
+  "source": "a155a776eddfb722a00e070a1b46b615be15f6fd",
+  "workflow": "https://github.com/Ninefarer/Reprise/actions/runs/43323873152",
+  "tested_at": "2026-11-12T23:06:57.224325+00:00",
+  "identity": "com.reprise.updater.qa",
+  "from_version": "3.3.2-nightly.20261112.900",
+  "to_version": "3.3.2-nightly.20261112.901",
+  "fingerprint": "330528a8f0aa36c4879a5eeffa884304950a2671b1aed8d5c96939b6c0e2a51c",
+  "old_installer_sha256": "eaceb6a69cf213049ecbfd44e0b8781e02c036ce1c9bbbaabdd5172c7f5a3f7d",
+  "new_installer_sha256": "d1066005705ad81521522b7676769dc75da3c3065beb94efafbf9c91525cb1f9",
+  "checks": {
+    "tampered_bytes_rejected": true,
+    "signed_version_mismatch_rejected": true,
+    "wrong_channel_rejected": true,
+    "stale_offer_rechecked": true,
+    "installed_upgrade_and_restart": true,
+    "task_row_unchanged": true,
+    "profile_retained": true,
+    "sqlite_integrity": true
+  },
+  "transport": "Loopback HTTP only in updater-e2e feature and QA identity; production requires valid HTTPS. GitHub HTTPS distribution is separately checked after publication."
+}

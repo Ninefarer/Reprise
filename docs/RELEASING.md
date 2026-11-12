@@ -32,7 +32,9 @@ At the time these instructions were added, the artwork existed locally but was u
 
 ## Manual release procedure
 
-There is currently no GitHub Actions release generator. Descriptions are prepared manually and passed to GitHub CLI using `--notes-file`. No publication automation is added by these templates.
+Descriptions remain deliberately authored from verified changes and stored as `docs/releases/VERSION.md`. The signed Windows release workflow builds, verifies and publishes those exact notes using `--notes-file`; it does not generate prose or invent categories. See [signed update operations](UPDATES.md).
+
+Dispatch `.github/workflows/signed-release.yml` with the channel, approved full source SHA and `publish` flag. The default is artifacts only. Publishing requires the installed-upgrade acceptance fingerprint; both the build and publisher independently validate it. Stable source must belong to `main`, Nightly to `develop`. Versioned releases and tags cannot be reused. The `nightly-updates` prerelease is solely a rolling manifest pointer and never replaces Latest Stable.
 
 1. Inspect the intended branch, commit range, versions, confirmed changes and release channel.
 2. Prepare the corresponding template. Fill only verified changes and references; omit empty categories and unapproved ...HEY.
