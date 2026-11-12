@@ -142,6 +142,120 @@ async function openSettings(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByLabelText(/Profile menu for/));
   await user.click(await screen.findByRole("menuitem", { name: "Settings" }));
 }
+describe("Settings draft protection", () => {
+  it("keeps edits when staying and discards only after an explicit choice", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.clear(screen.getByLabelText("Display name"));
+    await user.type(screen.getByLabelText("Display name"), "Unsaved name");
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Home" }));
+    let dialog = screen.getByRole("dialog", {
+      name: "Save your Settings changes?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Keep editing" }),
+    );
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Unsaved name");
+    await user.click(screen.getByRole("button", { name: "Home" }));
+    dialog = screen.getByRole("dialog", {
+      name: "Save your Settings changes?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Discard changes" }),
+    );
+    expect(data.settings.name).toBe("Test");
+    await openSettings(user);
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Test");
+  });
+  it("saves before completing the requested navigation", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.clear(screen.getByLabelText("Display name"));
+    await user.type(screen.getByLabelText("Display name"), "Saved name");
+    await user.click(screen.getByRole("button", { name: "Home" }));
+    const dialog = screen.getByRole("dialog", {
+      name: "Save your Settings changes?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Save and continue" }),
+    );
+    await screen.findByLabelText(/Profile menu for Saved name/);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByLabelText("Display name")).toBeNull();
+  });
+  it("retains the draft and navigation prompt if saving fails", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    const original = mocks.invoke.getMockImplementation()!;
+    mocks.invoke.mockImplementation(async (cmd, args) => {
+      if (cmd === "save_settings") throw Error("Storage unavailable");
+      return original(cmd, args);
+    });
+    await user.type(screen.getByLabelText("Display name"), " edited");
+    await user.click(screen.getByRole("button", { name: "Home" }));
+    const dialog = screen.getByRole("dialog", {
+      name: "Save your Settings changes?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Save and continue" }),
+    );
+    await within(dialog).findByRole("alert");
+    expect(data.settings.name).toBe("Test");
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Test edited");
+  });
+  it("does not call appearance-only changes unsaved", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.selectOptions(screen.getByLabelText("Theme"), "pitch-black");
+    await user.click(screen.getByRole("button", { name: "Home" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(data.settings.theme_family).toBe("pitch-black");
+  });
+});
+it.each([
+  [true, false, 1],
+  [false, false, 0],
+  [true, true, 0],
+] as const)(
+  "automatically checks only the onboarded main window (%s,%s)",
+  async (onboarded, capture, expected) => {
+    vi.useFakeTimers();
+    try {
+      data.settings.onboarded = onboarded;
+      const app = render(<App captureMode={capture} />);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30001);
+      });
+      expect(
+        mocks.invoke.mock.calls.filter(
+          ([cmd, args]) => cmd === "check_updates" && args?.automatic,
+        ),
+      ).toHaveLength(expected);
+      app.unmount();
+      const count = mocks.invoke.mock.calls.length;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60000);
+      });
+      expect(mocks.invoke.mock.calls).toHaveLength(count);
+    } finally {
+      vi.useRealTimers();
+    }
+  },
+);
 describe("Nightly channel", () => {
   it.each([
     ["3.3.0", false],
