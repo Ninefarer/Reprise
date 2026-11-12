@@ -753,14 +753,6 @@ legend {
 .preset-row button {
   font-size: 12px;
 }
-.onboard {
-  max-width: 800px;
-}
-.onboard-actions {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 25px;
-}
 .quick {
   padding: 12px 16px 14px;
   background: var(--bg);

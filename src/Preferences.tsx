@@ -7,6 +7,7 @@ import { Diagnostics, TestNotification } from "./Diagnostics";
 export function Preferences({
   settings,
   onSave,
+  onRedoOnboarding,
   onVisual,
   system,
   version,
@@ -18,6 +19,7 @@ export function Preferences({
   updateCheckMessage,
 }: {
   settings: Settings;
+  onRedoOnboarding: () => void;
   avatar?: string | null;
   onRefresh?: () => Promise<void>;
   onSave: (s: Settings) => Promise<boolean>;
@@ -212,6 +214,12 @@ export function Preferences({
         <summary>Advanced / Diagnostics</summary>
         {diagnosticsOpen && <Diagnostics />}
       </details>
+      <section className="settings-section">
+        <h2>Setup</h2>
+        <button type="button" onClick={onRedoOnboarding}>
+          Redo onboarding
+        </button>
+      </section>
       <section className="settings-section" aria-labelledby="updates-heading">
         <h2 id="updates-heading">About / Updates</h2>
         <p>Reprise v{version}</p>

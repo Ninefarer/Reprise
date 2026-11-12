@@ -1,0 +1,136 @@
+/* A self-contained setup surface; no app shell or native transparency is altered. */
+.setup-screen {
+  min-height: 100dvh;
+  padding: clamp(24px, 5vw, 64px);
+  display: grid;
+  align-items: center;
+  background: var(--bg);
+  color: var(--text);
+}
+.setup-shell {
+  width: min(100%, 660px);
+  margin-inline: auto;
+}
+.setup-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 38px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.setup-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.setup-step {
+  min-height: 440px;
+  animation: setup-arrive var(--motion-modal) var(--motion-ease) both;
+}
+.setup-step h1 {
+  font-size: clamp(26px, 3.8vw, 36px);
+  line-height: 1.2;
+  margin: 0 0 16px;
+  letter-spacing: -0.025em;
+}
+.setup-step h1:focus {
+  outline: none;
+}
+.setup-intro {
+  color: var(--muted);
+  margin: 0 0 30px;
+  line-height: 1.6;
+}
+.setup-step .avatar-editor {
+  margin-bottom: 24px;
+}
+.setup-step .fields {
+  margin-block: 20px;
+}
+.setup-step input:not([type="checkbox"]),
+.setup-step select {
+  min-height: 42px;
+}
+.setup-actions {
+  border-top: 1px solid var(--border);
+  padding-top: 22px;
+  margin-top: 32px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.setup-actions > div {
+  display: flex;
+  gap: 10px;
+}
+.setup-nightly {
+  --bg: #111822;
+  --surface: #1b2432;
+  --raised: #253045;
+  --text: #edf0f7;
+  --muted: #b8c3d6;
+  --subtle: #a5b2ca;
+  --border: #3b465b;
+  --accent: #b2c9a9;
+  --accent-text: #172217;
+  --focus: #cfb8ef;
+  --hover: #2c374b;
+  color-scheme: dark;
+  background:
+    radial-gradient(circle at 12% 16%, #d4e3f2b3 0 0.7px, transparent 1.4px),
+    radial-gradient(circle at 34% 30%, #d4e3f26b 0 0.6px, transparent 1.3px),
+    radial-gradient(circle at 58% 9%, #d4e3f2a3 0 0.7px, transparent 1.4px),
+    radial-gradient(circle at 76% 27%, #d4e3f270 0 0.8px, transparent 1.5px),
+    radial-gradient(circle at 91% 12%, #d4e3f2a3 0 0.6px, transparent 1.3px),
+    radial-gradient(circle at 21% 56%, #d4e3f250 0 0.7px, transparent 1.4px),
+    radial-gradient(circle at 86% 53%, #d4e3f24d 0 0.6px, transparent 1.3px),
+    linear-gradient(to bottom, transparent 25%, var(--bg) 100%),
+    radial-gradient(ellipse at 100% 0%, #49346066, transparent 72%),
+    linear-gradient(110deg, #1a2a43, var(--bg));
+}
+.setup-nightly :is(input, select, button) {
+  color: var(--text);
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+.setup-nightly button.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.setup-nightly input::placeholder {
+  color: var(--subtle);
+}
+@keyframes setup-arrive {
+  from {
+    opacity: 0;
+    translate: 0 var(--motion-distance);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@media (max-width: 600px) {
+  .setup-step .fields {
+    grid-template-columns: 1fr;
+  }
+  .setup-progress {
+    margin-bottom: 24px;
+  }
+  .setup-actions {
+    flex-wrap: wrap;
+  }
+}
+@media (forced-colors: active) {
+  .setup-nightly {
+    background: Canvas;
+    color: CanvasText;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .setup-nightly {
+    background: var(--bg);
+  }
+}

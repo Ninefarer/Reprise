@@ -1,4 +1,5 @@
 import { isNightly, NightlyDisclosure } from "./Nightly";
+import { Onboarding, RedoOnboardingDialog } from "./Onboarding";
 import { QuickCapture } from "./QuickCapture";
 import {
   useCallback,
@@ -96,8 +97,11 @@ export function App({
       null,
     ),
     [now, setNow] = useState(Math.floor(Date.now() / 1000)),
-    [step, setStep] = useState(0),
     [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [replayingSetup, setReplayingSetup] = useState(false);
+  const [confirmSetup, setConfirmSetup] = useState(false);
+  const setupActive = !data?.settings.onboarded || replayingSetup;
+  const setupCaptured = useRef(false);
   const [nightlySeen, setNightlySeen] = useState(false);
   const [updateCheckMessage, setUpdateCheckMessage] = useState("");
   const [nativeTaskId, setNativeTaskId] = useState<string | null>(null);
@@ -175,14 +179,15 @@ export function App({
       Number(!!editor) +
         Number(!!deleting) +
         Number(palette) +
-        Number(!!releaseDialog),
+        Number(!!releaseDialog) +
+        Number(confirmSetup),
     );
-  }, [editor, deleting, palette, releaseDialog]);
+  }, [editor, deleting, palette, releaseDialog, confirmSetup]);
   useEffect(() => {
     if (
       quick ||
       isNightly(data?.release?.version) ||
-      !data?.settings.onboarded ||
+      setupActive ||
       !data.release?.should_show ||
       !releaseFor(data.release.version) ||
       view !== "Home" ||
@@ -217,7 +222,7 @@ export function App({
   }, [
     data?.release?.should_show,
     data?.release?.version,
-    data?.settings.onboarded,
+    setupActive,
     view,
     title,
     query,
@@ -235,6 +240,7 @@ export function App({
     if (
       quick ||
       nightlySeen ||
+      setupActive ||
       !data ||
       !themeReady ||
       !isNightly(data.release?.version) ||
@@ -251,6 +257,7 @@ export function App({
   }, [
     quick,
     nightlySeen,
+    setupActive,
     data,
     themeReady,
     editor,
@@ -395,7 +402,15 @@ export function App({
   }, [view]);
   useEffect(() => {
     // Fetch on dequeue, after existing edits finish; never retain a stale Task copy.
-    if (!nativeTaskId || editor || deleting || palette || releaseDialog || busy)
+    if (
+      setupActive ||
+      !nativeTaskId ||
+      editor ||
+      deleting ||
+      palette ||
+      releaseDialog ||
+      busy
+    )
       return;
     let cancelled = false;
     void invoke<Snapshot>("snapshot")
@@ -417,9 +432,17 @@ export function App({
     return () => {
       cancelled = true;
     };
-  }, [nativeTaskId, editor, deleting, palette, releaseDialog, busy]);
+  }, [
+    setupActive,
+    nativeTaskId,
+    editor,
+    deleting,
+    palette,
+    releaseDialog,
+    busy,
+  ]);
   async function checkUpdates() {
-    if (updateOperation.current) return;
+    if (setupActive || updateOperation.current) return;
     updateOperation.current = true;
     setCheckingUpdates(true);
     setUpdateActivity(null);
@@ -467,6 +490,7 @@ export function App({
       const shortcut = data?.settings.command_shortcut ?? "Ctrl+K";
       if (
         !quick &&
+        !setupActive &&
         (e.ctrlKey || e.metaKey) &&
         (shortcut === "Ctrl+K"
           ? e.key.toLowerCase() === "k" && !e.shiftKey
@@ -482,7 +506,7 @@ export function App({
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [data?.settings.command_shortcut]);
+  }, [data?.settings.command_shortcut, setupActive]);
   useEffect(() => {
     if (!undo) return;
     const timer = setTimeout(() => setUndo(null), 30000);
@@ -901,6 +925,41 @@ export function App({
       </div>
     );
   }
+  if (setupActive)
+    return (
+      <Onboarding
+        settings={settings}
+        avatar={data.avatar}
+        nightlyVersion={
+          isNightly(data.release?.version) ? data.release!.version : undefined
+        }
+        replay={replayingSetup}
+        busy={busy}
+        error={error}
+        onRefresh={load}
+        onVisual={visual}
+        onCancel={() => {
+          setReplayingSetup(false);
+          setError("");
+        }}
+        onFinish={async (patch, firstTitle) => {
+          const ok = await run(async () => {
+            if (firstTitle && !setupCaptured.current) {
+              await invoke("capture", { title: firstTitle });
+              setupCaptured.current = true;
+            }
+            await invoke("save_settings", {
+              settings: { ...settings, ...patch, onboarded: true },
+            });
+          });
+          if (ok) {
+            setView("Home");
+            setQuery("");
+            setReplayingSetup(false);
+          }
+        }}
+      />
+    );
   const pageTitle =
     view === "Home"
       ? `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${settings.name ? ", " + settings.name : ""}.`
@@ -953,200 +1012,137 @@ export function App({
             <button onClick={() => setError("")}>Dismiss</button>
           </div>
         )}
-        {!settings.onboarded ? (
-          <section className="onboard">
-            <p className="eyebrow">WELCOME TO REPRISE · {step + 1} / 3</p>
-            <h1>
-              {
-                [
-                  "A little space for your intentions.",
-                  "Let later have a time.",
-                  "Start with one thing.",
-                ][step]
+        <>
+          <div className="page-heading">
+            <h1>{pageTitle}</h1>
+            <p>{descriptions[view]}</p>
+          </div>
+          {view === "Settings" ? (
+            <Preferences
+              settings={settings}
+              avatar={data.avatar}
+              onRefresh={load}
+              onRedoOnboarding={() => setConfirmSetup(true)}
+              onSave={preferences}
+              onVisual={visual}
+              system={data.system_visuals}
+              version={data.release?.version ?? releases[0].version}
+              onReleaseNotes={setReleaseDialog}
+              updateCheckMessage={updateCheckMessage}
+              onCheckUpdates={checkUpdates}
+              checkingUpdates={
+                checkingUpdates ||
+                (!!updateActivity && updateActivity.stage !== "error")
               }
-            </h1>
-            <p>Pause without losing your place. Return when you’re ready.</p>
-            {step === 0 ? (
-              <Preferences
-                settings={settings}
-                avatar={data.avatar}
-                onRefresh={load}
-                onSave={preferences}
-                onVisual={visual}
-                system={data.system_visuals}
-                version={data.release?.version ?? releases[0].version}
-                onReleaseNotes={setReleaseDialog}
-                updateCheckMessage={updateCheckMessage}
-                onCheckUpdates={checkUpdates}
-                checkingUpdates={
-                  checkingUpdates ||
-                  (!!updateActivity && updateActivity.stage !== "error") ||
-                  !settings.onboarded
-                }
-              />
-            ) : step === 1 ? (
-              <>
-                <h2>Your attention, on your terms.</h2>
-                <p>
-                  Settled tasks return{" "}
-                  {settings.settlement_mode === "24h"
-                    ? "after 24 hours"
-                    : `the following day at ${settings.return_time}`}
-                  . Daily review is{" "}
-                  {settings.daily_review ? `at ${settings.review_time}` : "off"}
-                  . All preferences stay editable in Settings.
-                </p>
-              </>
-            ) : (
-              capture
-            )}
-            <div className="onboard-actions">
-              <button
-                onClick={() =>
-                  void run(() =>
-                    invoke("save_settings", {
-                      settings: { ...settings, onboarded: true },
-                    }),
-                  )
-                }
-              >
-                Skip setup
-              </button>
-              <button
-                className="primary"
-                onClick={() =>
-                  step < 2
-                    ? setStep(step + 1)
-                    : void run(() =>
-                        invoke("save_settings", {
-                          settings: { ...settings, onboarded: true },
-                        }),
-                      )
-                }
-              >
-                {step < 2 ? "Continue →" : "Open Reprise"}
-              </button>
-            </div>
-          </section>
-        ) : (
-          <>
-            <div className="page-heading">
-              <h1>{pageTitle}</h1>
-              <p>{descriptions[view]}</p>
-            </div>
-            {view === "Settings" ? (
-              <Preferences
-                settings={settings}
-                avatar={data.avatar}
-                onRefresh={load}
-                onSave={preferences}
-                onVisual={visual}
-                system={data.system_visuals}
-                version={data.release?.version ?? releases[0].version}
-                onReleaseNotes={setReleaseDialog}
-                updateCheckMessage={updateCheckMessage}
-                onCheckUpdates={checkUpdates}
-                checkingUpdates={
-                  checkingUpdates ||
-                  (!!updateActivity && updateActivity.stage !== "error") ||
-                  !settings.onboarded
-                }
-              />
-            ) : (
-              <>
-                {(view === "Home" || view === "Inbox") && capture}
-                {view === "Home" && (
-                  <div className="overview">
-                    {(
-                      ["DoNow", "Resurfaced", "Inbox", "Scheduled"] as View[]
-                    ).map((v) => (
-                      <button
-                        key={v}
-                        data-status={taskCategory(v)}
-                        onClick={() => setView(v)}
-                      >
-                        <Icon name={v} />
-                        <span>{label(v)}</span>
-                        <strong>{count(v)}</strong>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {view === "Daily Review" ? (
-                  <div className="review-groups">
-                    {groups.map((g) => (
-                      <section className="review-section" key={g.title}>
-                        <div
-                          className="section-heading"
-                          data-status={reviewCategory(g.title)}
-                        >
-                          <div>
-                            <h2>
-                              {g.title}
-                              <span className="count-badge">
-                                {g.tasks.length}
-                              </span>
-                            </h2>
-                            <p>{g.description}</p>
-                          </div>
-                        </div>
-                        {g.tasks.length ? (
-                          g.tasks.map(taskCard)
-                        ) : (
-                          <p className="group-empty">
-                            {query
-                              ? "No matches in this section."
-                              : "All clear here."}
-                          </p>
-                        )}
-                      </section>
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    <div
-                      className="section-heading"
-                      data-status={taskCategory(view)}
+            />
+          ) : (
+            <>
+              {(view === "Home" || view === "Inbox") && capture}
+              {view === "Home" && (
+                <div className="overview">
+                  {(
+                    ["DoNow", "Resurfaced", "Inbox", "Scheduled"] as View[]
+                  ).map((v) => (
+                    <button
+                      key={v}
+                      data-status={taskCategory(v)}
+                      onClick={() => setView(v)}
                     >
-                      <h2>
-                        {view === "Home" ? "In focus" : label(view)}
-                        <span className="count-badge">
-                          {
-                            tasksForView(tasks, view, now).filter((t) =>
-                              matches(t, query),
-                            ).length
-                          }
-                        </span>
-                      </h2>
-                      {(view === "Settled" || view === "Snoozed") && (
-                        <span className="hint">
-                          Returned tasks move to Resurfaced
-                        </span>
+                      <Icon name={v} />
+                      <span>{label(v)}</span>
+                      <strong>{count(v)}</strong>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {view === "Daily Review" ? (
+                <div className="review-groups">
+                  {groups.map((g) => (
+                    <section className="review-section" key={g.title}>
+                      <div
+                        className="section-heading"
+                        data-status={reviewCategory(g.title)}
+                      >
+                        <div>
+                          <h2>
+                            {g.title}
+                            <span className="count-badge">
+                              {g.tasks.length}
+                            </span>
+                          </h2>
+                          <p>{g.description}</p>
+                        </div>
+                      </div>
+                      {g.tasks.length ? (
+                        g.tasks.map(taskCard)
+                      ) : (
+                        <p className="group-empty">
+                          {query
+                            ? "No matches in this section."
+                            : "All clear here."}
+                        </p>
                       )}
-                    </div>
-                    {visible.length
-                      ? visible
-                          .sort((a, b) =>
-                            view === "Settled" || view === "Snoozed"
-                              ? (a.wake_at ?? Infinity) -
-                                (b.wake_at ?? Infinity)
-                              : 0,
-                          )
-                          .map(taskCard)
-                      : empty(
-                          view === "Settled"
-                            ? "Tasks you deliberately pause will wait here until their return time."
-                            : view === "Snoozed"
-                              ? "Snooze an intention from its actions menu to give it a later time."
-                              : undefined,
-                        )}
-                  </>
-                )}
-              </>
-            )}
-          </>
-        )}
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div
+                    className="section-heading"
+                    data-status={taskCategory(view)}
+                  >
+                    <h2>
+                      {view === "Home" ? "In focus" : label(view)}
+                      <span className="count-badge">
+                        {
+                          tasksForView(tasks, view, now).filter((t) =>
+                            matches(t, query),
+                          ).length
+                        }
+                      </span>
+                    </h2>
+                    {(view === "Settled" || view === "Snoozed") && (
+                      <span className="hint">
+                        Returned tasks move to Resurfaced
+                      </span>
+                    )}
+                  </div>
+                  {visible.length
+                    ? visible
+                        .sort((a, b) =>
+                          view === "Settled" || view === "Snoozed"
+                            ? (a.wake_at ?? Infinity) - (b.wake_at ?? Infinity)
+                            : 0,
+                        )
+                        .map(taskCard)
+                    : empty(
+                        view === "Settled"
+                          ? "Tasks you deliberately pause will wait here until their return time."
+                          : view === "Snoozed"
+                            ? "Snooze an intention from its actions menu to give it a later time."
+                            : undefined,
+                      )}
+                </>
+              )}
+            </>
+          )}
+        </>
       </main>
+      {confirmSetup && (
+        <RedoOnboardingDialog
+          onCancel={() => setConfirmSetup(false)}
+          onConfirm={() => {
+            setConfirmSetup(false);
+            setupCaptured.current = false;
+            setReleaseDialog(null);
+            setPalette(false);
+            setContext(null);
+            setNotificationsOpen(false);
+            setError("");
+            setReplayingSetup(true);
+          }}
+        />
+      )}
       {releaseDialog === "new" && isNightly(data.release?.version) ? (
         <NightlyDisclosure
           version={data.release!.version}

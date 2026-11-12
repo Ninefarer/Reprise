@@ -71,6 +71,31 @@ export interface Release {
 }
 export const releases: Release[] = [
   {
+    version: "3.2.1-nightly.20261112.4",
+    date: "2026-11-12",
+    title: "A quieter beginning.",
+    sections: [
+      {
+        heading: "NEW & NOTEWORTHY",
+        accent: "new",
+        entries: [
+          {
+            text: "A dedicated three-step setup flow keeps navigation and notifications out of the way until you're ready.",
+          },
+          {
+            text: "Nightly setup borrows the blue-violet night sky, then returns to your selected theme. The Nightly disclosure waits until setup is complete.",
+          },
+          {
+            text: "Redo onboarding from Settings with confirmation, keeping existing tasks, history and preferences.",
+          },
+          {
+            text: "Setup no longer embeds the Settings page or its misleading disabled Checking? update button.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.2.1-nightly.20261112.3",
     date: "2026-11-12",
     title: "A hint of violet.",

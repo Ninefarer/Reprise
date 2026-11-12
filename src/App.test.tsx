@@ -142,7 +142,7 @@ async function openSettings(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole("menuitem", { name: "Settings" }));
 }
 describe("Nightly channel", () => {
-  it("shows its badge and disclosure even on first-run onboarding instead of release notes", async () => {
+  it("keeps first-run setup separate and shows the nightly disclosure only after finishing", async () => {
     data.settings.onboarded = false;
     data.release = {
       version: "3.2.1-nightly.20261112",
@@ -151,6 +151,18 @@ describe("Nightly channel", () => {
     };
     const user = userEvent.setup();
     const app = render(<App />);
+    await screen.findByRole("heading", {
+      name: "A little space for your intentions.",
+    });
+    expect(screen.queryByRole("navigation")).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Check for updates" }),
+    ).toBeNull();
+    expect(screen.queryByLabelText("Search tasks")).toBeNull();
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Skip setup" }));
     const disclosure = await screen.findByRole("dialog", {
       name: "You're running Reprise Nightly",
     });
@@ -178,6 +190,177 @@ describe("Nightly channel", () => {
     await screen.findByRole("dialog", {
       name: "You're running Reprise Nightly",
     });
+  });
+  it("completes focused steps, saves profile and attention preferences, and adds an optional Inbox task", async () => {
+    data.settings.onboarded = false;
+    const originalInvoke = mocks.invoke.getMockImplementation()!;
+    mocks.invoke.mockImplementation(async (cmd, args) => {
+      if (cmd === "capture") {
+        data.tasks.push({
+          ...closedTask("Finished"),
+          status: "Inbox",
+          id: "first",
+          title: args.title,
+        });
+        return;
+      }
+      return originalInvoke(cmd, args);
+    });
+    const user = userEvent.setup();
+    const app = render(<App />);
+    await user.clear(await screen.findByLabelText("Display name"));
+    await user.type(screen.getByLabelText("Display name"), "Dim");
+    await user.clear(screen.getByLabelText("Space name"));
+    await user.type(screen.getByLabelText("Space name"), "field");
+    await user.selectOptions(screen.getByLabelText("Theme"), "pitch-black");
+    await waitFor(() => expect(data.settings.theme_family).toBe("pitch-black"));
+    await user.click(screen.getByRole("button", { name: /Continue/ }));
+    await screen.findByRole("heading", { name: "Let later have a time." });
+    await user.selectOptions(
+      screen.getByLabelText("Settled tasks return"),
+      "next_day",
+    );
+    fireEvent.change(screen.getByLabelText("Preferred return time"), {
+      target: { value: "10:30" },
+    });
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByLabelText("Display name").getAttribute("value")).toBe(
+      "Dim",
+    );
+    await user.click(screen.getByRole("button", { name: /Continue/ }));
+    await user.click(screen.getByRole("button", { name: /Continue/ }));
+    await user.type(
+      screen.getByLabelText("Your first intention"),
+      "Plan tomorrow",
+    );
+    await user.click(screen.getByRole("button", { name: "Open Reprise" }));
+    await screen.findByLabelText(/Profile menu for Dim/);
+    expect(data.settings).toMatchObject({
+      name: "Dim",
+      workspace: "field",
+      onboarded: true,
+      settlement_mode: "next_day",
+      return_time: "10:30",
+      theme_family: "pitch-black",
+    });
+    expect(data.tasks.some((t) => t.title === "Plan tomorrow")).toBe(true);
+    expect(mocks.invoke).not.toHaveBeenCalledWith("check_updates");
+    app.unmount();
+    render(<App />);
+    await screen.findByLabelText(/Profile menu for Dim/);
+    expect(
+      screen.queryByRole("heading", {
+        name: "A little space for your intentions.",
+      }),
+    ).toBeNull();
+  });
+  it("confirms replay and preserves tasks and settings without marking the user un-onboarded", async () => {
+    data.tasks = [
+      { ...closedTask("Finished"), id: "existing", title: "Keep my intention" },
+    ];
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.click(screen.getByRole("button", { name: "Redo onboarding" }));
+    let dialog = screen.getByRole("dialog", {
+      name: "Go through setup again?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Keep working" }),
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Redo onboarding" }));
+    dialog = screen.getByRole("dialog", { name: "Go through setup again?" });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Redo onboarding" }),
+    );
+    await screen.findByLabelText("Display name");
+    expect(data.settings.onboarded).toBe(true);
+    expect(screen.queryByRole("navigation")).toBeNull();
+    expect(data.tasks).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "Cancel setup" }));
+    await screen.findByRole("button", { name: "Redo onboarding" });
+    expect(data.settings.name).toBe("Test");
+    expect(data.tasks[0].title).toBe("Keep my intention");
+  });
+  it("finishes a replay without deleting existing data or repeating the nightly disclosure", async () => {
+    data.release = {
+      version: "3.2.1-nightly.20261112.4",
+      acknowledged: null,
+      should_show: false,
+    };
+    data.tasks = [closedTask("Finished")];
+    data.notifications = [
+      {
+        id: "kept",
+        task_id: null,
+        category: "Diagnostic",
+        title: "Keep this",
+        message: "A saved record",
+        created_at: 100,
+        scheduled_at: 100,
+        submitted_at: null,
+        state: "Pending",
+        read: false,
+      },
+    ];
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(
+      await screen.findByRole("button", { name: "Continue to Nightly" }),
+    );
+    await openSettings(user);
+    await user.click(screen.getByRole("button", { name: "Redo onboarding" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Redo onboarding",
+      }),
+    );
+    await user.clear(screen.getByLabelText("Display name"));
+    await user.type(screen.getByLabelText("Display name"), "New name");
+    await user.click(screen.getByRole("button", { name: /Continue/ }));
+    await user.click(screen.getByRole("button", { name: /Continue/ }));
+    await user.click(screen.getByRole("button", { name: "Open Reprise" }));
+    await screen.findByLabelText(/Profile menu for New name/);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(data.tasks).toEqual([closedTask("Finished")]);
+    expect(data.notifications[0].id).toBe("kept");
+    expect(data.settings.workspace).toBe("Studio");
+    expect(
+      mocks.invoke.mock.calls.some(([cmd]) => /delete|clear/.test(cmd)),
+    ).toBe(false);
+  });
+  it("keeps setup editable after a save failure and does not duplicate the captured task on retry", async () => {
+    data.settings.onboarded = false;
+    const originalInvoke = mocks.invoke.getMockImplementation()!;
+    let fail = true;
+    mocks.invoke.mockImplementation(async (cmd, args) => {
+      if (cmd === "capture") {
+        data.tasks.push({
+          ...closedTask("Finished"),
+          status: "Inbox",
+          title: args.title,
+        });
+        return;
+      }
+      if (cmd === "save_settings" && fail) {
+        fail = false;
+        throw new Error("Could not save preferences");
+      }
+      return originalInvoke(cmd, args);
+    });
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(await screen.findByRole("button", { name: /Continue/ }));
+    await user.click(screen.getByRole("button", { name: /Continue/ }));
+    await user.type(screen.getByLabelText("Your first intention"), "Only once");
+    await user.click(screen.getByRole("button", { name: "Open Reprise" }));
+    await screen.findByRole("alert");
+    expect(data.settings.onboarded).toBe(false);
+    await user.click(screen.getByRole("button", { name: "Open Reprise" }));
+    await screen.findByLabelText(/Profile menu for/);
+    expect(data.tasks).toHaveLength(1);
+    expect(data.tasks[0].title).toBe("Only once");
   });
   it("does not show a startup disclosure in Quick Capture", async () => {
     data.release = {
