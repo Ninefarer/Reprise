@@ -41,7 +41,7 @@ Want to help test upcoming changes? [Nightly builds](https://github.com/Ninefare
 - Closing the window can leave Reprise running in the tray so reminders can return. **Quit Reprise** stops that background process.
 - Windows controls whether a notification appears. Reprise also keeps its own notification history.
 - Install 3.3.2 manually once to enable signed in-app updates. After that, Reprise checks for updates and lets you choose when to install.
-- **I made reprise with myself in mind first**. Whatever changes happen, are due to *ME* and my ideas for this app.
+- **I made reprise with myself in mind first**. *(If you don't like something, fork it! You may have better execution and ideas than me.)*
 
 ## Find your way around
 
