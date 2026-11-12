@@ -98,6 +98,7 @@ export function App({
     [step, setStep] = useState(0),
     [notificationsOpen, setNotificationsOpen] = useState(false);
   const [updateCheckMessage, setUpdateCheckMessage] = useState("");
+  const [nativeTaskId, setNativeTaskId] = useState<string | null>(null);
   const [checkingUpdates, setCheckingUpdates] = useState(false),
     [updateActivity, setUpdateActivity] = useState<UpdateActivity | null>(null);
   const updateOperation = useRef(false);
@@ -333,9 +334,15 @@ export function App({
       "notification-route",
       (event) => {
         if (event.payload.review) {
+          setNativeTaskId(null);
           setView("Daily Review");
           setQuery("");
-        } else setNotificationsOpen(true);
+        } else if (event.payload.task_id)
+          setNativeTaskId(event.payload.task_id);
+        else {
+          setNativeTaskId(null);
+          setNotificationsOpen(true);
+        }
       },
     )
       .then((unlisten) => {
@@ -354,6 +361,31 @@ export function App({
     const content = document.querySelector<HTMLElement>("main.content");
     if (content) content.scrollTop = 0;
   }, [view]);
+  useEffect(() => {
+    // Fetch on dequeue, after existing edits finish; never retain a stale Task copy.
+    if (!nativeTaskId || editor || deleting || palette || releaseDialog || busy)
+      return;
+    let cancelled = false;
+    void invoke<Snapshot>("snapshot")
+      .then((snapshot) => {
+        if (cancelled) return;
+        setNativeTaskId(null);
+        const task = snapshot.tasks.find((task) => task.id === nativeTaskId);
+        if (task) {
+          setNotificationsOpen(false);
+          open(task);
+        } else setNotificationsOpen(true);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setNativeTaskId(null);
+          setError(String(error));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [nativeTaskId, editor, deleting, palette, releaseDialog, busy]);
   async function checkUpdates() {
     if (updateOperation.current) return;
     updateOperation.current = true;
