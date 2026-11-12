@@ -1,3 +1,4 @@
+import { isNightly, NightlyDisclosure } from "./Nightly";
 import { QuickCapture } from "./QuickCapture";
 import {
   useCallback,
@@ -97,6 +98,7 @@ export function App({
     [now, setNow] = useState(Math.floor(Date.now() / 1000)),
     [step, setStep] = useState(0),
     [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [nightlySeen, setNightlySeen] = useState(false);
   const [updateCheckMessage, setUpdateCheckMessage] = useState("");
   const [nativeTaskId, setNativeTaskId] = useState<string | null>(null);
   const [checkingUpdates, setCheckingUpdates] = useState(false),
@@ -179,6 +181,7 @@ export function App({
   useEffect(() => {
     if (
       quick ||
+      isNightly(data?.release?.version) ||
       !data?.settings.onboarded ||
       !data.release?.should_show ||
       !releaseFor(data.release.version) ||
@@ -227,6 +230,35 @@ export function App({
     error,
     releaseDialog,
     notificationsOpen,
+  ]);
+  useEffect(() => {
+    if (
+      quick ||
+      nightlySeen ||
+      !data ||
+      !themeReady ||
+      !isNightly(data.release?.version) ||
+      editor ||
+      deleting ||
+      palette ||
+      releaseDialog ||
+      busy ||
+      error
+    )
+      return;
+    setNightlySeen(true);
+    setReleaseDialog("new");
+  }, [
+    quick,
+    nightlySeen,
+    data,
+    themeReady,
+    editor,
+    deleting,
+    palette,
+    releaseDialog,
+    busy,
+    error,
   ]);
   const load = useCallback(async (): Promise<void> => {
     if (loading.current) {
@@ -876,6 +908,7 @@ export function App({
   return (
     <div className="app" data-density={settings.density}>
       <Sidebar
+        version={data.release?.version}
         settings={settings}
         avatar={data.avatar}
         view={view}
@@ -1114,18 +1147,27 @@ export function App({
           </>
         )}
       </main>
-      {releaseDialog && (
-        <ReleaseDialog
-          current={data.release?.version ?? releases[0].version}
-          mode={releaseDialog}
-          pending={data.release?.should_show ?? false}
+      {releaseDialog === "new" && isNightly(data.release?.version) ? (
+        <NightlyDisclosure
+          version={data.release!.version}
           onClose={() => setReleaseDialog(null)}
-          onAcknowledge={() =>
-            run(() =>
-              invoke("acknowledge_release", { version: data.release!.version }),
-            )
-          }
         />
+      ) : (
+        releaseDialog && (
+          <ReleaseDialog
+            current={data.release?.version ?? releases[0].version}
+            mode={releaseDialog}
+            pending={data.release?.should_show ?? false}
+            onClose={() => setReleaseDialog(null)}
+            onAcknowledge={() =>
+              run(() =>
+                invoke("acknowledge_release", {
+                  version: data.release!.version,
+                }),
+              )
+            }
+          />
+        )
       )}
       {settings.onboarded && (
         <NotificationSidebar

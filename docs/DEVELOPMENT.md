@@ -17,3 +17,10 @@ Validation: 131 frontend tests, 45 Rust tests, TypeScript/Vite build and strict 
 ## First nightly
 
 The separately packaged test channel uses product name Reprise Nightly, version 3.2.1-nightly.20261112 and app identity com.reprise.nightly. It installs beside stable and uses a separate database; it does not import real tasks automatically. Quit stable before testing the shared Ctrl+Shift+Space shortcut. This is an opt-in testing artifact, not a replacement for stable 3.2.0. Stable main/release remain unchanged.
+
+
+## Nightly identification and disclosure
+
+Nightly-only sidebar badge sits above General and becomes an icon with a tooltip in the collapsed rail. A testing disclosure appears once per main-window launch, including initial onboarding, in place of automatic What's New. Capture never shows it. Stable automatic release notes are unchanged; release history remains accessible manually. The disclosure links to the fixed project issues/new URL through an argument-safe native browser command and warns against including private task data.
+
+The nightly build config is committed at src-tauri/tauri.nightly.conf.json. Build with `npm run tauri -- build --config src-tauri/tauri.nightly.conf.json`. Runtime channel detection uses the packaged nightly prerelease version, not the theme or profile. Regression tests cover first launch, close/refresh/relaunch behavior, issue-link invocation and capture exclusion. Current tests:133 frontend,45Rust; frontend build, strict Clippy and format checks pass.

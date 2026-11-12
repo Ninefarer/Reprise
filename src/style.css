@@ -1479,3 +1479,45 @@ legend {
   scrollbar-gutter: auto;
   overflow: hidden;
 }
+
+.nightly-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 8px;
+  margin: 0 0 5px;
+}
+.sidebar.collapsed .nightly-badge {
+  align-self: center;
+  padding: 5px;
+}
+.sidebar.collapsed .nightly-label {
+  display: none;
+}
+.nightly-disclosure {
+  padding: 26px;
+  max-width: min(520px, calc(100vw - 40px));
+}
+.nightly-disclosure h2 {
+  font-size: 22px;
+  line-height: 1.25;
+  margin: 10px 0 16px;
+}
+.nightly-disclosure p {
+  line-height: 1.6;
+  color: var(--muted);
+}
+.nightly-disclosure a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+.nightly-disclosure a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+}

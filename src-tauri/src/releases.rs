@@ -33,3 +33,20 @@ pub fn acknowledge_release(
     drop(d);
     app.emit("refresh", ()).map_err(|e| e.to_string())
 }
+
+/// A fixed project URL only; never execute a user-provided URL or shell expression.
+#[tauri::command]
+pub fn open_issue_report() -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        std::process::Command::new("explorer.exe")
+            .arg("https://github.com/Ninefarer/Reprise/issues/new")
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        Err("Open the project issues page in your browser.".into())
+    }
+}

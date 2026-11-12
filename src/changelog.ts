@@ -71,6 +71,41 @@ export interface Release {
 }
 export const releases: Release[] = [
   {
+    version: "3.2.1-nightly.20261112",
+    date: "2026-11-12",
+    title: "A clearer way back.",
+    subtitle: "Nightly prerelease for testing.",
+    sections: [
+      {
+        heading: "BUGS, BEGONE",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Native task reminder clicks open the matching task after any existing editor closes. Queued clicks fetch current data and do not reopen deleted tasks.",
+          },
+          {
+            text: "Finishing or rescheduling cancels obsolete queued start/deadline reminders, including reminders held during quiet hours.",
+          },
+          {
+            text: "Undo restores only the pending reminders cancelled by the undone transition, preserving dismissed and submitted history.",
+          },
+        ],
+      },
+      {
+        heading: "NIGHTLY, CLEARLY",
+        accent: "little",
+        entries: [
+          {
+            text: "A compact sidebar Nightly indicator and startup disclosure identify the test channel, with a link to report GitHub issues.",
+          },
+          {
+            text: "Nightly uses a separate installation and local database. Stable 3.2.0 remains unchanged.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.2.0",
     date: "2026-11-11",
     title: "A little less friction.",

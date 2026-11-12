@@ -222,6 +222,7 @@ fn main() {
             diagnostics::test_notification,
             visuals::visual_preferences,
             visuals::window_ready,
+            releases::open_issue_report,
             releases::acknowledge_release
         ])
         .setup(|app| {

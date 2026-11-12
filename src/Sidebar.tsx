@@ -1,3 +1,4 @@
+import { isNightly, NightlyBadge } from "./Nightly";
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Settings, View } from "./model";
@@ -9,6 +10,7 @@ import { taskCategory } from "./taskColors";
 import { PopupMenu, type MenuAction } from "./PopupMenu";
 export function Sidebar({
   settings,
+  version,
   avatar,
   view,
   count,
@@ -16,6 +18,7 @@ export function Sidebar({
   onPatch,
 }: {
   settings: Settings;
+  version?: string;
   avatar?: string | null;
   view: View;
   count: (v: View) => number | null;
@@ -134,6 +137,7 @@ export function Sidebar({
         setMenu({ x: e.clientX, y: e.clientY });
       }}
     >
+      {isNightly(version) && <NightlyBadge version={version!} />}
       <nav aria-label="Main navigation" tabIndex={0}>
         {navigation.map((g) => (
           <section className="nav-group" key={g.id}>

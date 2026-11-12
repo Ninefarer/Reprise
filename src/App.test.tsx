@@ -141,6 +141,55 @@ async function openSettings(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByLabelText(/Profile menu for/));
   await user.click(await screen.findByRole("menuitem", { name: "Settings" }));
 }
+describe("Nightly channel", () => {
+  it("shows its badge and disclosure even on first-run onboarding instead of release notes", async () => {
+    data.settings.onboarded = false;
+    data.release = {
+      version: "3.2.1-nightly.20261112",
+      acknowledged: null,
+      should_show: false,
+    };
+    const user = userEvent.setup();
+    const app = render(<App />);
+    const disclosure = await screen.findByRole("dialog", {
+      name: "You're running Reprise Nightly",
+    });
+    expect(screen.queryByRole("dialog", { name: "What's New" })).toBeNull();
+    expect(
+      within(disclosure)
+        .getByRole("link", { name: /Report an issue on GitHub/ })
+        .getAttribute("href"),
+    ).toBe("https://github.com/Ninefarer/Reprise/issues/new");
+    await user.click(
+      within(disclosure).getByRole("link", {
+        name: /Report an issue on GitHub/,
+      }),
+    );
+    expect(mocks.invoke).toHaveBeenCalledWith("open_issue_report");
+    await user.click(
+      within(disclosure).getByRole("button", { name: "Continue to Nightly" }),
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => mocks.listeners.get("refresh")!({ payload: null }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("note", { name: /Nightly build/ })).toBeTruthy();
+    app.unmount();
+    render(<App />);
+    await screen.findByRole("dialog", {
+      name: "You're running Reprise Nightly",
+    });
+  });
+  it("does not show a startup disclosure in Quick Capture", async () => {
+    data.release = {
+      version: "3.2.1-nightly.20261112",
+      acknowledged: null,
+      should_show: true,
+    };
+    render(<App captureMode />);
+    await waitFor(() => expect(mocks.invoke).toHaveBeenCalledWith("snapshot"));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
 describe("workspace UI", () => {
   it("saves native Glass options and intensity without changing palette preferences", async () => {
     const user = userEvent.setup();
