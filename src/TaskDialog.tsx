@@ -60,7 +60,8 @@ export function TaskDialog({
     setDraft((d) => ({ ...d, [k]: v }));
   async function transition(s: Status) {
     setBusy(true);
-    if (await onTransition(task, s)) onClose();
+    // Status actions must retain edits made in this dialog, not resubmit its original snapshot.
+    if (await onTransition(draft, s)) onClose();
     setBusy(false);
   }
   if (intent === "history")

@@ -71,6 +71,22 @@ export interface Release {
 }
 export const releases: Release[] = [
   {
+    version: "3.3.1",
+    date: "2026-11-12",
+    title: "Keep what you just wrote.",
+    sections: [
+      {
+        heading: "BUGS, BEGONE",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Fixed unsaved task edits being discarded when choosing Do now, Settle, or Finish in task details. Edited fields are now saved with the status change.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.3.0",
     date: "2026-11-12",
     title: "A more thoughtful beginning.",
