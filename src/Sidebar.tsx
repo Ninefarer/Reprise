@@ -137,7 +137,11 @@ export function Sidebar({
         setMenu({ x: e.clientX, y: e.clientY });
       }}
     >
-      {isNightly(version) && <NightlyBadge version={version!} />}
+      {isNightly(version) && (
+        <div className="nightly-header">
+          <NightlyBadge version={version!} />
+        </div>
+      )}
       <nav aria-label="Main navigation" tabIndex={0}>
         {navigation.map((g) => (
           <section className="nav-group" key={g.id}>

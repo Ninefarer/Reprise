@@ -1521,3 +1521,65 @@ legend {
   outline: 2px solid var(--focus);
   outline-offset: 4px;
 }
+
+/* A still night sky confined to the testing-channel header; the bottom dissolves into the sidebar. */
+.nightly-header {
+  position: relative;
+  isolation: isolate;
+  --night-sky: #18243a;
+  --night-star: #c2d4f2;
+}
+.nightly-header::before {
+  content: "";
+  position: absolute;
+  inset: -8px -12px -8px;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at 12% 20%,
+      color-mix(in srgb, var(--night-star) 55%, transparent) 0 0.7px,
+      transparent 1.2px
+    ),
+    radial-gradient(
+      circle at 35% 44%,
+      color-mix(in srgb, var(--night-star) 28%, transparent) 0 0.5px,
+      transparent 1px
+    ),
+    radial-gradient(
+      circle at 58% 15%,
+      color-mix(in srgb, var(--night-star) 45%, transparent) 0 0.6px,
+      transparent 1px
+    ),
+    radial-gradient(
+      circle at 76% 39%,
+      color-mix(in srgb, var(--night-star) 40%, transparent) 0 0.7px,
+      transparent 1.2px
+    ),
+    radial-gradient(
+      circle at 91% 13%,
+      color-mix(in srgb, var(--night-star) 50%, transparent) 0 0.5px,
+      transparent 1px
+    ),
+    linear-gradient(
+      110deg,
+      color-mix(in srgb, var(--night-sky) 65%, transparent),
+      color-mix(in srgb, var(--night-sky) 25%, transparent)
+    );
+  mask-image: linear-gradient(to bottom, #000 0%, #0009 55%, transparent 100%);
+}
+:root[data-theme="light"] .nightly-header {
+  --night-sky: #bccbe0;
+  --night-star: #59708e;
+}
+.nightly-header .nightly-badge {
+  position: relative;
+}
+.collapsed .nightly-header .nightly-badge {
+  justify-content: center;
+}
+@media (forced-colors: active), (prefers-reduced-transparency: reduce) {
+  .nightly-header::before {
+    display: none;
+  }
+}

@@ -71,6 +71,22 @@ export interface Release {
 }
 export const releases: Release[] = [
   {
+    version: "3.2.1-nightly.20261112.2",
+    date: "2026-11-12",
+    title: "A small patch of sky.",
+    sections: [
+      {
+        heading: "LOOKING SHARP",
+        accent: "sharp",
+        entries: [
+          {
+            text: "A subtle, static night sky behind the sidebar Nightly label fades into the navigation below. It adds no header height and has a light-theme counterpart and accessibility fallbacks.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.2.1-nightly.20261112",
     date: "2026-11-12",
     title: "A clearer way back.",
@@ -96,7 +112,7 @@ export const releases: Release[] = [
         accent: "little",
         entries: [
           {
-            text: "A compact sidebar Nightly indicator and startup disclosure identify the test channel, with a link to report GitHub issues.",
+            text: "A compact sidebar Nightly indicator with a subtle fading night sky, plus a startup disclosure and GitHub issue-report link, identify the test channel.",
           },
           {
             text: "Nightly uses a separate installation and local database. Stable 3.2.0 remains unchanged.",
