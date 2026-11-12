@@ -31,8 +31,6 @@ Reprise runs on **Windows 11, x64**. No account is required, and your tasks are 
 
 Download the `.exe` installer from the [latest Stable release](https://github.com/Ninefarer/Reprise/releases/latest), run it, and open Reprise. You do not need Node or Rust to use the app.
 
-The repository is currently private; downloads and issues require repository access.
-
 Want to help test upcoming changes? [Nightly builds](https://github.com/Ninefarer/Reprise/releases?q=nightly&expanded=true) are marked **Pre-release**. They install separately and keep their own task data. Stable is the everyday download; Nightly may have bugs or unfinished changes.
 
 [Installation and first run](docs/GETTING-STARTED.md) covers updates, running in the tray, and using both channels.
@@ -42,14 +40,14 @@ Want to help test upcoming changes? [Nightly builds](https://github.com/Ninefare
 - Core task management works offline. No cloud service is required.
 - Closing the window can leave Reprise running in the tray so reminders can return. **Quit Reprise** stops that background process.
 - Windows controls whether a notification appears. Reprise also keeps its own notification history.
-- Updates are currently installed manually; the signed in-app update feed is not connected.
+- Install 3.3.2 manually once to enable signed in-app updates. After that, Reprise checks for updates and lets you choose when to install.
 - **I made reprise with myself in mind first**. Whatever changes happen, are due to *ME* and my ideas for this app.
 
 ## Find your way around
 
 - [Getting started](docs/GETTING-STARTED.md): install, capture a task, and find Settings.
 - [Task workflow](docs/TASK-WORKFLOW.md): choose what to do now and what to return to later.
-- [Full changelog](CHANGELOG.md): additions, changes, and fixes in Stable 3.3.0.
+- [Full changelog](CHANGELOG.md): additions, changes, and fixes across Stable releases.
 - [All documentation](docs/README.md): user guides and the engineering records behind the app.
 
 Found something wrong? [Open an issue](https://github.com/Ninefarer/Reprise/issues) with what you expected, what happened, and your version. Keep private task details out of screenshots and reports.

@@ -6,8 +6,6 @@
 
 Reprise targets Windows 11 on x64 PCs. Download the `.exe` setup file from the [latest Stable release](https://github.com/Ninefarer/Reprise/releases/latest), run it, then open Reprise. The adjacent `.sha256` file is available if you want to verify your download. No development tools are needed.
 
-The repository is currently private. You need repository access to view releases, download installers, or report issues.
-
 ## Make it yours
 
 Follow setup to choose a display name, an optional space name, appearance, and reminder preferences. You can skip setup and change preferences later. Settings opens from your profile at the bottom of the sidebar.
@@ -28,9 +26,11 @@ With close-to-tray enabled, closing the main window leaves Reprise running. Use 
 
 Windows notification permissions, Focus / Do Not Disturb, and Reprise's quiet hours can affect reminders. Reprise's notification panel keeps its own history; clearing that history does not clear Windows Notification Center. A submitted notification is not proof that Windows displayed a banner.
 
-## Update manually
+## Updates
 
-Download a newer installer from the appropriate release channel. The signed in-app update feed is not configured, so **Check for updates** cannot currently discover or install GitHub releases. A published GitHub release alone does not connect that feed.
+Install Stable 3.3.2 manually once to enable signed in-app updates. Run the matching installer over the existing installation. After setup, Reprise checks for updates automatically; you can also use **Settings > About / Updates > Check for updates**. An available update appears in Notifications. Click its title when you want to install, or leave it for later. Stable updates stay on Stable; Nightly updates stay on Nightly.
+
+Older builds still require a manual download from the appropriate release channel.
 
 Task data is kept separately from the installed application. Do not delete the application data directory when updating. For feed configuration and technical details, see [Updater integration](UPDATES.md).
 

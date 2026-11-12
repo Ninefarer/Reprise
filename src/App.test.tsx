@@ -142,6 +142,39 @@ async function openSettings(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByLabelText(/Profile menu for/));
   await user.click(await screen.findByRole("menuitem", { name: "Settings" }));
 }
+it.each([
+  [true, false, 1],
+  [false, false, 0],
+  [true, true, 0],
+] as const)(
+  "automatically checks only the onboarded main window (%s,%s)",
+  async (onboarded, capture, expected) => {
+    vi.useFakeTimers();
+    try {
+      data.settings.onboarded = onboarded;
+      const app = render(<App captureMode={capture} />);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30001);
+      });
+      expect(
+        mocks.invoke.mock.calls.filter(
+          ([cmd, args]) => cmd === "check_updates" && args?.automatic,
+        ),
+      ).toHaveLength(expected);
+      app.unmount();
+      const count = mocks.invoke.mock.calls.length;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60000);
+      });
+      expect(mocks.invoke.mock.calls).toHaveLength(count);
+    } finally {
+      vi.useRealTimers();
+    }
+  },
+);
 describe("Nightly channel", () => {
   it.each([
     ["3.3.0", false],
