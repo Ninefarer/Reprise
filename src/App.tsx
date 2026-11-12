@@ -98,6 +98,7 @@ export function App({
     [step, setStep] = useState(0),
     [notificationsOpen, setNotificationsOpen] = useState(false);
   const [updateCheckMessage, setUpdateCheckMessage] = useState("");
+  const [nativeTask, setNativeTask] = useState<Task | null>(null);
   const [checkingUpdates, setCheckingUpdates] = useState(false),
     [updateActivity, setUpdateActivity] = useState<UpdateActivity | null>(null);
   const updateOperation = useRef(false);
@@ -335,6 +336,18 @@ export function App({
         if (event.payload.review) {
           setView("Daily Review");
           setQuery("");
+        } else if (event.payload.task_id) {
+          const id = event.payload.task_id;
+          void invoke<Snapshot>("snapshot")
+            .then((snapshot) => {
+              if (disposed) return;
+              const task = snapshot.tasks.find((task) => task.id === id);
+              if (task) setNativeTask(task);
+              else setNotificationsOpen(true);
+            })
+            .catch((error) => {
+              if (!disposed) setError(String(error));
+            });
         } else setNotificationsOpen(true);
       },
     )
@@ -354,6 +367,13 @@ export function App({
     const content = document.querySelector<HTMLElement>("main.content");
     if (content) content.scrollTop = 0;
   }, [view]);
+  useEffect(() => {
+    // Queue activation until an existing edit/dialog has been resolved.
+    if (!nativeTask || editor || deleting || palette || releaseDialog) return;
+    setNativeTask(null);
+    setNotificationsOpen(false);
+    open(nativeTask);
+  }, [nativeTask, editor, deleting, palette, releaseDialog]);
   async function checkUpdates() {
     if (updateOperation.current) return;
     updateOperation.current = true;

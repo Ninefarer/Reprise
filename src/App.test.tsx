@@ -355,6 +355,76 @@ describe("workspace UI", () => {
     );
     expect(screen.queryByText("Error: Windows unavailable")).toBeNull();
   });
+  it("opens the task identified by a native toast", async () => {
+    data.tasks = [
+      { ...closedTask("Finished"), status: "Inbox", completed_at: null },
+    ];
+    render(<App />);
+    await screen.findByRole("navigation");
+    await waitFor(() =>
+      expect(mocks.listeners.has("notification-route")).toBe(true),
+    );
+    await act(async () =>
+      mocks.listeners.get("notification-route")!({
+        payload: { review: false, task_id: data.tasks[0].id },
+      }),
+    );
+    await screen.findByRole("dialog");
+    expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe(
+      data.tasks[0].title,
+    );
+  });
+  it("queues a toast task without replacing an unsaved editor", async () => {
+    data.tasks = [
+      {
+        ...closedTask("Finished"),
+        id: "first",
+        title: "First",
+        status: "Inbox",
+        completed_at: null,
+      },
+      {
+        ...closedTask("Finished"),
+        id: "second",
+        title: "Second",
+        status: "Inbox",
+        completed_at: null,
+      },
+    ];
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("navigation");
+    await waitFor(() =>
+      expect(mocks.listeners.has("notification-route")).toBe(true),
+    );
+    await act(async () =>
+      mocks.listeners.get("notification-route")!({
+        payload: { review: false, task_id: "first" },
+      }),
+    );
+    const title = await screen.findByLabelText("Title");
+    await user.clear(title);
+    await user.type(title, "Unsaved draft");
+    await act(async () =>
+      mocks.listeners.get("notification-route")!({
+        payload: { review: false, task_id: "second" },
+      }),
+    );
+    expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe(
+      "Unsaved draft",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Close task details" }),
+    );
+    await waitFor(() =>
+      expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe(
+        "Second",
+      ),
+    );
+    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "save_task")).toBe(
+      false,
+    );
+  });
   it("routes reported native review activation and cleans up its listener", async () => {
     const app = render(<App />);
     await screen.findByRole("navigation");

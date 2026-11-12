@@ -175,7 +175,9 @@ impl Store {
             [&t.id],
         )
         .map_err(err)?;
-        tx.execute("UPDATE notifications SET state='Cancelled' WHERE task_id=?1 AND state='Pending' AND category IN ('Snoozed','Settled','Waiting')",[&t.id]).map_err(err)?;
+        // Quiet hours can leave reminders queued after their event is processed.
+        // A task edit must retire obsolete queued reminders as well as future events.
+        tx.execute("UPDATE notifications SET state='Cancelled' WHERE task_id=?1 AND state='Pending' AND (category IN ('Snoozed','Settled','Waiting') OR ?2 OR (category='Scheduled' AND scheduled_at IS NOT ?3) OR (category='Deadline' AND scheduled_at IS NOT ?4))",params![t.id,matches!(t.status,Status::Finished|Status::Dropped),t.scheduled_at,t.due_at]).map_err(err)?;
         if !matches!(t.status, Status::Finished | Status::Dropped) {
             for (category, time) in [
                 ("Scheduled", t.scheduled_at),
