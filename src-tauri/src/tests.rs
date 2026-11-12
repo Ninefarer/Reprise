@@ -621,3 +621,30 @@ fn rescheduling_cancels_only_obsolete_queued_reminders() {
         1
     );
 }
+
+#[test]
+fn undo_restores_only_its_cancelled_queued_reminders() {
+    let mut d = db();
+    let mut t = Task::new("Undo with queued reminders".into(), 100);
+    t.status = Status::Scheduled;
+    t.scheduled_at = Some(110);
+    t.due_at = Some(120);
+    let mut t = d.save(t, "Scheduled", 100).unwrap();
+    d.reconcile(130).unwrap();
+    let notices = d.notices().unwrap();
+    let dismissed = notices[0].id.clone();
+    d.manage_notices("dismiss", &[dismissed.clone()], 131)
+        .unwrap();
+    t.status = Status::Finished;
+    let t = d.save(t, "Finished", 140).unwrap();
+    d.undo(&t.id, t.updated_at, 145).unwrap();
+    assert_eq!(
+        d.notices()
+            .unwrap()
+            .iter()
+            .filter(|n| n.state == "Pending")
+            .count(),
+        1
+    );
+    assert!(d.notices().unwrap().iter().all(|n| n.id != dismissed));
+}

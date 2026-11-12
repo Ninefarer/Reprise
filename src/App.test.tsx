@@ -425,6 +425,47 @@ describe("workspace UI", () => {
       false,
     );
   });
+  it("does not reopen a queued task deleted while another editor was open", async () => {
+    data.tasks = [
+      {
+        ...closedTask("Finished"),
+        id: "first",
+        title: "First",
+        status: "Inbox",
+        completed_at: null,
+      },
+      {
+        ...closedTask("Finished"),
+        id: "second",
+        title: "Second",
+        status: "Inbox",
+        completed_at: null,
+      },
+    ];
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("navigation");
+    await waitFor(() =>
+      expect(mocks.listeners.has("notification-route")).toBe(true),
+    );
+    await act(async () =>
+      mocks.listeners.get("notification-route")!({
+        payload: { review: false, task_id: "first" },
+      }),
+    );
+    await screen.findByLabelText("Title");
+    await act(async () =>
+      mocks.listeners.get("notification-route")!({
+        payload: { review: false, task_id: "second" },
+      }),
+    );
+    data.tasks = data.tasks.filter((t) => t.id !== "second");
+    await user.click(
+      screen.getByRole("button", { name: "Close task details" }),
+    );
+    await screen.findByRole("complementary", { name: "Notifications" });
+    expect(screen.queryByLabelText("Title")).toBeNull();
+  });
   it("routes reported native review activation and cleans up its listener", async () => {
     const app = render(<App />);
     await screen.findByRole("navigation");

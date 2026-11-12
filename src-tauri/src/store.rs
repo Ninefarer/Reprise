@@ -152,6 +152,23 @@ impl Store {
         ) {
             t.wake_at = None;
         }
+        let restore_notices: Vec<String> = if action == "Undone" {
+            let after: String = self
+                .conn
+                .query_row(
+                    "SELECT after_data FROM history WHERE task_id=?1 ORDER BY id DESC LIMIT 1",
+                    [&t.id],
+                    |r| r.get(0),
+                )
+                .map_err(err)?;
+            serde_json::from_str::<Value>(&after)
+                .map_err(err)?
+                .get("_cancelled_notice_ids")
+                .and_then(|v| serde_json::from_value(v.clone()).ok())
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        };
         let data = serde_json::to_string(&t).map_err(err)?;
         let tx = self.conn.transaction().map_err(err)?;
         tx.execute(
@@ -159,6 +176,23 @@ impl Store {
             params![t.id, data],
         )
         .map_err(err)?;
+        let cancelled_notices: Vec<String> = {
+            let mut q=tx.prepare("SELECT id FROM notifications WHERE task_id=?1 AND state='Pending' AND (category IN ('Snoozed','Settled','Waiting') OR ?2 OR (category='Scheduled' AND scheduled_at IS NOT ?3) OR (category='Deadline' AND scheduled_at IS NOT ?4))").map_err(err)?;
+            let rows = q
+                .query_map(
+                    params![
+                        t.id,
+                        matches!(t.status, Status::Finished | Status::Dropped),
+                        t.scheduled_at,
+                        t.due_at
+                    ],
+                    |r| r.get::<_, String>(0),
+                )
+                .map_err(err)?;
+            rows.collect::<std::result::Result<_, _>>().map_err(err)?
+        };
+        let mut history_data = serde_json::from_str::<Value>(&data).map_err(err)?;
+        history_data["_cancelled_notice_ids"] = json!(cancelled_notices);
         tx.execute(
             "INSERT INTO history(task_id,at,action,before_data,after_data) VALUES(?1,?2,?3,?4,?5)",
             params![
@@ -166,7 +200,7 @@ impl Store {
                 now,
                 action,
                 before.as_ref().map(|b| serde_json::to_string(b).unwrap()),
-                data
+                history_data.to_string()
             ],
         )
         .map_err(err)?;
@@ -175,9 +209,18 @@ impl Store {
             [&t.id],
         )
         .map_err(err)?;
-        // Quiet hours can leave reminders queued after their event is processed.
-        // A task edit must retire obsolete queued reminders as well as future events.
-        tx.execute("UPDATE notifications SET state='Cancelled' WHERE task_id=?1 AND state='Pending' AND (category IN ('Snoozed','Settled','Waiting') OR ?2 OR (category='Scheduled' AND scheduled_at IS NOT ?3) OR (category='Deadline' AND scheduled_at IS NOT ?4))",params![t.id,matches!(t.status,Status::Finished|Status::Dropped),t.scheduled_at,t.due_at]).map_err(err)?;
+        for notice_id in &cancelled_notices {
+            tx.execute(
+                "UPDATE notifications SET state='Cancelled' WHERE id=?1",
+                [notice_id],
+            )
+            .map_err(err)?;
+        }
+        // Restore only pending notices cancelled by the transition being undone.
+        // Submitted, dismissed and permanently cleared notices must stay untouched.
+        for notice_id in restore_notices {
+            tx.execute("UPDATE notifications SET state='Pending' WHERE id=?1 AND task_id=?2 AND state='Cancelled' AND id NOT IN (SELECT id FROM retired_notifications)",params![notice_id,t.id]).map_err(err)?;
+        }
         if !matches!(t.status, Status::Finished | Status::Dropped) {
             for (category, time) in [
                 ("Scheduled", t.scheduled_at),

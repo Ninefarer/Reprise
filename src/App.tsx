@@ -98,7 +98,7 @@ export function App({
     [step, setStep] = useState(0),
     [notificationsOpen, setNotificationsOpen] = useState(false);
   const [updateCheckMessage, setUpdateCheckMessage] = useState("");
-  const [nativeTask, setNativeTask] = useState<Task | null>(null);
+  const [nativeTaskId, setNativeTaskId] = useState<string | null>(null);
   const [checkingUpdates, setCheckingUpdates] = useState(false),
     [updateActivity, setUpdateActivity] = useState<UpdateActivity | null>(null);
   const updateOperation = useRef(false);
@@ -334,21 +334,15 @@ export function App({
       "notification-route",
       (event) => {
         if (event.payload.review) {
+          setNativeTaskId(null);
           setView("Daily Review");
           setQuery("");
-        } else if (event.payload.task_id) {
-          const id = event.payload.task_id;
-          void invoke<Snapshot>("snapshot")
-            .then((snapshot) => {
-              if (disposed) return;
-              const task = snapshot.tasks.find((task) => task.id === id);
-              if (task) setNativeTask(task);
-              else setNotificationsOpen(true);
-            })
-            .catch((error) => {
-              if (!disposed) setError(String(error));
-            });
-        } else setNotificationsOpen(true);
+        } else if (event.payload.task_id)
+          setNativeTaskId(event.payload.task_id);
+        else {
+          setNativeTaskId(null);
+          setNotificationsOpen(true);
+        }
       },
     )
       .then((unlisten) => {
@@ -368,12 +362,30 @@ export function App({
     if (content) content.scrollTop = 0;
   }, [view]);
   useEffect(() => {
-    // Queue activation until an existing edit/dialog has been resolved.
-    if (!nativeTask || editor || deleting || palette || releaseDialog) return;
-    setNativeTask(null);
-    setNotificationsOpen(false);
-    open(nativeTask);
-  }, [nativeTask, editor, deleting, palette, releaseDialog]);
+    // Fetch on dequeue, after existing edits finish; never retain a stale Task copy.
+    if (!nativeTaskId || editor || deleting || palette || releaseDialog || busy)
+      return;
+    let cancelled = false;
+    void invoke<Snapshot>("snapshot")
+      .then((snapshot) => {
+        if (cancelled) return;
+        setNativeTaskId(null);
+        const task = snapshot.tasks.find((task) => task.id === nativeTaskId);
+        if (task) {
+          setNotificationsOpen(false);
+          open(task);
+        } else setNotificationsOpen(true);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setNativeTaskId(null);
+          setError(String(error));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [nativeTaskId, editor, deleting, palette, releaseDialog, busy]);
   async function checkUpdates() {
     if (updateOperation.current) return;
     updateOperation.current = true;
