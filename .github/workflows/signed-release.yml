@@ -1,0 +1,85 @@
+name: Signed Windows release
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        type: choice
+        options: [stable, nightly]
+        required: true
+      source_ref:
+        description: Approved full source commit SHA
+        required: true
+      publish:
+        type: boolean
+        default: false
+        description: Publish only after installed signed-upgrade verification
+  push:
+    branches: [develop]
+    paths: [.github/workflows/signed-release.yml]
+permissions:
+  contents: read
+concurrency:
+  group: signed-release-${{ inputs.channel || 'register' }}
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 40
+    outputs:
+      version: ${{ steps.bundle.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: rustup update stable --no-self-update
+      - run: rustup default stable
+      - run: npm test
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+      - name: Build and verify signed release
+        id: bundle
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          UPDATER_ACCEPTANCE_FINGERPRINT: ${{ vars.UPDATER_ACCEPTANCE_FINGERPRINT }}
+          PUBLISH_RELEASE: ${{ inputs.publish }}
+          RELEASE_CHANNEL: ${{ inputs.channel }}
+        run: node scripts/updater/build-release.mjs "$env:RELEASE_CHANNEL"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: signed-${{ inputs.channel }}-${{ github.run_id }}
+          path: ${{ steps.bundle.outputs.artifact_dir }}/
+          if-no-files-found: error
+          retention-days: 14
+  publish:
+    if: inputs.publish
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: signed-${{ inputs.channel }}-${{ github.run_id }}
+          path: artifacts/staged
+      - name: Publish verified artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPDATER_ACCEPTANCE_FINGERPRINT: ${{ vars.UPDATER_ACCEPTANCE_FINGERPRINT }}
+        run: node scripts/updater/publish-release.mjs artifacts/staged
