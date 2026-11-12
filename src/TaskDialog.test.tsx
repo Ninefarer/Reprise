@@ -57,11 +57,7 @@ it.each([
     await user.clear(screen.getByLabelText("Notes"));
     await user.type(screen.getByLabelText("Notes"), "Keep these notes");
     await user.type(screen.getByLabelText("Project"), "Personal");
-<<<<<<< HEAD
-    await user.click(screen.getByRole("button", { name, exact: true }));
-=======
     await user.click(screen.getByRole("button", { name }));
->>>>>>> main
     expect(onTransition).toHaveBeenCalledWith(
       expect.objectContaining({
         title: "Edited title",
@@ -90,11 +86,7 @@ it("keeps edited values available when a transition is rejected", async () => {
     />,
   );
   await user.type(screen.getByLabelText("Notes"), " Keep this edit");
-<<<<<<< HEAD
-  await user.click(screen.getByRole("button", { name: "Finish", exact: true }));
-=======
   await user.click(screen.getByRole("button", { name: "Finish" }));
->>>>>>> main
   expect(onClose).not.toHaveBeenCalled();
   expect((screen.getByLabelText("Notes") as HTMLTextAreaElement).value).toBe(
     "Original notes Keep this edit",
