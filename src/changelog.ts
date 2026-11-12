@@ -71,6 +71,22 @@ export interface Release {
 }
 export const releases: Release[] = [
   {
+    version: "3.2.1-nightly.20261112.3",
+    date: "2026-11-12",
+    title: "A hint of violet.",
+    sections: [
+      {
+        heading: "LOOKING SHARP",
+        accent: "sharp",
+        entries: [
+          {
+            text: "A faint purple tint on the right side of the Nightly sky blends into the existing bottom fade.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.2.1-nightly.20261112.2",
     date: "2026-11-12",
     title: "A small patch of sky.",

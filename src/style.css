@@ -1527,6 +1527,7 @@ legend {
   position: relative;
   isolation: isolate;
   --night-sky: #18243a;
+  --night-purple: #8262b3;
   --night-star: #c2d4f2;
 }
 .nightly-header::before {
@@ -1561,6 +1562,11 @@ legend {
       color-mix(in srgb, var(--night-star) 50%, transparent) 0 0.5px,
       transparent 1px
     ),
+    radial-gradient(
+      ellipse at 100% 12%,
+      color-mix(in srgb, var(--night-purple) 22%, transparent),
+      transparent 72%
+    ),
     linear-gradient(
       110deg,
       color-mix(in srgb, var(--night-sky) 65%, transparent),
@@ -1570,6 +1576,7 @@ legend {
 }
 :root[data-theme="light"] .nightly-header {
   --night-sky: #bccbe0;
+  --night-purple: #967bb8;
   --night-star: #59708e;
 }
 .nightly-header .nightly-badge {
