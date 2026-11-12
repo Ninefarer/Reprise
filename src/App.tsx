@@ -366,6 +366,38 @@ function Application({
       window.removeEventListener("focus", focus);
     };
   }, [load]);
+  useEffect(() => {
+    if (quick || setupActive) return;
+    let disposed = false;
+    const check = async () => {
+      if (updateOperation.current) return;
+      updateOperation.current = true;
+      try {
+        const result = await invoke<{
+          notice_id: string | null;
+          message?: string;
+        }>("check_updates", { automatic: true });
+        if (!disposed) {
+          if (result?.message) setUpdateCheckMessage(result.message);
+          if (result?.notice_id) await load();
+        }
+      } catch (error) {
+        if (!disposed)
+          setUpdateCheckMessage(
+            `Automatic update check couldn't finish: ${String(error)}`,
+          );
+      } finally {
+        updateOperation.current = false;
+      }
+    };
+    const first = setTimeout(() => void check(), 30000);
+    const interval = setInterval(() => void check(), 6 * 3600000);
+    return () => {
+      disposed = true;
+      clearTimeout(first);
+      clearInterval(interval);
+    };
+  }, [quick, setupActive, load]);
   useLayoutEffect(() => {
     if (!data) return;
     trace("snapshot.commit", snapshotStarted.current);

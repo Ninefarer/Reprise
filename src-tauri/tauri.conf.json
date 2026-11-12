@@ -44,8 +44,10 @@
   },
   "plugins": {
     "updater": {
-      "endpoints": [],
-      "pubkey": "",
+      "endpoints": [
+        "https://github.com/Ninefarer/Reprise/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVEODAzMzZCNEE0RjQwRDcKUldUWFFFOUthek9BN1VPSm1lLysrM0MzcjJGcEMySlFDdVJXRXcyZklqN1FnV3dCcVYvNWFTVUwK",
       "requireSignedVersion": true,
       "windows": {
         "installMode": "passive"
@@ -71,6 +73,7 @@
         "installerIcon": "icons/stable/icon.ico",
         "uninstallerIcon": "icons/stable/icon.ico"
       }
-    }
+    },
+    "createUpdaterArtifacts": true
   }
 }

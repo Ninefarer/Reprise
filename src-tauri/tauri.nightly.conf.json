@@ -16,5 +16,13 @@
         "uninstallerIcon": "icons/nightly/icon.ico"
       }
     }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/Ninefarer/Reprise/releases/download/nightly-updates/latest.json"
+      ],
+      "requireSignedVersion": true
+    }
   }
 }
