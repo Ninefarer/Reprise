@@ -106,8 +106,8 @@ export function Onboarding({
               <h1 ref={heading} tabIndex={-1} id="setup-title">
                 {
                   [
-                    "A little space for your intentions.",
-                    "Let later have a time.",
+                    "Set up your space.",
+                    "Choose when tasks return.",
                     "Start with one thing.",
                   ][step]
                 }
@@ -116,7 +116,7 @@ export function Onboarding({
                 {
                   [
                     "Make yourself at home. You can change all of this later.",
-                    "Choose how Reprise helps you return, without rushing you.",
+                    "Set return times, daily review reminders, and quiet hours.",
                     "Capture something for later. No dates or priorities needed.",
                   ][step]
                 }
@@ -223,7 +223,7 @@ export function Onboarding({
                       checked={draft.daily_review}
                       onChange={(e) => set("daily_review", e.target.checked)}
                     />
-                    A daily moment to review
+                    Send a daily review reminder
                   </label>
                   <div className="fields">
                     {draft.daily_review && (
@@ -260,7 +260,7 @@ export function Onboarding({
               ) : (
                 <>
                   <label>
-                    Your first intention
+                    Your first task
                     <input
                       maxLength={500}
                       placeholder="What would you like to come back to?"

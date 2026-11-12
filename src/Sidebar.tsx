@@ -15,6 +15,7 @@ export function Sidebar({
   view,
   count,
   onNavigate,
+  onQuit,
   onPatch,
 }: {
   settings: Settings;
@@ -23,6 +24,7 @@ export function Sidebar({
   view: View;
   count: (v: View) => number | null;
   onNavigate: (v: View, anchor?: string) => void;
+  onQuit?: () => void;
   onPatch: (p: Partial<Settings>) => Promise<void>;
 }) {
   const [width, setWidth] = useState(settings.sidebar_width ?? 224),
@@ -360,7 +362,10 @@ export function Sidebar({
                 {text}
               </button>
             ))}
-            <button role="menuitem" onClick={() => void invoke("quit_app")}>
+            <button
+              role="menuitem"
+              onClick={() => (onQuit ? onQuit() : void invoke("quit_app"))}
+            >
               Quit Reprise
             </button>
           </div>

@@ -140,6 +140,81 @@ mod native {
     }
     #[derive(Default)]
     pub struct Runtime(Mutex<VecDeque<Active>>);
+    fn check_permission(
+        id: &str,
+        setting: windows::core::Result<NotificationSetting>,
+    ) -> Result<(), String> {
+        match setting {
+            Ok(NotificationSetting::Enabled) => Ok(()),
+            Ok(setting) => Err(format!("Windows notifications are disabled (setting {}). Check Windows notification settings for Reprise.", setting.0)),
+            // A newly installed desktop identity can have no permission record yet.
+            // Let Show ask Windows to submit; this does not imply permission or display.
+            Err(error) if error.code().0 == 0x80070490u32 as i32 => Ok(()),
+            Err(error) => Err(format!("{id}: read notification permission failed: {error}")),
+        }
+    }
+    #[test]
+    fn permission_missing_record_is_distinct_from_disabled_and_other_failures() {
+        use windows::core::{Error, HRESULT};
+        assert!(check_permission(
+            "test",
+            Err(Error::from_hresult(HRESULT(0x80070490u32 as i32)))
+        )
+        .is_ok());
+        assert!(check_permission("test", Ok(NotificationSetting::Enabled)).is_ok());
+        for state in [
+            NotificationSetting::DisabledForApplication,
+            NotificationSetting::DisabledForUser,
+            NotificationSetting::DisabledByGroupPolicy,
+            NotificationSetting::DisabledByManifest,
+        ] {
+            assert!(check_permission("test", Ok(state)).is_err());
+        }
+        assert!(check_permission(
+            "test",
+            Err(Error::from_hresult(HRESULT(0x80070005u32 as i32)))
+        )
+        .is_err());
+    }
+    fn prepare(
+        id: &str,
+        content: &Content,
+    ) -> Result<(windows::UI::Notifications::ToastNotifier, ToastNotification), String> {
+        let notifier = ToastNotificationManager::CreateToastNotifierWithId(&HSTRING::from(id))
+            .map_err(|e| format!("{id}: create notifier failed: {e}"))?;
+        check_permission(id, notifier.Setting())?;
+        let doc =
+            XmlDocument::new().map_err(|e| format!("{id}: create XML document failed: {e}"))?;
+        doc.LoadXml(&HSTRING::from(xml(content)))
+            .map_err(|e| format!("{id}: load toast XML failed: {e}"))?;
+        let toast = ToastNotification::CreateToastNotification(&doc)
+            .map_err(|e| format!("{id}: create toast failed: {e}"))?;
+        toast
+            .SetTag(&HSTRING::from(
+                &uuid::Uuid::new_v4().simple().to_string()[..16],
+            ))
+            .map_err(|e| format!("{id}: set toast tag failed: {e}"))?;
+        toast
+            .SetGroup(&HSTRING::from("reprise-reminders"))
+            .map_err(|e| format!("{id}: set toast group failed: {e}"))?;
+        Ok((notifier, toast))
+    }
+
+    #[test]
+    #[ignore = "Sends a real Windows toast; set REPRISE_TOAST_TEST_ID to an installed app identity"]
+    fn installed_native_toast_probe() {
+        let id =
+            std::env::var("REPRISE_TOAST_TEST_ID").expect("Set REPRISE_TOAST_TEST_ID explicitly");
+        let content = Content {
+            title: "Reprise Nightly notification check".into(),
+            body: "Testing the installed Nightly Windows notification path.".into(),
+        };
+        let (notifier, toast) = prepare(&id, &content).expect("Prepare native notification");
+        notifier
+            .Show(&toast)
+            .unwrap_or_else(|e| panic!("{id}: Show failed: {e}"));
+        println!("Windows accepted the toast for {id}; this does not confirm banner display.");
+    }
     pub fn send(
         app: &tauri::AppHandle,
         content: &Content,
@@ -147,26 +222,7 @@ mod native {
         review: bool,
         task_id: Option<String>,
     ) -> Result<(), String> {
-        let notifier = ToastNotificationManager::CreateToastNotifierWithId(&HSTRING::from(
-            &app.config().identifier,
-        ))
-        .map_err(|e| e.to_string())?;
-        let setting = notifier.Setting().map_err(|e| e.to_string())?;
-        if setting != NotificationSetting::Enabled {
-            return Err(format!("Windows notifications are disabled (setting {}). Check Windows notification settings for Reprise.",setting.0));
-        }
-        let doc = XmlDocument::new().map_err(|e| e.to_string())?;
-        doc.LoadXml(&HSTRING::from(xml(content)))
-            .map_err(|e| e.to_string())?;
-        let toast = ToastNotification::CreateToastNotification(&doc).map_err(|e| e.to_string())?;
-        toast
-            .SetTag(&HSTRING::from(
-                &uuid::Uuid::new_v4().simple().to_string()[..16],
-            ))
-            .map_err(|e| e.to_string())?;
-        toast
-            .SetGroup(&HSTRING::from("reprise-reminders"))
-            .map_err(|e| e.to_string())?;
+        let (notifier, toast) = prepare(&app.config().identifier, content)?;
         let handle = app.clone();
         let activation_ids = ids.clone();
         let activated = toast
@@ -192,7 +248,9 @@ mod native {
             });
             Ok(())
         })).map_err(|e| e.to_string())?;
-        notifier.Show(&toast).map_err(|e| e.to_string())?;
+        notifier
+            .Show(&toast)
+            .map_err(|e| format!("{}: show toast failed: {e}", app.config().identifier))?;
         let state = app.state::<Runtime>();
         let mut active = state.0.lock().map_err(|e| e.to_string())?;
         active.push_back(Active {

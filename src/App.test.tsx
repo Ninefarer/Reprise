@@ -154,7 +154,7 @@ describe("Nightly channel", () => {
       data.release = { version, acknowledged: null, should_show: false };
       render(<App />);
       await screen.findByRole("heading", {
-        name: "A little space for your intentions.",
+        name: "Set up your space.",
       });
       expect(!!document.querySelector(".setup-nightly")).toBe(sky);
       expect(document.documentElement.dataset.family).toBe("pitch-black");
@@ -172,7 +172,7 @@ describe("Nightly channel", () => {
     const user = userEvent.setup();
     const app = render(<App />);
     await screen.findByRole("heading", {
-      name: "A little space for your intentions.",
+      name: "Set up your space.",
     });
     expect(screen.queryByRole("navigation")).toBeNull();
     expect(screen.queryByRole("note", { name: /Nightly build/ })).toBeNull();
@@ -242,7 +242,7 @@ describe("Nightly channel", () => {
           .disabled,
       ).toBe(false),
     );
-    await screen.findByRole("heading", { name: "Let later have a time." });
+    await screen.findByRole("heading", { name: "Choose when tasks return." });
     await user.selectOptions(
       screen.getByLabelText("Settled tasks return"),
       "next_day",
@@ -274,10 +274,7 @@ describe("Nightly channel", () => {
           .disabled,
       ).toBe(false),
     );
-    await user.type(
-      screen.getByLabelText("Your first intention"),
-      "Plan tomorrow",
-    );
+    await user.type(screen.getByLabelText("Your first task"), "Plan tomorrow");
     await user.click(screen.getByRole("button", { name: "Open Reprise" }));
     await screen.findByLabelText(/Profile menu for Dim/);
     expect(data.settings).toMatchObject({
@@ -295,7 +292,7 @@ describe("Nightly channel", () => {
     await screen.findByLabelText(/Profile menu for Dim/);
     expect(
       screen.queryByRole("heading", {
-        name: "A little space for your intentions.",
+        name: "Set up your space.",
       }),
     ).toBeNull();
   });
@@ -422,7 +419,7 @@ describe("Nightly channel", () => {
           .disabled,
       ).toBe(false),
     );
-    await user.type(screen.getByLabelText("Your first intention"), "Only once");
+    await user.type(screen.getByLabelText("Your first task"), "Only once");
     await user.click(screen.getByRole("button", { name: "Open Reprise" }));
     await screen.findByRole("alert");
     expect(data.settings.onboarded).toBe(false);
@@ -441,11 +438,11 @@ describe("Nightly channel", () => {
     ).toBe(true);
     expect(
       screen.getByRole("heading", {
-        name: "A little space for your intentions.",
+        name: "Set up your space.",
       }),
     ).toBeTruthy();
     const second = await screen.findByRole("heading", {
-      name: "Let later have a time.",
+      name: "Choose when tasks return.",
     });
     expect(document.activeElement).toBe(second);
     document.documentElement.dataset.motion = "off";
@@ -658,9 +655,18 @@ describe("workspace UI", () => {
     ).toBe("system");
   });
   it("reports notification submission honestly and recovers after failure", async () => {
+    data.release = {
+      version: "3.2.1-nightly.20261112.5",
+      acknowledged: null,
+      should_show: false,
+    };
     const user = userEvent.setup();
     render(<App />);
+    await user.click(
+      await screen.findByRole("button", { name: "Continue to Nightly" }),
+    );
     await openSettings(user);
+    await user.click(screen.getByText("Advanced / Diagnostics"));
     const original = mocks.invoke.getMockImplementation()!;
     let fail = true;
     mocks.invoke.mockImplementation(async (cmd, args) => {
@@ -851,21 +857,64 @@ describe("workspace UI", () => {
       screen.queryByRole("complementary", { name: "Notifications" }),
     ).toBeNull();
   });
-  it("loads diagnostics only when explicitly opened", async () => {
+  it("keeps diagnostics and notification tests out of stable Settings", async () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
+    expect(screen.queryByText("Advanced / Diagnostics")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Test Windows notification" }),
+    ).toBeNull();
     expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "diagnostics")).toBe(
       false,
     );
     expect(
-      screen.getByRole("button", { name: "Test Windows notification" }),
+      screen.getByRole("heading", {
+        name: "Notifications and background behavior",
+      }),
     ).toBeTruthy();
+  });
+  it("shows nightly-only diagnostics on demand and filters release history to the nightly channel", async () => {
+    data.release = {
+      version: "3.2.1-nightly.20261112.5",
+      acknowledged: null,
+      should_show: false,
+    };
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(
+      await screen.findByRole("button", { name: "Continue to Nightly" }),
+    );
+    await openSettings(user);
+    expect(screen.queryByRole("button", { name: "What's New" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Test Windows notification" }),
+    ).toBeNull();
+    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "diagnostics")).toBe(
+      false,
+    );
     await user.click(screen.getByText("Advanced / Diagnostics"));
     await screen.findByText("com.reprise.desktop");
-    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "diagnostics")).toBe(
-      true,
+    const diagnostic = screen
+      .getByRole("heading", { name: "Notification diagnostics" })
+      .closest("details")!;
+    expect(
+      within(diagnostic).getByRole("button", {
+        name: "Test Windows notification",
+      }),
+    ).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", { name: "Release Notes history" }),
     );
+    const versions = within(screen.getByLabelText("Version")).getAllByRole(
+      "option",
+    );
+    expect(versions.length).toBeGreaterThan(1);
+    expect(
+      versions.every((option) =>
+        (option as HTMLOptionElement).value.includes("-nightly."),
+      ),
+    ).toBe(true);
   });
   it("waits for an idle Home view, acknowledges What's New, and does not repeat it", async () => {
     data.release = {
@@ -1230,7 +1279,7 @@ it("defaults filtering to the current paused view and supports clearing", async 
   expect(screen.getByText("Studio letter")).toBeTruthy();
   expect(screen.queryByText("Studio closed")).toBeNull();
   await user.type(search, " missing");
-  expect(screen.getByText("No matching intentions.")).toBeTruthy();
+  expect(screen.getByText("No matching tasks.")).toBeTruthy();
   await user.click(screen.getByRole("button", { name: "Clear search" }));
   expect((search as HTMLInputElement).value).toBe("");
 });

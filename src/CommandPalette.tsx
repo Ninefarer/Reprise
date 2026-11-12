@@ -93,9 +93,7 @@ export function CommandPalette({
     >
       <div className="palette-head">
         <h2>
-          {selected
-            ? `Actions · ${selected.title}`
-            : "Find an intention or command"}
+          {selected ? `Actions · ${selected.title}` : "Find a task or command"}
         </h2>
         <button onClick={onClose} aria-label="Close command palette">
           ×
@@ -192,9 +190,14 @@ export function CommandPalette({
           }
         }}
       >
+        <span className="sr-only" role="status" aria-live="polite">
+          {results.length
+            ? `${results.length} results. Selected: ${results[index]?.text ?? results[0].text}`
+            : "No results"}
+        </span>
         {!selected && q.trim() && !results.some((r) => r.task) && (
           <p className="hint">
-            No matching tasks. You can create this intention below.
+            No matching tasks. Create a new task in Inbox below.
           </p>
         )}
         {results.length ? (
@@ -215,7 +218,7 @@ export function CommandPalette({
             </div>
           ))
         ) : (
-          <p>No matching intentions or commands.</p>
+          <p>No matching tasks or commands.</p>
         )}
       </div>
       <small>

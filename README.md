@@ -11,7 +11,7 @@
   <a href="https://github.com/Ninefarer/Reprise/issues">Report an issue</a>
 </p>
 
-Reprise is a Windows task manager for the things you intend to come back to. Capture an intention, make room when you need to, and return without losing your place.
+Reprise is a Windows task manager for the things you want to come back to. Capture a task, pause it when you need to, and return without losing your place.
 
 ![Reprise Stable in its dark theme, showing Home, task navigation, the quick-add field, and the pinned Notifications panel.](assets/screenshots/stable-home.png)
 
@@ -30,8 +30,6 @@ Reprise is a Windows task manager for the things you intend to come back to. Cap
 Reprise runs on **Windows 11, x64**. No account is required, and your tasks are stored on your device.
 
 Download the `.exe` installer from the [latest Stable release](https://github.com/Ninefarer/Reprise/releases/latest), run it, and open Reprise. You do not need Node or Rust to use the app.
-
-The repository is currently private; downloads and issues require repository access.
 
 Want to help test upcoming changes? [Nightly builds](https://github.com/Ninefarer/Reprise/releases?q=nightly&expanded=true) are marked **Pre-release**. They install separately and keep their own task data. Stable is the everyday download; Nightly may have bugs or unfinished changes.
 

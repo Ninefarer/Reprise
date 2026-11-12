@@ -58,10 +58,20 @@ export function TaskDialog({
   }, [task.id]);
   const set = <K extends keyof Task>(k: K, v: Task[K]) =>
     setDraft((d) => ({ ...d, [k]: v }));
-  async function transition(s: Status) {
+  async function submit(status?: Status) {
+    if (busy) return;
     setBusy(true);
-    if (await onTransition(task, s)) onClose();
-    setBusy(false);
+    setError("");
+    try {
+      const ok = status
+        ? await onTransition(draft, status)
+        : await onSave(draft);
+      if (ok) onClose();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
   }
   if (intent === "history")
     return (
@@ -110,20 +120,19 @@ export function TaskDialog({
     <dialog
       ref={ref}
       className="task-dialog material-floating"
+      aria-labelledby="task-editor-heading"
       onCancel={onClose}
     >
       <form
         onSubmit={async (e) => {
           e.preventDefault();
-          setBusy(true);
-          if (await onSave(draft)) onClose();
-          setBusy(false);
+          await submit();
         }}
       >
         <div className="dialog-head">
           <div>
-            <p className="eyebrow">INTENTION DETAILS</p>
-            <h2>Make the next step clear.</h2>
+            <p className="eyebrow">TASK DETAILS</p>
+            <h2 id="task-editor-heading">Edit task</h2>
           </div>
           <button
             type="button"
@@ -308,21 +317,21 @@ export function TaskDialog({
           <button
             type="button"
             disabled={busy}
-            onClick={() => void transition("DoNow")}
+            onClick={() => void submit("DoNow")}
           >
             Do now
           </button>
           <button
             type="button"
             disabled={busy}
-            onClick={() => void transition("Settled")}
+            onClick={() => void submit("Settled")}
           >
             {task.status === "Settled" ? "Settle again" : "Settle"}
           </button>
           <button
             type="button"
             disabled={busy}
-            onClick={() => void transition("Finished")}
+            onClick={() => void submit("Finished")}
           >
             Finish
           </button>
@@ -337,7 +346,7 @@ export function TaskDialog({
               </div>
             ))
           ) : (
-            <p>No transitions recorded.</p>
+            <p>No status changes recorded.</p>
           )}
         </section>
         <div className="delete-section">

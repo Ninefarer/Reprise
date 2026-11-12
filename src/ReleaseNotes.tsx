@@ -1,4 +1,5 @@
-﻿import { useEffect, useRef, useState } from "react";
+﻿import { isNightly } from "./Nightly";
+import { useEffect, useRef, useState } from "react";
 import {
   releases,
   releaseFor,
@@ -110,11 +111,13 @@ export function ReleaseDialog({
             {!releaseFor(current) && (
               <option value={current}>{current} — notes unavailable</option>
             )}
-            {releases.map((r) => (
-              <option key={r.version} value={r.version}>
-                v{r.version}
-              </option>
-            ))}
+            {releases
+              .filter((r) => !isNightly(current) || isNightly(r.version))
+              .map((r) => (
+                <option key={r.version} value={r.version}>
+                  v{r.version}
+                </option>
+              ))}
           </select>
         </label>
       </div>

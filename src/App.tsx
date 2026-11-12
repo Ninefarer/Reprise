@@ -1,4 +1,5 @@
 import { TextContextMenus } from "./TextContextMenu";
+import { trace, traceSnapshot, traceStart } from "./performance";
 import { isNightly, NightlyDisclosure } from "./Nightly";
 import { Onboarding, RedoOnboardingDialog } from "./Onboarding";
 import { QuickCapture } from "./QuickCapture";
@@ -31,7 +32,8 @@ import {
 } from "./model";
 import { Icon } from "./navigation";
 import { TaskDialog, type TaskIntent } from "./TaskDialog";
-import { Preferences } from "./Preferences";
+import { Preferences, type SettingsEditor } from "./Preferences";
+import { UnsavedSettingsDialog } from "./UnsavedSettingsDialog";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { Sidebar } from "./Sidebar";
 import { NotificationSidebar } from "./NotificationSidebar";
@@ -55,25 +57,28 @@ import { taskCategory, reviewCategory } from "./taskColors";
 import type { UpdateActivity } from "./updates";
 const captureWindowMode = new URLSearchParams(location.search).has("capture");
 const descriptions: Partial<Record<View, string>> = {
-  Home: "Pick up where you left off. One intention at a time.",
-  "Daily Review": "A calm moment to decide what needs your attention.",
-  Inbox: "Captured and safe. Choose a next step when you’re ready.",
-  DoNow: "A focused space for what you’re doing now.",
-  Scheduled: "Your plans, with room to change them.",
-  Settled: "Deliberately paused. Your place is saved.",
+  Home: "Pick up where you left off.",
+  "Daily Review": "Review what’s due, what’s returned, and what to do next.",
+  Inbox: "Captured for later. Choose a next step when you’re ready.",
+  DoNow: "What you’ve chosen to work on now.",
+  Scheduled: "Tasks with a planned start date.",
+  Settled: "Paused until their return time.",
   Snoozed: "Out of the way until the time you chose.",
   Waiting: "Keep the context while you wait for someone or something.",
   Resurfaced: "Ready for another look. You decide what happens next.",
-  Finished: "A record of what you followed through on.",
+  Finished: "Completed tasks and their history.",
   Dropped: "Deliberately let go. Restore anything you want to return to.",
-  "All Tasks": "Every intention, together.",
+  "All Tasks": "Active, finished, and dropped tasks.",
   "Notification History": "Waitin' for ya",
-  Settings: "Make Reprise fit your rhythm.",
+  Settings: "Appearance, reminders, and app preferences.",
 };
 function Application({
   captureMode = captureWindowMode,
 }: { captureMode?: boolean } = {}) {
   const quick = captureMode;
+  const snapshotStarted = useRef<number | null>(null);
+  const searchStarted = useRef<number | null>(null);
+  const firstRender = useRef(traceStart());
   const [data, setData] = useState<Snapshot | null>(null),
     [view, setView] = useState<View>("Home"),
     [query, setQuery] = useState(""),
@@ -102,6 +107,14 @@ function Application({
     [notificationsOpen, setNotificationsOpen] = useState(false);
   const [replayingSetup, setReplayingSetup] = useState(false);
   const [confirmSetup, setConfirmSetup] = useState(false);
+  const settingsEditor = useRef<SettingsEditor | null>(null);
+  const registerSettingsEditor = useCallback(
+    (editor: SettingsEditor | null) => {
+      settingsEditor.current = editor;
+    },
+    [],
+  );
+  const [settingsLeave, setSettingsLeave] = useState<(() => void) | null>(null);
   const setupActive = !data?.settings.onboarded || replayingSetup;
   const setupCaptured = useRef(false);
   const [nightlySeen, setNightlySeen] = useState(false);
@@ -269,14 +282,18 @@ function Application({
     busy,
     error,
   ]);
-  const load = useCallback(async (): Promise<void> => {
+  const load = useCallback(async (reason = "explicit"): Promise<void> => {
     if (loading.current) {
       reloadRequested.current = true;
       return;
     }
     loading.current = true;
+    const started = traceStart();
     try {
-      const next = await invoke<Snapshot>("snapshot");
+      const next = await (started === null
+        ? invoke<Snapshot>("snapshot")
+        : invoke<Snapshot>("snapshot", { measure: true }));
+      traceSnapshot(`snapshot.${reason}`, started, next);
       await Promise.all(
         next.tasks
           .filter((t) => t.status === "Settled" && !t.settled_at)
@@ -309,6 +326,7 @@ function Application({
           ...Object.fromEntries(fresh.map((t) => [t.id, until])),
         }));
       }
+      snapshotStarted.current = started;
       setData(next);
     } catch (e) {
       setError(String(e));
@@ -321,14 +339,14 @@ function Application({
     }
   }, []);
   useEffect(() => {
-    void load();
+    void load("initial");
     const timer = setInterval(() => {
       setNow(Math.floor(Date.now() / 1000));
-      void load();
+      void load("timer");
     }, 15000);
     let off: (() => void) | undefined;
     let dead = false;
-    void listen("refresh", () => void load())
+    void listen("refresh", () => void load("event"))
       .then((f) => {
         if (dead) f();
         else off = f;
@@ -337,7 +355,7 @@ function Application({
         if (!dead) setError(String(error));
       });
     const focus = () => {
-      void load();
+      void load("focus");
       if (quick) captureRef.current?.focus();
     };
     window.addEventListener("focus", focus);
@@ -348,6 +366,19 @@ function Application({
       window.removeEventListener("focus", focus);
     };
   }, [load]);
+  useLayoutEffect(() => {
+    if (!data) return;
+    trace("snapshot.commit", snapshotStarted.current);
+    snapshotStarted.current = null;
+    if (firstRender.current !== null) {
+      trace("startup.webview-first-data-commit", firstRender.current);
+      firstRender.current = null;
+    }
+  }, [data]);
+  useLayoutEffect(() => {
+    trace("search.commit", searchStarted.current);
+    searchStarted.current = null;
+  }, [query]);
   useEffect(() => {
     if (quick) return;
     let off: (() => void) | undefined,
@@ -581,11 +612,17 @@ function Application({
   async function add() {
     if (!title.trim() || busy || captureSaving.current) return;
     captureSaving.current = true;
+    const started = traceStart();
     try {
-      const ok = await run(() => invoke("capture", { title: title.trim() }));
+      const ok = await run(async () => {
+        const saving = traceStart();
+        await invoke("capture", { title: title.trim() });
+        trace("capture.persist", saving);
+      });
       if (ok) {
         setTitle("");
         if (quick) await getCurrentWindow().hide();
+        trace("capture.submit-to-complete", started);
       }
     } catch (error) {
       setError(String(error));
@@ -603,6 +640,14 @@ function Application({
   async function visual(patch: Partial<VisualPreferences>) {
     await run(() => invoke("visual_preferences", { patch }));
   }
+  function afterSettings(action: () => void) {
+    if (
+      view === "Settings" &&
+      (settingsEditor.current?.dirty || settingsEditor.current?.busy)
+    )
+      setSettingsLeave(() => action);
+    else action();
+  }
   function navigate(v: View, anchor?: string) {
     if (v === "Notification History") {
       setNotificationsOpen(true);
@@ -611,12 +656,18 @@ function Application({
       );
       return;
     }
-    setView(v);
-    setQuery("");
-    if (anchor)
-      requestAnimationFrame(() =>
-        document.getElementById(anchor)?.scrollIntoView?.({ block: "center" }),
-      );
+    const go = () => {
+      setView(v);
+      setQuery("");
+      if (anchor)
+        requestAnimationFrame(() =>
+          document
+            .getElementById(anchor)
+            ?.scrollIntoView?.({ block: "center" }),
+        );
+    };
+    if (v === "Settings") go();
+    else afterSettings(go);
   }
   async function special(t: Task, action: string) {
     return run(async () => {
@@ -920,9 +971,7 @@ function Application({
     return (
       <div className="empty" data-status={taskCategory(view)}>
         <Icon name={view} />
-        <h3>
-          {query ? "No matching intentions." : "A little breathing room."}
-        </h3>
+        <h3>{query ? "No matching tasks." : "No tasks here yet."}</h3>
         <p>{query ? "Try another title, note, project, or tag." : text}</p>
       </div>
     );
@@ -975,6 +1024,11 @@ function Application({
         view={view}
         count={count}
         onNavigate={navigate}
+        onQuit={() =>
+          afterSettings(() => {
+            void run(() => invoke("quit_app"));
+          })
+        }
         onPatch={async (p) => {
           await run(() =>
             invoke("sidebar_preferences", {
@@ -992,9 +1046,12 @@ function Application({
               <input
                 ref={searchRef}
                 aria-label="Search tasks"
-                placeholder="Search intentions…"
+                placeholder="Search tasks…"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  searchStarted.current = traceStart();
+                  setQuery(e.target.value);
+                }}
               />
               {query && (
                 <button
@@ -1024,7 +1081,10 @@ function Application({
               settings={settings}
               avatar={data.avatar}
               onRefresh={load}
-              onRedoOnboarding={() => setConfirmSetup(true)}
+              onRedoOnboarding={() =>
+                afterSettings(() => setConfirmSetup(true))
+              }
+              onEditor={registerSettingsEditor}
               onSave={preferences}
               onVisual={visual}
               system={data.system_visuals}
@@ -1119,9 +1179,9 @@ function Application({
                         .map(taskCard)
                     : empty(
                         view === "Settled"
-                          ? "Tasks you deliberately pause will wait here until their return time."
+                          ? "Settled tasks wait here until their return time."
                           : view === "Snoozed"
-                            ? "Snooze an intention from its actions menu to give it a later time."
+                            ? "Choose Snooze from a task’s actions menu to set a return time."
                             : undefined,
                       )}
                 </>
@@ -1130,6 +1190,24 @@ function Application({
           )}
         </>
       </main>
+      {settingsLeave && (
+        <UnsavedSettingsDialog
+          onStay={() => setSettingsLeave(null)}
+          onDiscard={() => {
+            settingsEditor.current?.discard();
+            const go = settingsLeave;
+            setSettingsLeave(null);
+            go();
+          }}
+          onSave={async () => {
+            if (!(await settingsEditor.current?.save())) return false;
+            const go = settingsLeave;
+            setSettingsLeave(null);
+            go();
+            return true;
+          }}
+        />
+      )}
       {confirmSetup && (
         <RedoOnboardingDialog
           onCancel={() => setConfirmSetup(false)}

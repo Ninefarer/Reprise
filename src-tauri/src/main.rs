@@ -93,11 +93,34 @@ fn delete_task(
     app.emit("refresh", ()).map_err(|e| e.to_string())
 }
 #[tauri::command]
-fn snapshot(db: tauri::State<Db>, app: tauri::AppHandle) -> Result<serde_json::Value, String> {
+fn snapshot(
+    db: tauri::State<Db>,
+    app: tauri::AppHandle,
+    measure: Option<bool>,
+) -> Result<serde_json::Value, String> {
+    let started = measure.unwrap_or(false).then(std::time::Instant::now);
+    let clock = || {
+        started
+            .map(|t| t.elapsed().as_secs_f64() * 1000.0)
+            .unwrap_or(0.0)
+    };
     let d = db.lock().map_err(|e| e.to_string())?;
-    Ok(
-        serde_json::json!({"tasks":d.tasks()?,"settings":d.settings()?,"notifications":d.notices()?,"avatar":profile::avatar(&app,&d.settings()?.profile_image),"system_visuals":visuals::system_visuals(),"release":{"version":app.package_info().version.to_string(),"acknowledged":d.settings()?.last_seen_release,"should_show":releases::should_show(&app.package_info().version.to_string(),d.settings()?.last_seen_release.as_deref())}}),
-    )
+    let locked = clock();
+    let tasks = d.tasks()?;
+    let tasks_done = clock();
+    let settings = d.settings()?;
+    let settings_done = clock();
+    let notifications = d.notices()?;
+    let notices_done = clock();
+    let avatar = profile::avatar(&app, &settings.profile_image);
+    let system_visuals = visuals::system_visuals();
+    let visuals_done = clock();
+    let version = app.package_info().version.to_string();
+    let mut result = serde_json::json!({"tasks":tasks,"settings":settings,"notifications":notifications,"avatar":avatar,"system_visuals":system_visuals,"release":{"version":version,"acknowledged":settings.last_seen_release,"should_show":releases::should_show(&version,settings.last_seen_release.as_deref())}});
+    if started.is_some() {
+        result["performance"] = serde_json::json!({"mutex_wait_ms":locked,"tasks_ms":tasks_done-locked,"settings_ms":settings_done-tasks_done,"notifications_ms":notices_done-settings_done,"avatar_system_ms":visuals_done-notices_done,"snapshot_total_ms":clock()});
+    }
+    Ok(result)
 }
 #[tauri::command]
 fn capture(title: String, db: tauri::State<Db>) -> Result<Task, String> {

@@ -5,7 +5,7 @@
 - [Getting started](GETTING-STARTED.md): installation, first capture, Settings, updates, and the tray.
 - [Task workflow](TASK-WORKFLOW.md): lifecycle states, scheduling, and returning tasks.
 - [Full changelog](../CHANGELOG.md): the complete Stable 3.3.0 change record.
-- [Stable and Nightly releases](https://github.com/Ninefarer/Reprise/releases): installers and release descriptions. Repository access is currently required.
+- [Stable and Nightly releases](https://github.com/Ninefarer/Reprise/releases): installers and release descriptions.
 
 ## Building Reprise
 

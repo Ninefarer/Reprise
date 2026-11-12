@@ -4,7 +4,7 @@
 
 A task can be unfinished without being forgotten. Reprise keeps its lifecycle separate from its start date, deadline, and return timer.
 
-## Choose a place for an intention
+## Choose a place for a task
 
 | Place     | What it means                                                 |
 | --------- | ------------------------------------------------------------- |

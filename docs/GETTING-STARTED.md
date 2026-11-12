@@ -6,8 +6,6 @@
 
 Reprise targets Windows 11 on x64 PCs. Download the `.exe` setup file from the [latest Stable release](https://github.com/Ninefarer/Reprise/releases/latest), run it, then open Reprise. The adjacent `.sha256` file is available if you want to verify your download. No development tools are needed.
 
-The repository is currently private. You need repository access to view releases, download installers, or report issues.
-
 ## Make it yours
 
 Follow setup to choose a display name, an optional space name, appearance, and reminder preferences. You can skip setup and change preferences later. Settings opens from your profile at the bottom of the sidebar.
