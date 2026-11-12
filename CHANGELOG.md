@@ -1,5 +1,13 @@
 # Reprise changelog
 
+## 3.3.1 · November 12, 2026
+
+### Fixed
+
+- Task-detail actions **Do now**, **Settle**, and **Finish** now save the current edited title, notes, dates, project, and other fields with the status transition. Previously, those buttons submitted the original task and could silently discard unsaved edits.
+
+Existing revision checks, task history, and Undo remain in place. Regression coverage also verifies that rejected updates retain the open draft.
+
 ## 3.3.0 · November 12, 2026
 
 This is the complete Stable change record since 3.2.0, bringing the selected Nightly work into Stable. Historical Nightly entries remain available in the application's release history and on [GitHub](https://github.com/Ninefarer/Reprise/releases).

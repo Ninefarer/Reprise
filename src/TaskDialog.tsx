@@ -61,6 +61,7 @@ export function TaskDialog({
   async function submit(status?: Status) {
     if (busy) return;
     setBusy(true);
+<<<<<<< HEAD
     setError("");
     try {
       const ok = status
@@ -72,6 +73,11 @@ export function TaskDialog({
     } finally {
       setBusy(false);
     }
+=======
+    // Status actions must retain edits made in this dialog, not resubmit its original snapshot.
+    if (await onTransition(draft, s)) onClose();
+    setBusy(false);
+>>>>>>> main
   }
   if (intent === "history")
     return (
