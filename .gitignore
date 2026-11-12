@@ -1,0 +1,57 @@
+# Dependencies and build output
+node_modules/
+/dist/
+/src-tauri/target/
+/src-tauri/gen/schemas/
+
+# Local caches, test output, and logs (keep test source files)
+.vite/
+.cache/
+/coverage/
+*.tsbuildinfo
+*.log
+
+# Environment files and local credentials
+.env*
+.npmrc
+.netrc
+.git-credentials
+.cargo/credentials
+.cargo/credentials.toml
+credentials.json
+secrets.json
+secrets/
+*.pem
+*.key
+*.pfx
+*.p12
+*.keystore
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+
+# Local databases, including SQLite journals, WAL, and shared-memory files
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+
+# Local app data and personal exports; never place these in source folders
+/data/
+/local-data/
+/backups/
+/exports/
+/notification-history/
+
+# Local QA screenshots contain notification history and desktop content
+/docs/qa-3.2.0/
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Keep package-lock.json and src-tauri/Cargo.lock for reproducible builds.

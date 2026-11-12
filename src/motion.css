@@ -1,0 +1,234 @@
+/* Finite, event-driven motion. Nothing loops while the tray process is idle. */
+:root {
+  --motion-fast: 120ms;
+  --motion-menu: 130ms;
+  --motion-popover: 140ms;
+  --motion-modal: 180ms;
+  --motion-group: 180ms;
+  --motion-sidebar: 210ms;
+  --motion-complete: 220ms;
+  --motion-return: 700ms;
+  --motion-distance: 4px;
+  --motion-scale: 0.98;
+  --press-distance: 1px;
+  --motion-ease: cubic-bezier(0.2, 0.75, 0.3, 1);
+}
+:root[data-motion="expressive"] {
+  --motion-fast: 140ms;
+  --motion-menu: 140ms;
+  --motion-popover: 160ms;
+  --motion-modal: 210ms;
+  --motion-group: 200ms;
+  --motion-sidebar: 230ms;
+  --motion-complete: 240ms;
+  --motion-return: 850ms;
+  --motion-distance: 6px;
+  --motion-scale: 0.975;
+}
+button,
+summary,
+input,
+select,
+textarea {
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease);
+}
+button:not(:disabled):active {
+  translate: 0 var(--press-distance);
+}
+.context-menu {
+  transform-origin: top left;
+  animation: menu-enter var(--motion-menu) var(--motion-ease);
+}
+.profile-footer[open] [role="menu"],
+.sidebar-tooltip {
+  animation: popover-enter var(--motion-popover) var(--motion-ease);
+}
+.task-dialog[open] {
+  animation: modal-enter var(--motion-modal) var(--motion-ease);
+}
+.task-dialog[open]::backdrop {
+  animation: backdrop-enter var(--motion-modal) ease-out;
+}
+.sidebar {
+  transition: width var(--motion-sidebar) var(--motion-ease);
+}
+.sidebar[data-resizing="true"] {
+  transition: none;
+}
+.sidebar .nav-items {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--motion-group) var(--motion-ease);
+}
+.sidebar .nav-items[hidden] {
+  display: grid;
+  grid-template-rows: 0fr;
+}
+.sidebar .nav-items-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.sidebar .nav-group button:focus-visible {
+  outline-offset: -2px;
+}
+.group-chevron {
+  transition: transform var(--motion-group) var(--motion-ease);
+}
+.notification-dock {
+  animation: panel-enter var(--motion-modal) var(--motion-ease);
+}
+.notification-dock[data-exiting="true"] {
+  animation: panel-exit var(--motion-modal) var(--motion-ease) forwards;
+  pointer-events: none;
+}
+.undo-toast {
+  animation:
+    toast-enter var(--motion-modal) var(--motion-ease),
+    toast-exit var(--motion-fast) ease-in calc(30s - var(--motion-fast))
+      forwards;
+}
+.task-card.completion-feedback {
+  color: var(--text);
+  border-inline-start-color: var(--status-finished);
+  pointer-events: none;
+  animation: completion-feedback var(--motion-complete) var(--motion-ease)
+    forwards;
+}
+.completion-feedback .completion-check {
+  color: var(--status-finished);
+  font-size: 20px;
+}
+.completion-feedback .status {
+  color: var(--status-finished);
+  margin-left: auto;
+}
+.task-card.newly-resurfaced {
+  animation: return-highlight var(--motion-return) ease-out;
+}
+@keyframes menu-enter {
+  from {
+    opacity: 0;
+    transform: scale(var(--motion-scale));
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes popover-enter {
+  from {
+    opacity: 0;
+    translate: 0 var(--motion-distance);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(var(--motion-scale));
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes panel-enter {
+  from {
+    opacity: 0;
+    translate: 100% 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes panel-exit {
+  from {
+    opacity: 1;
+    translate: 0 0;
+  }
+  to {
+    opacity: 0;
+    translate: 100% 0;
+  }
+}
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    translate: 0 var(--motion-distance);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes toast-exit {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes completion-feedback {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes return-highlight {
+  from {
+    background-color: color-mix(
+      in srgb,
+      var(--status-resurfaced) 12%,
+      var(--surface)
+    );
+  }
+  to {
+    background-color: var(--surface);
+  }
+}
+:root[data-window-active="false"] *,
+:root[data-window-active="false"] *::before,
+:root[data-window-active="false"] *::after {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
+:root[data-motion="off"] {
+  --press-distance: 0px;
+  transition: none !important;
+  animation: none !important;
+}
+:root[data-motion="off"] *,
+:root[data-motion="off"] *::before,
+:root[data-motion="off"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --press-distance: 0px;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,81 @@
+/* Density changes spacing, not font size or task information. */
+:root {
+  --task-padding: 16px;
+  --task-gap: 9px;
+  --section-gap: 22px;
+}
+:root[data-density="compact"] {
+  --task-padding: 10px;
+  --task-gap: 6px;
+  --section-gap: 14px;
+}
+.task-card {
+  padding: var(--task-padding);
+  margin-block: var(--task-gap);
+}
+:root[data-density="compact"]
+  .sidebar
+  .nav-group
+  button:not(.nav-group-toggle) {
+  min-height: 30px;
+  padding-block: 5px;
+  margin-block: 1px;
+}
+:root[data-density="compact"] .nav-group {
+  margin-bottom: 10px;
+}
+:root[data-density="compact"] .overview {
+  gap: 8px;
+}
+:root[data-density="compact"] .overview button {
+  padding: 12px;
+}
+:root[data-density="compact"] .section-heading {
+  margin-block: var(--section-gap) 8px;
+}
+:root[data-density="compact"] .review-section {
+  margin-bottom: 16px;
+}
+:root[data-density="compact"] .task-card .pause-info {
+  padding-top: 7px;
+  margin-top: 8px;
+}
+:root[data-density="compact"] .settings-section {
+  padding: 16px;
+  margin-bottom: 12px;
+}
+:root[data-density="compact"] .fields {
+  gap: 12px;
+}
+:root[data-density="compact"] .preferences label {
+  gap: 5px;
+}
+:root[data-density="compact"] .task-dialog form,
+:root[data-density="compact"] .notification-clear-dialog {
+  padding: 20px;
+}
+:root[data-density="compact"] .context-menu button,
+:root[data-density="compact"] .profile-footer [role="menuitem"] {
+  min-height: 30px;
+  padding-block: 6px;
+}
+:root[data-density="compact"] .notification-dock .notice {
+  padding: 8px 10px;
+  margin-block: 6px;
+}
+:root[data-density="compact"] .notification-dock .notice .task-actions {
+  margin-top: 7px;
+}
+:root[data-density="compact"] .notification-dock .notice h3 {
+  margin-top: 6px;
+}
+:root[data-density="compact"] .notification-head {
+  padding: 12px;
+}
+:root[data-density="compact"] .notification-filters {
+  padding: 10px 12px;
+}
+:root[data-density="compact"] .capture {
+  margin-bottom: 16px;
+  padding-block: 6px;
+}

@@ -1,0 +1,266 @@
+html {
+  overflow-x: clip;
+}
+.notification-edge {
+  pointer-events: none;
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  height: 100vh;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  z-index: 15;
+}
+.notification-edge:hover {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.notification-edge:focus-visible {
+  outline-offset: -3px;
+  background: var(--selected);
+}
+.notification-dock {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: min(350px, calc(100vw - 30px));
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--border);
+  background: var(--sidebar);
+  z-index: 25;
+  box-shadow: -12px 0 28px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex-shrink: 0;
+}
+.notification-dock[data-pinned="true"] {
+  position: sticky;
+  width: clamp(280px, 28vw, 350px);
+  box-shadow: none;
+}
+.notification-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 18px 16px 13px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.notification-head > div {
+  flex: 1;
+  min-width: 0;
+}
+.notification-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+.notification-head h2 svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.notification-total {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-weight: 400;
+}
+.notification-head p {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 5px 0 0;
+}
+.notification-head > button {
+  display: inline-flex;
+  padding: 6px;
+  min-width: 28px;
+  min-height: 28px;
+  justify-content: center;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.notification-head > button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.notification-head .notification-pin[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--selected);
+}
+.notification-filters {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.notification-filters label {
+  font-size: 10px;
+  color: var(--muted);
+}
+.notification-filters input[type="search"],
+.notification-filters select {
+  margin-top: 5px;
+  padding: 7px 8px;
+  font-size: 11px;
+}
+.notification-filters > div {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  margin-top: 10px;
+}
+.notification-filters > div > label:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.notification-filters .check {
+  flex-shrink: 0;
+  margin: 0 0 8px;
+  gap: 6px;
+}
+.notification-scroll {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  flex: 1;
+  padding: 0 12px 12px;
+  outline-offset: -3px;
+  scrollbar-gutter: stable;
+}
+.notification-dock .notice {
+  display: block;
+  padding: 13px 11px;
+  margin: 10px 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.notification-dock .notice .task-meta {
+  gap: 5px 9px;
+  font-size: 10px;
+}
+.notification-dock .notice h3 {
+  font-size: 12px;
+  margin: 9px 0 5px;
+}
+.notification-dock .notice p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.notification-dock .notice-failed {
+  color: var(--danger);
+}
+.notice-update-title {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: var(--accent);
+}
+.notice-update-title:hover {
+  text-decoration: underline;
+  background: transparent;
+}
+.notification-dock .notice .update-progress {
+  color: var(--accent);
+  margin-top: 8px;
+}
+.notification-dock .notice .task-actions {
+  margin-top: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.notification-dock .task-actions button {
+  padding: 5px 8px;
+  font-size: 10px;
+}
+.notification-empty {
+  text-align: center;
+  padding: 35px 16px;
+  color: var(--muted);
+}
+.notification-empty > svg {
+  opacity: 0.7;
+}
+.notification-empty h3 {
+  font-size: 12px;
+  margin: 12px 0 6px;
+  color: var(--text);
+}
+.notification-empty p {
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 0;
+}
+/* On narrow windows pinning keeps the panel open without crushing task content. */
+@media (max-width: 1100px) {
+  .notification-dock[data-pinned="true"] {
+    position: fixed;
+    width: min(350px, calc(100vw - 30px));
+    box-shadow: -12px 0 28px var(--shadow);
+  }
+}
+
+/* The dock overlays application text. Its reading surfaces must stay opaque. */
+.notification-dock {
+  isolation: isolate;
+  background: var(--sidebar);
+}
+.notification-dock .notice {
+  background: var(--surface);
+  padding: 11px;
+  margin: 8px 0;
+}
+.notification-management {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.notification-management button {
+  font-size: 11px;
+  padding: 6px 8px;
+  min-height: 30px;
+}
+.notification-management p {
+  width: 100%;
+  margin: 0;
+}
+.notification-head,
+.notification-filters,
+.notification-management {
+  flex-shrink: 0;
+}
+.notification-preferences {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  border: 0;
+  padding: 8px 0;
+}
+.notification-preferences .check {
+  margin: 4px 0;
+}
+
+.notification-clear-dialog {
+  padding: 24px;
+}
+
+/* Keep transition feedback clear of the notification reading/action area. */
+.app:has(.notification-dock) .undo-toast {
+  right: 366px;
+  max-width: min(480px, calc(100vw - 390px));
+}

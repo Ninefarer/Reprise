@@ -1,0 +1,375 @@
+﻿/* Family tokens extend Classic; task accents remain in task-colors.css. */
+:root {
+  --surface-rgb: 255, 255, 255;
+  --scrollbar-idle: rgba(71, 81, 69, 0.16);
+}
+:root[data-theme="dark"] {
+  --surface-rgb: 40, 47, 41;
+  --scrollbar-idle: rgba(176, 189, 171, 0.15);
+}
+:root[data-family="pitch-black"] {
+  --bg: #050505;
+  --sidebar: #0a0a0a;
+  --surface: #101010;
+  --raised: #181818;
+  --text: #e9e9ed;
+  --muted: #b8b8c0;
+  --subtle: #a0a0ab;
+  --border: #303035;
+  --control-border: #686872;
+  --shadow: #0008;
+  --backdrop: #0009;
+  --surface-rgb: 16, 16, 16;
+  --scrollbar-idle: rgba(200, 200, 208, 0.15);
+}
+:root[data-family="ashen-white"] {
+  --bg: #fafafa;
+  --sidebar: #f2f2f4;
+  --surface: #fff;
+  --raised: #f2f2f4;
+  --text: #27272e;
+  --muted: #555560;
+  --subtle: #666670;
+  --border: #d0d0d7;
+  --control-border: #8e8e98;
+  --shadow: #11111920;
+  --backdrop: #15151d60;
+  --scrollbar-idle: rgba(80, 80, 90, 0.16);
+  --surface-rgb: 255, 255, 255;
+}
+/* Solid is the baseline and fallback. Only supported, eligible surfaces opt in. */
+@supports (backdrop-filter: blur(1px)) {
+  :root[data-modal-backdrop="blur"] .task-dialog::backdrop {
+    background: var(--backdrop);
+    backdrop-filter: blur(8px);
+  }
+  /* The modal backdrop already does the blur. Avoid filtering it a second time. */
+  :root[data-modal-backdrop="blur"] dialog.material-floating {
+    backdrop-filter: none !important;
+  }
+  :root[data-modal-depth="2"] .task-dialog::backdrop,
+  :root[data-modal-depth="3"] .task-dialog::backdrop {
+    backdrop-filter: none;
+  }
+}
+:root[data-modal-backdrop="none"] .task-dialog::backdrop {
+  background: transparent;
+  backdrop-filter: none;
+}
+:root[data-effects="reduced"] :is(.material-menu, .material-floating) {
+  background: var(--surface) !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 8px 24px var(--shadow) !important;
+  border-color: var(--border) !important;
+}
+:root[data-effects="reduced"] .task-dialog::backdrop {
+  backdrop-filter: none;
+}
+/* Native controls stay opaque and native. No attempt to blur outside this webview. */
+:root :is(select, input, textarea, option) {
+  color-scheme: inherit;
+}
+#appearance-section input[type="range"] {
+  padding: 0;
+  accent-color: var(--accent);
+}
+/* Native-compatible transient styling; geometry and hit testing remain native. */
+html,
+.sidebar nav,
+.task-dialog,
+.palette-results,
+.context-menu,
+.release-scroll {
+  scrollbar-gutter: stable;
+}
+:root[data-scrollbars="transient"],
+:root[data-scrollbars="transient"]
+  :is(
+    .sidebar nav,
+    .task-dialog,
+    .palette-results,
+    .context-menu,
+    .notification-scroll,
+    .release-scroll
+  ) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-idle) transparent;
+  transition: scrollbar-color 0.15s ease;
+}
+:root[data-scrollbars="transient"]:is(
+    :hover,
+    :focus-within,
+    [data-scrolling="true"]
+  ),
+:root[data-scrollbars="transient"]
+  :is(
+    .sidebar nav,
+    .task-dialog,
+    .palette-results,
+    .context-menu,
+    .notification-scroll,
+    .release-scroll
+  ):is(:hover, :focus-within, [data-scrolling="true"]) {
+  scrollbar-color: var(--border) transparent;
+}
+:root[data-scrollbars="transient"]::-webkit-scrollbar,
+:root[data-scrollbars="transient"]
+  :is(
+    .sidebar nav,
+    .task-dialog,
+    .palette-results,
+    .context-menu,
+    .notification-scroll,
+    .release-scroll
+  )::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+:root[data-scrollbars="transient"]::-webkit-scrollbar-thumb,
+:root[data-scrollbars="transient"]
+  :is(
+    .sidebar nav,
+    .task-dialog,
+    .palette-results,
+    .context-menu,
+    .notification-scroll,
+    .release-scroll
+  )::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-idle);
+  border-radius: 6px;
+}
+:root[data-scrollbars="transient"]
+  :is(
+    .sidebar nav,
+    .task-dialog,
+    .palette-results,
+    .context-menu,
+    .notification-scroll,
+    .release-scroll
+  ):is(
+    :hover,
+    :focus-within,
+    [data-scrolling="true"]
+  )::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+:root[data-scrollbars="always"],
+:root[data-scrollbars="always"]
+  :is(
+    .sidebar nav,
+    .task-dialog,
+    .palette-results,
+    .context-menu,
+    .notification-scroll,
+    .release-scroll
+  ) {
+  scrollbar-color: auto;
+  scrollbar-width: auto;
+}
+:root[data-scrollbars="always"] .sidebar nav::-webkit-scrollbar {
+  width: 12px;
+}
+:root[data-scrollbars="always"] .sidebar nav::-webkit-scrollbar-thumb {
+  background: var(--muted);
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root :is(.material-menu, .material-floating) {
+    background: var(--surface) !important;
+    backdrop-filter: none !important;
+    border-color: var(--border) !important;
+  }
+  :root .task-dialog::backdrop {
+    backdrop-filter: none !important;
+  }
+  :root,
+  :root
+    :is(
+      .sidebar nav,
+      .task-dialog,
+      .palette-results,
+      .context-menu,
+      .notification-scroll,
+      .release-scroll
+    ) {
+    scrollbar-color: auto;
+    scrollbar-width: auto;
+  }
+}
+@media (forced-colors: active) {
+  :root :is(.material-menu, .material-floating) {
+    background: Canvas !important;
+    color: CanvasText !important;
+    backdrop-filter: none !important;
+    border: 1px solid CanvasText !important;
+    box-shadow: none !important;
+  }
+  :root .task-dialog::backdrop {
+    backdrop-filter: none !important;
+  }
+  :root,
+  :root
+    :is(
+      .sidebar nav,
+      .task-dialog,
+      .palette-results,
+      .context-menu,
+      .notification-scroll,
+      .release-scroll
+    ) {
+    scrollbar-color: auto;
+    scrollbar-width: auto;
+  }
+}
+.release-dialog {
+  width: 760px;
+  padding: 0;
+  max-height: calc(100vh - 45px);
+}
+.release-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.release-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-shrink: 0;
+  padding: 15px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.release-toolbar > strong {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.release-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+}
+.release-toolbar select {
+  width: 180px;
+  font-size: 11px;
+  padding: 6px;
+  margin: 0;
+}
+.release-scroll {
+  min-height: 0;
+  overflow: auto;
+  flex: 1;
+}
+.release-notes {
+  padding: 28px 32px;
+}
+.release-heading {
+  display: block;
+  margin: 0 0 32px;
+}
+.release-heading h2 {
+  font-size: 46px;
+  letter-spacing: -2px;
+  font-weight: 750;
+  line-height: 1;
+  margin: 12px 0;
+}
+.release-heading h3 {
+  font-size: 22px;
+  font-weight: 500;
+  margin: 20px 0 8px;
+  letter-spacing: -0.4px;
+}
+.release-heading time {
+  font-size: 11px;
+  color: var(--subtle);
+}
+.release-heading > p:last-child {
+  font-size: 13px;
+  margin: 0;
+}
+.release-notes > section {
+  margin: 28px 0;
+}
+.release-notes > section > h3 {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.1px;
+  line-height: 1.5;
+  color: var(--release-accent);
+}
+.release-notes > section > h3::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  min-width: 20px;
+  background: currentColor;
+  opacity: 0.4;
+}
+[data-release-accent="new"] {
+  --release-accent: var(--status-do-now);
+}
+[data-release-accent="little"] {
+  --release-accent: var(--status-scheduled);
+}
+[data-release-accent="sharp"] {
+  --release-accent: var(--status-settled);
+}
+[data-release-accent="fixes"] {
+  --release-accent: var(--status-resurfaced);
+}
+[data-release-accent="technical"] {
+  --release-accent: var(--status-inbox);
+}
+[data-release-accent="known"] {
+  --release-accent: var(--status-snoozed);
+}
+.release-notes ul {
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text);
+}
+.release-notes li {
+  padding-left: 3px;
+  margin: 9px 0;
+}
+.release-notes li::marker {
+  color: var(--release-accent);
+}
+.release-notes ul ul {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 4px 0;
+}
+.release-notes ul ul li {
+  margin: 3px 0;
+}
+.release-notes a {
+  color: var(--accent);
+  display: inline-block;
+  margin-left: 7px;
+}
+.release-footer {
+  border-top: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 15px;
+  flex-shrink: 0;
+}
+@media (max-width: 850px) {
+  .release-notes {
+    padding: 22px;
+  }
+  .release-toolbar {
+    padding: 12px 18px;
+  }
+  .release-heading h2 {
+    font-size: 40px;
+  }
+}

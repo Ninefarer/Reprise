@@ -1,0 +1,358 @@
+const legacyChangelog = [
+  {
+    date: "November 9, 2026",
+    title: "Color with purpose",
+    changes: [
+      "Soft lifecycle accents across navigation, badges, cards, filters and task actions, with readable light-mode counterparts.",
+      "Teal marks Resurfaced review membership separately from the underlying task status.",
+      "Notification History is now labeled Notifications, with the subtitle “Waitin’ for ya”.",
+    ],
+  },
+  {
+    date: "November 9, 2026",
+    title: "Personal space and dependable task actions",
+    changes: [
+      "Local profile pictures with crop controls and a pinned profile menu.",
+      "Resizable, collapsible sidebar with saved preferences.",
+      "Status-aware right-click menus on every task, including Finished and Dropped.",
+      "Resume restores the previous actionable state; Wake Now and Resurface Now put tasks into review.",
+      "Global command palette, view filtering and a configurable command shortcut.",
+      "Guarded 30-second Undo for task transitions and native notification diagnostics.",
+    ],
+  },
+  {
+    date: "November 9, 2026",
+    title: "Task control and navigation",
+    changes: [
+      "Permanently delete tasks, including their notes, history, reminders and in-app notification records, with confirmation.",
+      "Finished and Dropped task cards no longer open details on right-click.",
+      "Search is shown on task pages, and hidden in Settings and Notification History.",
+      "Read release changes here in Settings.",
+    ],
+  },
+  {
+    date: "November 9, 2026",
+    title: "A calmer workspace",
+    changes: [
+      "Grouped sidebar navigation with icons, counts and a dedicated Daily Review page.",
+      "Settled and Snoozed views show return times and countdowns; resurfaced tasks have their own queue.",
+      "System, Light and Dark appearance with shared palettes across both windows.",
+      "Shared task editor, snooze presets, task history and notification filters.",
+    ],
+  },
+  {
+    date: "November 9, 2026",
+    title: "First local build",
+    changes: [
+      "SQLite task storage, lifecycle transitions and a persistent Rust reminder scheduler.",
+      "Windows notifications, notification history, system tray and Quick Capture.",
+    ],
+  },
+];
+
+export type ReleaseAccent =
+  "new" | "little" | "sharp" | "fixes" | "technical" | "known";
+export interface ReleaseEntry {
+  text: string;
+  details?: ReleaseEntry[];
+  links?: { label: string; href: string }[];
+}
+export interface ReleaseSection {
+  heading: string;
+  accent: ReleaseAccent;
+  entries: ReleaseEntry[];
+}
+export interface Release {
+  version: string;
+  date: string;
+  title: string;
+  subtitle?: string;
+  sections: ReleaseSection[];
+}
+export const releases: Release[] = [
+  {
+    version: "3.2.0",
+    date: "2026-11-11",
+    title: "A little less friction.",
+    subtitle: "More control over reminders. Settings that do their job.",
+    sections: [
+      {
+        heading: "YOUR REMINDERS, YOUR CALL",
+        accent: "new",
+        entries: [
+          {
+            text: "Dismiss individual notifications, mark all as read, clear read history or clear all with confirmation.",
+          },
+          {
+            text: "Human-readable categories, searchable history and a Daily Review entry point.",
+          },
+          {
+            text: "Windows toasts now name the task and explain its reminder type. Grouped reminders include specific task details.",
+          },
+          {
+            text: "Retired reminders stay retired across restarts. Clearing local history leaves tasks and Windows Notification Center alone.",
+          },
+        ],
+      },
+      {
+        heading: "THE LITTLE THINGS",
+        accent: "little",
+        entries: [
+          {
+            text: "Quick Capture is now a borderless utility window with a draggable header, close button and clear Enter/Escape hints.",
+          },
+          {
+            text: "Fixed the empty scrollbar gutter along Quick Capture's right edge. Closing keeps the draft; repeated Enter presses cannot create duplicate tasks.",
+          },
+          {
+            text: "Compact density now adjusts navigation, task lists, notifications, settings and dialogs immediately, without hiding task descriptions.",
+          },
+          {
+            text: "Notification reading surfaces stay opaque in Clear Glass and Acrylic so content underneath cannot interfere.",
+          },
+          {
+            text: "Removed the About notification states disclosure from the notification panel.",
+          },
+          {
+            text: "Daily Review uses correct grammar, skips empty days and retains daily deduplication after clearing history.",
+          },
+          {
+            text: "An unconfigured updater reports its status in Settings instead of creating another placeholder reminder.",
+          },
+        ],
+      },
+      {
+        heading: "UNDER THE HOOD",
+        accent: "technical",
+        entries: [
+          {
+            text: "Notification history and management are separated from background scheduling. Transactional operations retain stable reminder identifiers.",
+          },
+          {
+            text: "Live Windows toast clicks can open Daily Review while Reprise remains running.",
+          },
+          {
+            text: "Native Windows toast submission now reports rejection and failure errors instead of relying on a queued background send. Windows acceptance still does not prove visible display.",
+          },
+        ],
+      },
+      {
+        heading: "KNOWN LIMITS",
+        accent: "known",
+        entries: [
+          {
+            text: "Windows decides whether to display notifications. Submission does not confirm display.",
+          },
+          {
+            text: "Reprise must remain running for reminders. Activation after complete process termination is unsupported; Notification Center click behavior has not been verified.",
+          },
+          {
+            text: "Update checks remain manual; a signed release feed has not been configured.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "3.1.1",
+    date: "2026-11-09",
+    title: "A way forward.",
+    sections: [
+      {
+        heading: "THE LITTLE THINGS",
+        accent: "little",
+        entries: [
+          {
+            text: "Check for updates from Settings. Results appear in your in-app Notifications.",
+          },
+          {
+            text: "When a signed update is available, click its notification to download, install and restart.",
+          },
+        ],
+      },
+      {
+        heading: "UNDER THE HOOD",
+        accent: "technical",
+        entries: [
+          {
+            text: "Update checks are manual. Your tasks keep working offline.",
+          },
+          {
+            text: "The release feed is not connected yet. Checks explain this instead of claiming you're up to date.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "3.1.0",
+    date: "2026-11-09",
+    title: "Room to breathe.",
+    subtitle: "Less in the way. The same intentions.",
+    sections: [
+      {
+        heading: "LOOKING SHARP",
+        accent: "sharp",
+        entries: [
+          {
+            text: "Aligned task counts across the left sidebar, including All Tasks.",
+          },
+          {
+            text: "Removed the extra bell and Search & commands buttons. Ctrl+K still opens commands; the right edge and Ctrl+Shift+N open Notifications.",
+          },
+          {
+            text: "Neutral Pitch Black and Ashen White surfaces, curated accents and saved animation preferences.",
+          },
+        ],
+      },
+      {
+        heading: "THE LITTLE THINGS",
+        accent: "little",
+        entries: [
+          {
+            text: "Notifications now slide out as well as in. Closing restores focus immediately, and reduced motion skips the transition.",
+          },
+          {
+            text: "Notification rows show useful actions and problems without repeating the technical Submitted label.",
+            details: [
+              {
+                text: "Read applies to Reprise history. Windows notification submission is kept separately; it is not proof of display or reading.",
+              },
+            ],
+          },
+          {
+            text: "Settings remains in your profile menu. Notifications keeps its own pinnable right panel.",
+          },
+        ],
+      },
+      {
+        heading: "UNDER THE HOOD",
+        accent: "technical",
+        entries: [
+          {
+            text: "Task lifecycle, settlement, snooze, deletion and reminder storage keep their existing behavior.",
+          },
+          {
+            text: "Existing data and preferences are retained when installing this release.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "0.2.0",
+    date: "2026-11-09",
+    title: "A change of atmosphere.",
+    subtitle: "Same intentions. A little more room to make this place yours.",
+    sections: [
+      {
+        heading: "NEW & NOTEWORTHY",
+        accent: "new",
+        entries: [
+          {
+            text: "Three theme families: Reprise Classic, Pitch Black and Ashen White.",
+            details: [
+              {
+                text: "Classic keeps Light, Dark and System. Fixed families keep your Classic preference saved for your return.",
+              },
+            ],
+          },
+          {
+            text: "Flat, Frosted and experimental Glass materials.",
+            details: [
+              {
+                text: "Glass starts with menus only. The sidebar, task lists and main canvas stay solid.",
+              },
+            ],
+          },
+          {
+            text: "A local What's New experience that remembers which release you acknowledged.",
+          },
+        ],
+      },
+      {
+        heading: "LOOKING SHARP",
+        accent: "sharp",
+        entries: [
+          {
+            text: "Pitch Black and Ashen White use neutral surfaces, with stronger control and secondary-text contrast.",
+          },
+          {
+            text: "A choice of Lavender, Sage, Icy Blue, Rose or Neutral accents for controls. Task colors keep their own meaning.",
+          },
+          {
+            text: "Shared surface tokens, bounded blur controls and independently configurable modal backdrops.",
+          },
+          {
+            text: "Your semantic task colors keep their meaning across all three families. Rest is still lavender.",
+          },
+        ],
+      },
+      {
+        heading: "THE LITTLE THINGS",
+        accent: "little",
+        entries: [
+          {
+            text: "Off, Subtle and Expressive animation preferences. Windows reduced motion takes priority while keeping your choice saved.",
+            details: [
+              {
+                text: "Menus, dialogs and navigation move briefly when used. Successful completion gets a quick check; new review entries get one quiet highlight.",
+              },
+            ],
+          },
+          {
+            text: "Native scrollbars recede between interactions when Windows allows it. Prefer them always visible? There's a setting.",
+          },
+          {
+            text: "Release history now has version headings, categories and nested details. You are, in fact, reading the feature.",
+          },
+        ],
+      },
+      {
+        heading: "UNDER THE HOOD",
+        accent: "technical",
+        entries: [
+          {
+            text: "Saved visual preferences are applied before the main window is shown.",
+          },
+          {
+            text: "Release acknowledgment is local and compared using semantic versions, including prereleases.",
+          },
+          {
+            text: "Task lifecycle, SQLite task tables and notification scheduling are unchanged. No update downloader was added.",
+          },
+        ],
+      },
+      {
+        heading: "KNOWN ISSUES",
+        accent: "known",
+        entries: [
+          {
+            text: "CSS blur stays inside this app. It cannot turn your desktop into frosted glass.",
+          },
+          {
+            text: "Native date pickers and select popups keep their reliable system styling.",
+          },
+          {
+            text: "Unsupported effects or accessibility preferences use solid surfaces. Glass remains experimental.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "0.1.0",
+    date: "2026-11-09",
+    title: "A place to return.",
+    subtitle: "The first local build and its early refinements.",
+    sections: legacyChangelog.map((entry, index) => ({
+      heading: entry.title.toUpperCase(),
+      accent: (
+        ["sharp", "new", "fixes", "little", "technical"] as ReleaseAccent[]
+      )[index % 5],
+      entries: entry.changes.map((text) => ({ text })),
+    })),
+  },
+];
+export const releaseFor = (version: string) =>
+  releases.find((release) => release.version === version);

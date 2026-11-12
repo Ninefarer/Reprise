@@ -1,0 +1,63 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Reprise",
+  "version": "3.2.0",
+  "identifier": "com.reprise.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Reprise",
+        "width": 1180,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "create": false,
+        "visible": false
+      },
+      {
+        "label": "capture",
+        "title": "Capture an intention",
+        "url": "index.html?capture=1",
+        "width": 560,
+        "height": 200,
+        "resizable": false,
+        "visible": false,
+        "create": false,
+        "decorations": false,
+        "shadow": true,
+        "center": true,
+        "skipTaskbar": true,
+        "maximizable": false,
+        "minimizable": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [],
+      "pubkey": "",
+      "requireSignedVersion": true,
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "shortDescription": "Later should actually arrive.",
+    "category": "Productivity"
+  }
+}

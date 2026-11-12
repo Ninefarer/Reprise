@@ -1,0 +1,9 @@
+{
+  "identifier": "capture-controls",
+  "windows": [
+    "capture"
+  ],
+  "permissions": [
+    "core:window:allow-start-dragging"
+  ]
+}

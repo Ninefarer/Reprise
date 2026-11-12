@@ -1,0 +1,13 @@
+{
+  "identifier": "default",
+  "windows": [
+    "main",
+    "capture"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-hide",
+    "core:window:allow-set-theme",
+    "core:window:allow-set-background-color"
+  ]
+}

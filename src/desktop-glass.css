@@ -1,0 +1,119 @@
+/* Native Clear/Acrylic remains the source of desktop visibility and blur.
+   These static materials tint it; no CSS filter simulates external composition. */
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"]) {
+  background: transparent;
+  --glass-pane-alpha: calc(var(--desktop-tint) * 0.58);
+  --glass-nav-alpha: calc(0.58 + var(--desktop-tint) * 0.2);
+  --glass-card-alpha: calc(0.8 + var(--desktop-tint) * 0.12);
+  --glass-dense-alpha: 0.95;
+  --glass-edge-alpha: calc(0.24 - var(--desktop-tint) * 0.1);
+  --glass-reflection-alpha: calc(0.08 - var(--desktop-tint) * 0.05);
+  --glass-edge: rgba(255, 255, 255, var(--glass-edge-alpha));
+  --glass-reflection: rgba(255, 255, 255, var(--glass-reflection-alpha));
+  --glass-shadow: 0 5px 16px #00000024;
+  --glass-inner: inset 0 1px 0 #ffffff17;
+}
+:root[data-theme="light"]:is(
+    [data-desktop-glass="clear"],
+    [data-desktop-glass="acrylic"]
+  ) {
+  --glass-pane-alpha: calc(var(--desktop-tint) * 0.48);
+  --glass-nav-alpha: calc(0.4 + var(--desktop-tint) * 0.26);
+  --glass-card-alpha: calc(0.88 + var(--desktop-tint) * 0.08);
+  --glass-dense-alpha: 0.97;
+  --glass-edge: #ffffffb3;
+  --glass-reflection: rgba(
+    255,
+    255,
+    255,
+    calc(0.18 - var(--desktop-tint) * 0.1)
+  );
+  --glass-shadow: 0 4px 14px #161a2512;
+  --glass-inner: inset 0 1px 0 #ffffffcc;
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"]) body {
+  background: transparent;
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  :is(.app, .quick) {
+  background:
+    linear-gradient(125deg, var(--glass-reflection), transparent 42%),
+    rgba(var(--surface-rgb), var(--glass-pane-alpha));
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  .sidebar {
+  background:
+    linear-gradient(110deg, var(--glass-reflection), transparent 65%),
+    rgba(var(--surface-rgb), var(--glass-nav-alpha));
+  border-color: var(--glass-edge);
+  box-shadow: inset -1px 0 0 #ffffff08;
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  :is(.task-card, .overview button) {
+  background:
+    linear-gradient(155deg, var(--glass-reflection), transparent 45%),
+    rgba(var(--surface-rgb), var(--glass-card-alpha));
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-inner), var(--glass-shadow);
+}
+/* Keep lifecycle edges distinct from the neutral illuminated perimeter. */
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  .task-card[data-status] {
+  border-inline-start-color: var(--task-accent);
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  :is(.settings-section, .capture) {
+  background:
+    linear-gradient(160deg, var(--glass-reflection), transparent 35%),
+    rgba(var(--surface-rgb), var(--glass-dense-alpha));
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-inner), var(--glass-shadow);
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  :is(input, select, textarea) {
+  background-color: rgba(var(--surface-rgb), var(--glass-dense-alpha));
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  :is(.task-dialog, .context-menu, .profile-footer [role="menu"]) {
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-inner), var(--glass-shadow);
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  .task-card:hover {
+  background-color: rgba(var(--surface-rgb), var(--glass-dense-alpha));
+}
+/* Do not weaken focus, accent selection or native high-contrast control colors. */
+@media (forced-colors: active),
+  (prefers-reduced-transparency: reduce),
+  (prefers-contrast: more) {
+  :root body,
+  :root .app,
+  :root .quick {
+    background: var(--bg) !important;
+  }
+  :root .sidebar {
+    background: var(--sidebar) !important;
+    box-shadow: none !important;
+  }
+  :root
+    :is(
+      .task-card,
+      .overview button,
+      .notice,
+      .settings-section,
+      .capture,
+      input,
+      select,
+      textarea
+    ) {
+    background: var(--surface) !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Capture is one surface; its text field must not become a nested glass box. */
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  .capture
+  input {
+  background: transparent;
+}

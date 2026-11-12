@@ -1,0 +1,143 @@
+/* The only source of lifecycle colors. Dark swatches are also used before
+   the native theme is resolved; explicit Light always keeps its own palette. */
+:root {
+  --dark-inbox: #e4e8e5;
+  --dark-do-now: #a8d5a2;
+  --dark-scheduled: #9dbde8;
+  --dark-settled: #c5afe8;
+  --dark-snoozed: #e5be82;
+  --dark-waiting: #e6a59e;
+  --dark-resurfaced: #83d8c9;
+  --dark-finished: #91b99b;
+  --dark-dropped: #929a9f;
+  --status-inbox: #46524c;
+  --status-do-now: #3e6840;
+  --status-scheduled: #365e91;
+  --status-settled: #70518f;
+  --status-snoozed: #805e26;
+  --status-waiting: #94514a;
+  --status-resurfaced: #286c61;
+  --status-finished: #4c7056;
+  --status-dropped: #58636c;
+}
+:root[data-theme="dark"] {
+  --status-inbox: var(--dark-inbox);
+  --status-do-now: var(--dark-do-now);
+  --status-scheduled: var(--dark-scheduled);
+  --status-settled: var(--dark-settled);
+  --status-snoozed: var(--dark-snoozed);
+  --status-waiting: var(--dark-waiting);
+  --status-resurfaced: var(--dark-resurfaced);
+  --status-finished: var(--dark-finished);
+  --status-dropped: var(--dark-dropped);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --status-inbox: var(--dark-inbox);
+    --status-do-now: var(--dark-do-now);
+    --status-scheduled: var(--dark-scheduled);
+    --status-settled: var(--dark-settled);
+    --status-snoozed: var(--dark-snoozed);
+    --status-waiting: var(--dark-waiting);
+    --status-resurfaced: var(--dark-resurfaced);
+    --status-finished: var(--dark-finished);
+    --status-dropped: var(--dark-dropped);
+  }
+}
+[data-status="Inbox"] {
+  --task-accent: var(--status-inbox);
+}
+[data-status="DoNow"] {
+  --task-accent: var(--status-do-now);
+}
+[data-status="Scheduled"] {
+  --task-accent: var(--status-scheduled);
+}
+[data-status="Settled"] {
+  --task-accent: var(--status-settled);
+}
+[data-status="Snoozed"] {
+  --task-accent: var(--status-snoozed);
+}
+[data-status="Waiting"] {
+  --task-accent: var(--status-waiting);
+}
+[data-status="Resurfaced"] {
+  --task-accent: var(--status-resurfaced);
+}
+[data-status="Finished"] {
+  --task-accent: var(--status-finished);
+}
+[data-status="Dropped"] {
+  --task-accent: var(--status-dropped);
+}
+.sidebar .nav-group button[data-status] > svg,
+.sidebar .nav-group button[data-status] > .nav-count {
+  color: var(--task-accent);
+}
+.sidebar .nav-group button[data-status] > .nav-count {
+  background: var(--sidebar);
+  border-radius: 4px;
+}
+.task-card[data-status] {
+  border-inline-start: 2px solid var(--task-accent);
+}
+.status[data-status] {
+  color: var(--task-accent);
+  border-color: var(--task-accent);
+  background: var(--surface);
+}
+.queue-indicator {
+  color: var(--status-resurfaced);
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+.queue-indicator::before {
+  content: "↻";
+  font-size: 13px;
+}
+.overview button[data-status] > svg,
+.overview button[data-status] > strong {
+  color: var(--task-accent);
+}
+.section-heading[data-status] .count-badge {
+  color: var(--task-accent);
+  border-color: var(--task-accent);
+  background: var(--surface);
+}
+.section-heading[data-status] h2::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--task-accent);
+}
+.empty[data-status] > svg {
+  color: var(--task-accent);
+}
+.context-menu button > span[data-status] {
+  color: var(--task-accent);
+}
+select[data-status] {
+  border-inline-start: 3px solid var(--task-accent);
+}
+select option[data-status] {
+  color: var(--task-accent);
+}
+.dialog-statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 18px;
+}
+.notice-category[data-status] {
+  color: var(--task-accent);
+}
+.pause-info .remaining {
+  color: var(--task-accent, var(--muted));
+}
+.task-card .finish {
+  color: var(--task-accent, var(--muted));
+}

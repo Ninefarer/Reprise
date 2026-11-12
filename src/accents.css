@@ -1,0 +1,90 @@
+/* Interactive colors are independent of the lifecycle palette in task-colors.css. */
+:root[data-accent] {
+  --accent: var(--interactive-accent);
+  --accent-text: var(--interactive-text);
+  --selected: var(--interactive-selection);
+  --hover: var(--interactive-hover);
+  --focus: var(--interactive-accent);
+}
+:root[data-accent="sage"] {
+  --interactive-accent: #365c43;
+  --interactive-text: #ffffff;
+  --interactive-selection: #d6e2cf;
+  --interactive-hover: #e3eadc;
+}
+:root[data-accent="lavender"] {
+  --interactive-accent: #6b4f92;
+  --interactive-text: #ffffff;
+  --interactive-selection: #e8dff2;
+  --interactive-hover: #f0eaf6;
+}
+:root[data-accent="icy-blue"] {
+  --interactive-accent: #365d89;
+  --interactive-text: #ffffff;
+  --interactive-selection: #dee9f5;
+  --interactive-hover: #eaf1f8;
+}
+:root[data-accent="rose"] {
+  --interactive-accent: #885263;
+  --interactive-text: #ffffff;
+  --interactive-selection: #efdee4;
+  --interactive-hover: #f6e9ed;
+}
+:root[data-accent="neutral"] {
+  --interactive-accent: #505056;
+  --interactive-text: #ffffff;
+  --interactive-selection: #e1e1e5;
+  --interactive-hover: #ededf0;
+}
+:root[data-theme="dark"][data-accent="sage"] {
+  --interactive-accent: #a8c49b;
+  --interactive-text: #192717;
+  --interactive-selection: #354730;
+  --interactive-hover: #313e2e;
+}
+:root[data-theme="dark"][data-accent="lavender"] {
+  --interactive-accent: #c5b6e5;
+  --interactive-text: #211a2d;
+  --interactive-selection: #39313f;
+  --interactive-hover: #2d2832;
+}
+:root[data-theme="dark"][data-accent="icy-blue"] {
+  --interactive-accent: #abc8e8;
+  --interactive-text: #172332;
+  --interactive-selection: #2c3c4d;
+  --interactive-hover: #25323f;
+}
+:root[data-theme="dark"][data-accent="rose"] {
+  --interactive-accent: #dab4bf;
+  --interactive-text: #2e1c24;
+  --interactive-selection: #45313a;
+  --interactive-hover: #35282e;
+}
+:root[data-theme="dark"][data-accent="neutral"] {
+  --interactive-accent: #c7c7cb;
+  --interactive-text: #1e1e20;
+  --interactive-selection: #323235;
+  --interactive-hover: #252528;
+}
+:root {
+  accent-color: var(--accent);
+}
+:root[data-family="pitch-black"] :is(input, select, textarea),
+:root[data-family="ashen-white"] :is(input, select, textarea) {
+  border-color: var(--control-border);
+}
+:root select option:checked {
+  background: var(--selected);
+  color: var(--text);
+}
+:root .primary:hover {
+  filter: none;
+  box-shadow: inset 0 0 0 1px var(--accent-text);
+}
+:root .nav-group button.active {
+  color: var(--text);
+}
+/* The status colors remain readable on opaque badge/count surfaces, regardless of accent. */
+:root .task-card[data-status] .status {
+  background: var(--surface);
+}
