@@ -143,6 +143,25 @@ async function openSettings(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole("menuitem", { name: "Settings" }));
 }
 describe("Nightly channel", () => {
+  it.each([
+    ["3.3.0", false],
+    ["3.2.1-nightly.20261112.5", true],
+  ] as const)(
+    "keeps the onboarding sky exclusive to Nightly: %s",
+    async (version, sky) => {
+      data.settings.onboarded = false;
+      data.settings.theme_family = "pitch-black";
+      data.release = { version, acknowledged: null, should_show: false };
+      render(<App />);
+      await screen.findByRole("heading", {
+        name: "A little space for your intentions.",
+      });
+      expect(!!document.querySelector(".setup-nightly")).toBe(sky);
+      expect(document.documentElement.dataset.family).toBe("pitch-black");
+      expect(screen.queryByRole("navigation")).toBeNull();
+      expect(screen.queryByRole("dialog")).toBeNull();
+    },
+  );
   it("keeps first-run setup separate and shows the nightly disclosure only after finishing", async () => {
     data.settings.onboarded = false;
     data.release = {
