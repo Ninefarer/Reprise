@@ -11,6 +11,7 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 #[derive(Default)]
 pub struct UpdateRuntime {
     busy: AtomicBool,
+    last_auto_attempt: std::sync::Mutex<Option<Instant>>,
 }
 struct Operation<'a>(&'a AtomicBool);
 impl Drop for Operation<'_> {
@@ -41,6 +42,16 @@ struct Progress {
 
 pub fn configured(value: Option<&serde_json::Value>) -> Result<bool, String> {
     let Some(value) = value else { return Ok(false) };
+    for flag in [
+        "dangerousInsecureTransportProtocol",
+        "dangerousAcceptInvalidCerts",
+        "dangerousAcceptInvalidHostnames",
+        "allowDowngrades",
+    ] {
+        if value.get(flag).and_then(|v| v.as_bool()) == Some(true) {
+            return Err("Production updates require valid HTTPS and downgrade protection".into());
+        }
+    }
     let endpoints = value.get("endpoints").and_then(|v| v.as_array());
     let pubkey = value.get("pubkey").and_then(|v| v.as_str()).unwrap_or("");
     if endpoints.is_none_or(|v| v.is_empty()) || pubkey.trim().is_empty() {
@@ -107,6 +118,9 @@ pub fn record_check(
         return Ok(id);
     }
     let tx = d.conn.unchecked_transaction().map_err(|e| e.to_string())?;
+    if kind == "available" && tx.query_row(
+        "SELECT EXISTS(SELECT 1 FROM notifications WHERE id=?1 AND state IN ('UpdateAvailable','UpdateDownloading','UpdateInstalling'))", [&id], |r| r.get::<_, bool>(0)
+    ).map_err(|e|e.to_string())? { return Ok(id); }
     if kind == "available" || kind == "current" {
         tx.execute("UPDATE notifications SET state='UpdateSuperseded' WHERE category='Updates' AND state IN ('UpdateAvailable','UpdateError') AND id<>?1",[&id]).map_err(|e|e.to_string())?;
     }
@@ -158,6 +172,46 @@ pub fn reconcile(d: &Store, current: &str) -> Result<(), String> {
 fn refresh(app: &tauri::AppHandle) {
     let _ = app.emit("refresh", ());
 }
+fn same_channel(current: &str, offered: &str) -> Result<(), String> {
+    let current = semver::Version::parse(current).map_err(|e| e.to_string())?;
+    let offered = semver::Version::parse(offered).map_err(|e| e.to_string())?;
+    if current.pre.is_empty() != offered.pre.is_empty() {
+        return Err("The update feed offered a release from a different channel".into());
+    }
+    Ok(())
+}
+fn qa_loopback(app: &tauri::AppHandle, url: &tauri::Url) -> bool {
+    cfg!(feature = "updater-e2e")
+        && app.config().identifier == "com.reprise.updater.qa"
+        && url.scheme() == "http"
+        && url.host_str() == Some("127.0.0.1")
+}
+fn configured_for(app: &tauri::AppHandle) -> Result<bool, String> {
+    let value = app.config().plugins.0.get("updater");
+    // Test installers are a separate compile-time build and identity. Production has no HTTP fallback.
+    if cfg!(feature = "updater-e2e") && app.config().identifier == "com.reprise.updater.qa" {
+        if let Some(value) = value {
+            if value
+                .get("endpoints")
+                .and_then(|v| v.as_array())
+                .is_some_and(|urls| {
+                    !urls.is_empty()
+                        && urls.iter().all(|u| {
+                            u.as_str()
+                                .and_then(|s| s.parse::<tauri::Url>().ok())
+                                .is_some_and(|u| qa_loopback(app, &u))
+                        })
+                })
+            {
+                let mut checked = value.clone();
+                checked["endpoints"] = serde_json::json!(["https://127.0.0.1/qa"]);
+                checked["dangerousInsecureTransportProtocol"] = serde_json::json!(false);
+                return configured(Some(&checked));
+            }
+        }
+    }
+    configured(value)
+}
 fn checked_notice(
     app: &tauri::AppHandle,
     kind: &str,
@@ -184,7 +238,10 @@ async fn remote(app: &tauri::AppHandle) -> Result<Option<Update>, String> {
         .await
         .map_err(|e| e.to_string())?;
     if let Some(ref update) = update {
-        if update.download_url.scheme() != "https" || update.signature.trim().is_empty() {
+        same_channel(&app.package_info().version.to_string(), &update.version)?;
+        if (update.download_url.scheme() != "https" && !qa_loopback(app, &update.download_url))
+            || update.signature.trim().is_empty()
+        {
             return Err("The update does not contain a secure signed download".into());
         }
     }
@@ -194,17 +251,50 @@ async fn remote(app: &tauri::AppHandle) -> Result<Option<Update>, String> {
 pub async fn check_updates(
     app: tauri::AppHandle,
     runtime: tauri::State<'_, UpdateRuntime>,
+    automatic: Option<bool>,
 ) -> Result<CheckResult, String> {
     let _operation = runtime.begin()?;
+    let automatic = automatic.unwrap_or(false);
+    if automatic {
+        {
+            let db = app.state::<Db>();
+            let d = db.lock().map_err(|e| e.to_string())?;
+            if !d.settings()?.onboarded {
+                return Ok(CheckResult {
+                    notice_id: None,
+                    message: None,
+                });
+            }
+        }
+        let mut previous = runtime
+            .last_auto_attempt
+            .lock()
+            .map_err(|e| e.to_string())?;
+        if previous.is_some_and(|p| p.elapsed() < Duration::from_secs(6 * 3600)) {
+            return Ok(CheckResult {
+                notice_id: None,
+                message: None,
+            });
+        }
+        *previous = Some(Instant::now());
+    }
     let current = app.package_info().version.to_string();
-    match configured(app.config().plugins.0.get("updater")) {
+    match configured_for(&app) {
         Ok(false) => return Ok(CheckResult { notice_id: None, message: Some("Update source not configured. Connect a signed release feed before checking for updates.".into()) }),
         Err(error) => return checked_notice(&app, "error", &current, Some(&error)),
         _ => {}
     }
     match remote(&app).await {
         Ok(Some(update)) => checked_notice(&app, "available", &update.version, None),
+        Ok(None) if automatic => Ok(CheckResult {
+            notice_id: None,
+            message: Some("You're up to date.".into()),
+        }),
         Ok(None) => checked_notice(&app, "current", &current, None),
+        Err(error) if automatic => Ok(CheckResult {
+            notice_id: None,
+            message: Some(format!("Automatic update check couldn't finish: {error}")),
+        }),
         Err(error) => checked_notice(&app, "error", &current, Some(&error)),
     }
 }
@@ -245,7 +335,7 @@ fn status(
     Ok(())
 }
 async fn install_inner(app: &tauri::AppHandle, id: &str) -> Result<(), String> {
-    if !configured(app.config().plugins.0.get("updater"))? {
+    if !configured_for(app)? {
         return Err("The update repository is not configured yet".into());
     }
     let expected = {
@@ -336,6 +426,39 @@ mod tests {
     use super::*;
     fn db() -> Store {
         Store::init(rusqlite::Connection::open_in_memory().unwrap()).unwrap()
+    }
+    #[test]
+    fn update_channels_never_cross_and_bad_versions_fail() {
+        assert!(same_channel("3.3.1", "3.3.2").is_ok());
+        assert!(same_channel("3.3.1", "3.4.0-nightly.1").is_err());
+        assert!(same_channel("3.3.2-nightly.1", "3.3.2-nightly.2").is_ok());
+        assert!(same_channel("3.3.2-nightly.1", "3.4.0-rc.1").is_ok());
+        assert!(same_channel("3.3.2-nightly.1", "3.4.0").is_err());
+        assert!(same_channel("3.3.1", "invalid").is_err());
+    }
+    #[test]
+    fn production_config_rejects_weakened_transport_and_downgrades() {
+        for flag in [
+            "dangerousInsecureTransportProtocol",
+            "dangerousAcceptInvalidCerts",
+            "dangerousAcceptInvalidHostnames",
+            "allowDowngrades",
+        ] {
+            let mut cfg = serde_json::json!({"endpoints":["https://github.com/Ninefarer/Reprise/releases/latest/download/latest.json"],"pubkey":"public","requireSignedVersion":true});
+            cfg[flag] = serde_json::json!(true);
+            assert!(configured(Some(&cfg)).is_err(), "{flag}");
+        }
+    }
+    #[test]
+    fn existing_update_offer_keeps_read_state_and_timestamp() {
+        let mut d = db();
+        let id = record_check(&d, "available", "3.3.2", None, 100).unwrap();
+        d.manage_notices("read", std::slice::from_ref(&id), 101)
+            .unwrap();
+        record_check(&d, "available", "3.3.2", None, 200).unwrap();
+        let n = d.notices().unwrap().pop().unwrap();
+        assert!(n.read);
+        assert_eq!(n.created_at, 100);
     }
     #[test]
     fn absent_feed_is_not_reported_as_up_to_date() {

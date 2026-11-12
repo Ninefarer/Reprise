@@ -1,0 +1,42 @@
+name: Signed updater QA artifacts
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - .github/workflows/signed-updater-qa.yml
+      - scripts/updater/**
+      - src-tauri/src/updates.rs
+      - src-tauri/tauri.conf.json
+permissions:
+  contents: read
+concurrency:
+  group: signed-updater-qa
+  cancel-in-progress: false
+jobs:
+  signed-fixtures:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: rustup update stable --no-self-update
+      - run: rustup default stable
+      - run: npm test
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      - name: Build and verify isolated signed installers
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: node scripts/updater/build-qa.mjs
+      - run: node --test scripts/updater/manifest.test.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: signed-updater-qa-${{ github.sha }}
+          path: artifacts/updater-qa/
+          if-no-files-found: error
+          retention-days: 7

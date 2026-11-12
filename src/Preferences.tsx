@@ -223,6 +223,10 @@ export function Preferences({
       <section className="settings-section" aria-labelledby="updates-heading">
         <h2 id="updates-heading">About / Updates</h2>
         <p>Reprise v{version}</p>
+        <p className="hint">
+          Checks for updates after setup and every six hours while Reprise is
+          running. You choose when to download and install.
+        </p>
         {updateCheckMessage && <p role="status">{updateCheckMessage}</p>}
         <div className="dialog-actions">
           <button
