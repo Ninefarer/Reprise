@@ -71,6 +71,37 @@ export interface Release {
 }
 export const releases: Release[] = [
   {
+    version: "3.3.2",
+    date: "2026-11-12",
+    title: "Ready when you are.",
+    sections: [
+      {
+        heading: "NEW & NOTEWORTHY",
+        accent: "new",
+        entries: [
+          {
+            text: "Reprise checks for updates after setup and while running. Available updates appear in Notifications; you choose when to install.",
+          },
+          {
+            text: "Stable and Nightly keep separate update feeds, installations, and task data.",
+          },
+          {
+            text: "Updates require a valid signature and matching signed version before installation.",
+          },
+        ],
+      },
+      {
+        heading: "THE LITTLE THINGS",
+        accent: "little",
+        entries: [
+          {
+            text: "Install this version manually once to enable in-app updates. Run the installer over your existing Stable installation without uninstalling or deleting its data.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.3.1",
     date: "2026-11-12",
     title: "Keep what you just wrote.",

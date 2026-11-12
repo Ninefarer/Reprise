@@ -26,9 +26,11 @@ With close-to-tray enabled, closing the main window leaves Reprise running. Use 
 
 Windows notification permissions, Focus / Do Not Disturb, and Reprise's quiet hours can affect reminders. Reprise's notification panel keeps its own history; clearing that history does not clear Windows Notification Center. A submitted notification is not proof that Windows displayed a banner.
 
-## Update manually
+## Updates
 
-Download a newer installer from the appropriate release channel. The signed in-app update feed is not configured, so **Check for updates** cannot currently discover or install GitHub releases. A published GitHub release alone does not connect that feed.
+Install Stable 3.3.2 manually once to enable signed in-app updates. Run the matching installer over the existing installation. After setup, Reprise checks for updates automatically; you can also use **Settings > About / Updates > Check for updates**. An available update appears in Notifications. Click its title when you want to install, or leave it for later. Stable updates stay on Stable; Nightly updates stay on Nightly.
+
+Older builds still require a manual download from the appropriate release channel.
 
 Task data is kept separately from the installed application. Do not delete the application data directory when updating. For feed configuration and technical details, see [Updater integration](UPDATES.md).
 

@@ -40,14 +40,14 @@ Want to help test upcoming changes? [Nightly builds](https://github.com/Ninefare
 - Core task management works offline. No cloud service is required.
 - Closing the window can leave Reprise running in the tray so reminders can return. **Quit Reprise** stops that background process.
 - Windows controls whether a notification appears. Reprise also keeps its own notification history.
-- Updates are currently installed manually; the signed in-app update feed is not connected.
-- **I made reprise with myself in mind first**. Whatever changes happen, are due to *ME* and my ideas for this app.
+- Install 3.3.2 manually once to enable signed in-app updates. After that, Reprise checks for updates and lets you choose when to install.
+- **I made reprise with myself in mind first**. *(If you don't like something, fork it! You may have better execution and ideas than me.)*
 
 ## Find your way around
 
 - [Getting started](docs/GETTING-STARTED.md): install, capture a task, and find Settings.
 - [Task workflow](docs/TASK-WORKFLOW.md): choose what to do now and what to return to later.
-- [Full changelog](CHANGELOG.md): additions, changes, and fixes in Stable 3.3.0.
+- [Full changelog](CHANGELOG.md): additions, changes, and fixes across Stable releases.
 - [All documentation](docs/README.md): user guides and the engineering records behind the app.
 
 Found something wrong? [Open an issue](https://github.com/Ninefarer/Reprise/issues) with what you expected, what happened, and your version. Keep private task details out of screenshots and reports.

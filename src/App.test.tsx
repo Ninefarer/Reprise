@@ -223,6 +223,7 @@ describe("Settings draft protection", () => {
     expect(data.settings.theme_family).toBe("pitch-black");
   });
 });
+
 it.each([
   [true, false, 1],
   [false, false, 0],

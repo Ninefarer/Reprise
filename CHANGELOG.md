@@ -1,5 +1,20 @@
 # Reprise changelog
 
+## 3.3.2 ? November 12, 2026
+
+### Added
+
+- Signed in-app updates distributed through GitHub Releases, with separate Stable and Nightly feeds.
+- Automatic checks after setup and every six hours, plus an explicit check in Settings. Users choose when to install from the update notification.
+- Signature and signed-version validation, channel isolation, stale-offer rechecking and recovery after interrupted updates.
+- GitHub Actions signing with repository secrets and a publication gate backed by an installed-upgrade test.
+
+### Updating
+
+- Existing installations need this updater-enabled installer manually once. Install over the matching channel without uninstalling or deleting its data.
+- No task lifecycle, reminder schedule, application identity or database schema changes.
+
+
 ## 3.3.1 · November 12, 2026
 
 ### Fixed

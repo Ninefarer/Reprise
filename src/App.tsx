@@ -411,6 +411,7 @@ function Application({
     trace("search.commit", searchStarted.current);
     searchStarted.current = null;
   }, [query]);
+
   useEffect(() => {
     if (quick) return;
     let off: (() => void) | undefined,
