@@ -1,11 +1,10 @@
 {
   "identifier": "default",
-  "windows": [
-    "main",
-    "capture"
-  ],
+  "windows": ["main", "capture"],
   "permissions": [
     "core:default",
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-write-text",
     "core:window:allow-hide",
     "core:window:allow-set-theme",
     "core:window:allow-set-background-color"

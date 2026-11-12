@@ -412,6 +412,7 @@ export function Sidebar({
       )}
       {menu && (
         <PopupMenu
+          request={menu}
           label="Sidebar actions"
           x={menu.x}
           y={menu.y}

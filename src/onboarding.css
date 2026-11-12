@@ -30,7 +30,7 @@
 }
 .setup-step {
   min-height: 440px;
-  animation: setup-arrive var(--motion-modal) var(--motion-ease) both;
+  animation: setup-arrive 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .setup-step h1 {
   font-size: clamp(26px, 3.8vw, 36px);
@@ -135,5 +135,15 @@
 @media (prefers-reduced-transparency: reduce) {
   .setup-nightly {
     background: var(--bg);
+  }
+}
+
+.setup-step.setup-leaving {
+  animation: setup-depart 140ms ease-in both;
+}
+@keyframes setup-depart {
+  to {
+    opacity: 0;
+    translate: 0 -3px;
   }
 }

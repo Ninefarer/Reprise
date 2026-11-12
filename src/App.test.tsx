@@ -40,6 +40,7 @@ beforeEach(() => {
   data = {
     tasks: [],
     notifications: [],
+    release: { version: "3.2.0", acknowledged: "3.2.0", should_show: false },
     settings: {
       name: "Test",
       workspace: "Studio",
@@ -216,6 +217,12 @@ describe("Nightly channel", () => {
     await user.selectOptions(screen.getByLabelText("Theme"), "pitch-black");
     await waitFor(() => expect(data.settings.theme_family).toBe("pitch-black"));
     await user.click(screen.getByRole("button", { name: /Continue/ }));
+    await waitFor(() =>
+      expect(
+        (document.querySelector(".setup-fields") as HTMLFieldSetElement)
+          .disabled,
+      ).toBe(false),
+    );
     await screen.findByRole("heading", { name: "Let later have a time." });
     await user.selectOptions(
       screen.getByLabelText("Settled tasks return"),
@@ -225,11 +232,29 @@ describe("Nightly channel", () => {
       target: { value: "10:30" },
     });
     await user.click(screen.getByRole("button", { name: "Back" }));
+    await waitFor(() =>
+      expect(
+        (document.querySelector(".setup-fields") as HTMLFieldSetElement)
+          .disabled,
+      ).toBe(false),
+    );
     expect(screen.getByLabelText("Display name").getAttribute("value")).toBe(
       "Dim",
     );
     await user.click(screen.getByRole("button", { name: /Continue/ }));
+    await waitFor(() =>
+      expect(
+        (document.querySelector(".setup-fields") as HTMLFieldSetElement)
+          .disabled,
+      ).toBe(false),
+    );
     await user.click(screen.getByRole("button", { name: /Continue/ }));
+    await waitFor(() =>
+      expect(
+        (document.querySelector(".setup-fields") as HTMLFieldSetElement)
+          .disabled,
+      ).toBe(false),
+    );
     await user.type(
       screen.getByLabelText("Your first intention"),
       "Plan tomorrow",
@@ -320,7 +345,19 @@ describe("Nightly channel", () => {
     await user.clear(screen.getByLabelText("Display name"));
     await user.type(screen.getByLabelText("Display name"), "New name");
     await user.click(screen.getByRole("button", { name: /Continue/ }));
+    await waitFor(() =>
+      expect(
+        (document.querySelector(".setup-fields") as HTMLFieldSetElement)
+          .disabled,
+      ).toBe(false),
+    );
     await user.click(screen.getByRole("button", { name: /Continue/ }));
+    await waitFor(() =>
+      expect(
+        (document.querySelector(".setup-fields") as HTMLFieldSetElement)
+          .disabled,
+      ).toBe(false),
+    );
     await user.click(screen.getByRole("button", { name: "Open Reprise" }));
     await screen.findByLabelText(/Profile menu for New name/);
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -353,7 +390,19 @@ describe("Nightly channel", () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(await screen.findByRole("button", { name: /Continue/ }));
+    await waitFor(() =>
+      expect(
+        (document.querySelector(".setup-fields") as HTMLFieldSetElement)
+          .disabled,
+      ).toBe(false),
+    );
     await user.click(screen.getByRole("button", { name: /Continue/ }));
+    await waitFor(() =>
+      expect(
+        (document.querySelector(".setup-fields") as HTMLFieldSetElement)
+          .disabled,
+      ).toBe(false),
+    );
     await user.type(screen.getByLabelText("Your first intention"), "Only once");
     await user.click(screen.getByRole("button", { name: "Open Reprise" }));
     await screen.findByRole("alert");
@@ -362,6 +411,30 @@ describe("Nightly channel", () => {
     await screen.findByLabelText(/Profile menu for/);
     expect(data.tasks).toHaveLength(1);
     expect(data.tasks[0].title).toBe("Only once");
+  });
+  it("allows the outgoing setup transition to finish before advancing and respects Animation Off", async () => {
+    data.settings.onboarded = false;
+    render(<App />);
+    const next = await screen.findByRole("button", { name: /Continue/ });
+    fireEvent.click(next);
+    expect(
+      (document.querySelector(".setup-fields") as HTMLFieldSetElement).disabled,
+    ).toBe(true);
+    expect(
+      screen.getByRole("heading", {
+        name: "A little space for your intentions.",
+      }),
+    ).toBeTruthy();
+    const second = await screen.findByRole("heading", {
+      name: "Let later have a time.",
+    });
+    expect(document.activeElement).toBe(second);
+    document.documentElement.dataset.motion = "off";
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByLabelText("Display name")).toBeTruthy();
+    expect(
+      (document.querySelector(".setup-fields") as HTMLFieldSetElement).disabled,
+    ).toBe(false);
   });
   it("does not show a startup disclosure in Quick Capture", async () => {
     data.release = {
@@ -1176,6 +1249,23 @@ it.each([
 });
 
 describe("Quick Capture regression", () => {
+  it("supports the shared editing menu without losing its draft or closing capture on menu Escape", async () => {
+    const user = userEvent.setup();
+    render(<App captureMode />);
+    const input = await screen.findByRole("textbox", {
+      name: "Capture a task",
+    });
+    await user.type(input, "Capture draft");
+    (input as HTMLInputElement).setSelectionRange(0, 7);
+    fireEvent.contextMenu(input, { clientX: 450, clientY: 175 });
+    const menu = screen.getByRole("menu", { name: "Text editing" });
+    expect(within(menu).getByRole("menuitem", { name: "Copy" })).toBeTruthy();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect((input as HTMLInputElement).value).toBe("Capture draft");
+    expect(mocks.hide).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(input);
+  });
   it("focuses capture, submits on Enter and hides only after success", async () => {
     const user = userEvent.setup();
     render(<App captureMode />);

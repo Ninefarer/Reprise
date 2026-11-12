@@ -189,6 +189,7 @@ fn main() {
             visuals::request_dashboard(app);
         }))
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .plugin(
@@ -285,7 +286,11 @@ fn main() {
                     )?,
                 ],
             )?;
-            let icon = tauri::image::Image::new_owned([70, 125, 110, 255].repeat(32 * 32), 32, 32);
+            // The configured application icon follows the Stable/Nightly build config.
+            let icon = app
+                .default_window_icon()
+                .cloned()
+                .ok_or("Configured application icon is unavailable")?;
             tauri::tray::TrayIconBuilder::new()
                 .icon(icon)
                 .menu(&menu)

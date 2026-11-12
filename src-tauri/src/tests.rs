@@ -87,8 +87,10 @@ fn first_install_does_not_interrupt_onboarding_but_existing_users_get_notes() {
         s.last_seen_release.as_deref()
     ));
     assert!(!crate::releases::baseline_first_install(&mut s, "0.3.0"));
-    let mut existing = Settings::default();
-    existing.onboarded = true;
+    let mut existing = Settings {
+        onboarded: true,
+        ..Settings::default()
+    };
     assert!(!crate::releases::baseline_first_install(
         &mut existing,
         "0.2.0"
@@ -487,7 +489,8 @@ fn notification_management_is_durable_and_does_not_resurface_tasks() {
     let t = d.save(t, "Snoozed", 100).unwrap();
     d.reconcile(201).unwrap();
     let id = d.notices().unwrap()[0].id.clone();
-    d.manage_notices("dismiss", &[id.clone()], 202).unwrap();
+    d.manage_notices("dismiss", std::slice::from_ref(&id), 202)
+        .unwrap();
     let mut d = Store::init(d.conn).unwrap();
     d.reconcile(300).unwrap();
     assert!(d.notices().unwrap().is_empty());
@@ -633,7 +636,7 @@ fn undo_restores_only_its_cancelled_queued_reminders() {
     d.reconcile(130).unwrap();
     let notices = d.notices().unwrap();
     let dismissed = notices[0].id.clone();
-    d.manage_notices("dismiss", &[dismissed.clone()], 131)
+    d.manage_notices("dismiss", std::slice::from_ref(&dismissed), 131)
         .unwrap();
     t.status = Status::Finished;
     let t = d.save(t, "Finished", 140).unwrap();

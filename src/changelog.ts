@@ -71,6 +71,74 @@ export interface Release {
 }
 export const releases: Release[] = [
   {
+    version: "3.3.0",
+    date: "2026-11-12",
+    title: "A more thoughtful beginning.",
+    subtitle: "A quieter setup, useful right-clicks, and a familiar new face.",
+    sections: [
+      {
+        heading: "NEW & NOTEWORTHY",
+        accent: "new",
+        entries: [
+          {
+            text: "A dedicated three-step onboarding flow helps you set up your profile, appearance, return preferences, and optional first task before opening the main interface.",
+          },
+          {
+            text: "Redo onboarding from Settings with confirmation, without resetting your tasks, history, or saved profile.",
+          },
+          {
+            text: "Right-click text fields for working Cut, Copy, Paste, Select All, Undo, and Redo actions, including task details and Quick Capture.",
+          },
+        ],
+      },
+      {
+        heading: "LOOKING SHARP",
+        accent: "sharp",
+        entries: [
+          {
+            text: "Task, navigation, and editing menus share icons, separators, shortcut labels, keyboard navigation, and brief opening and closing animations.",
+          },
+          {
+            text: "Menus follow your theme and remain readable over native Glass, with quieter fallbacks for accessibility preferences.",
+          },
+          {
+            text: "Stable onboarding follows your selected theme. The starry background and Nightly disclosure stay exclusive to Nightly builds.",
+          },
+          {
+            text: "Smoother onboarding transitions respect Animation Off and Windows reduced motion.",
+          },
+          {
+            text: "Original Stable and Nightly artwork now supplies the application, tray, installer, and uninstaller icons for each channel.",
+          },
+          {
+            text: "The repository has a new wordmark-led introduction, a real Stable screenshot, installation and task guides, and illustrated Stable GitHub release notes.",
+          },
+        ],
+      },
+      {
+        heading: "BUGS, BEGONE",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Context menus stay inside the window and remain clickable above task dialogs. Escape restores focus without closing the parent dialog or Quick Capture.",
+          },
+          {
+            text: "Rapid right-clicks no longer let an old closing menu dismiss the new one. Delayed clipboard reads cannot overwrite a field that changed while waiting.",
+          },
+          {
+            text: "Setup no longer exposes the main navigation or an apparent update check. Nightly disclosure waits until setup finishes.",
+          },
+          {
+            text: "Native task reminder clicks open the matching current task after an existing editor closes, and ignore tasks that have been deleted.",
+          },
+          {
+            text: "Finishing or rescheduling cancels stale queued reminders, including quiet-hours reminders. Undo restores only the pending reminders cancelled by that transition.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.2.1-nightly.20261112.5",
     date: "2026-11-12",
     title: "Just the sky.",

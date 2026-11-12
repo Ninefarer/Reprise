@@ -32,18 +32,22 @@ function contrast(a, b) {
   return (Math.max(l(a), l(b)) + 0.05) / (Math.min(l(a), l(b)) + 0.05);
 }
 describe("theme polish contrast", () => {
-  it("packages v3.2.0 consistently with locally bundled release notes", () => {
-    expect(JSON.parse(read("../package.json")).version).toBe("3.2.0");
+  it("packages v3.3.0 consistently with locally bundled release notes", () => {
+    expect(JSON.parse(read("../package.json")).version).toBe("3.3.0");
     expect(JSON.parse(read("../package-lock.json")).packages[""].version).toBe(
-      "3.2.0",
+      "3.3.0",
     );
     expect(JSON.parse(read("../src-tauri/tauri.conf.json")).version).toBe(
-      "3.2.0",
+      "3.3.0",
     );
     expect(
       read("../src-tauri/Cargo.toml").match(/version = "([^"]+)"/)[1],
-    ).toBe("3.2.0");
-    expect(releaseFor("3.2.0")?.sections.length).toBeGreaterThan(0);
+    ).toBe("3.3.0");
+    expect(read("../src-tauri/Cargo.lock")).toMatch(
+      /name = "reprise"\r?\nversion = "3\.3\.0"/,
+    );
+    expect(releaseFor("3.3.0")?.sections.length).toBeGreaterThan(0);
+    expect(releaseFor("3.2.0")).toBeTruthy();
     expect(releaseFor("0.2.0")).toBeTruthy();
   });
   it("gives only Quick Capture a borderless utility window and scoped dragging", () => {

@@ -1,38 +1,58 @@
-# Reprise
+﻿<p align="center">
+  <img src="assets/branding/reprise wordmark.png" width="360" alt="Reprise" />
+</p>
 
-Later should actually arrive. A local Windows task workspace using Tauri 2, Rust, React, TypeScript and SQLite.
+<p align="center"><strong>Later should actually arrive.</strong></p>
 
-## Development
+<p align="center">
+  <a href="https://github.com/Ninefarer/Reprise/releases/latest"><strong>Download for Windows</strong></a> ·
+  <a href="docs/GETTING-STARTED.md">Getting started</a> ·
+  <a href="https://github.com/Ninefarer/Reprise/releases">Release notes</a> ·
+  <a href="https://github.com/Ninefarer/Reprise/issues">Report an issue</a>
+</p>
 
-Install Node, stable Rust, Visual Studio C++ build tools and Windows WebView2. Run `npm ci`, then `npm run tauri dev`. `npm run tauri build` produces an NSIS installer. Run `cargo test --manifest-path src-tauri/Cargo.toml` for domain/storage tests and `npm run build` for the typed frontend build.
+Reprise is a Windows task manager for the things you intend to come back to. Capture an intention, make room when you need to, and return without losing your place.
 
-## Storage and scheduling
+![Reprise Stable in its dark theme, showing Home, task navigation, the quick-add field, and the pinned Notifications panel.](assets/screenshots/stable-home.png)
 
-The authoritative database is `reprise.sqlite` in Tauri's app data directory for `com.reprise.desktop`. WAL, foreign keys, transactions, schema versioning and optimistic task revision checks protect persisted changes. Resurfacing is queue membership independent of lifecycle. Snooze and settlement retain schedule and deadline. Waiting reminders retain Waiting status. A Rust worker reconciles events every 15 seconds, including after startup, sleep or clock changes. Durable event IDs prevent repeated history entries and reminders. Quiet hours defer native submissions; multiple pending notifications are grouped. Daily review uses the current local calendar date. Next-day settlement resolves DST gaps forward and folds to the earlier instant; an already stored wake instant stays fixed after timezone changes.
+## Make room. Keep your place.
 
-Closing hides the main window by default; the tray process continues scheduling. **Quit completely stops reminders until the next launch.** Missed events are reconciled on launch. Notifications have Pending/Submitted/Failed states; Submitted is not proof of display. A crash between OS submission and database acknowledgement can cause a repeated notification because Windows submission and SQLite cannot share a transaction.
+**Capture first.** Put a thought in Inbox without choosing a date or a priority. Quick Capture opens with **Ctrl+Shift+Space**, even when the main window is tucked away.
 
-## Current implementation boundaries
+**Pause on purpose.** Snooze something for a little later, or Settle it until tomorrow or 24 hours from now. Its schedule and deadline stay intact.
 
-This is an initial implementation, not yet a release satisfying the full requested specification. A user-provided screenshot confirms native Windows notification display. Notification activation has not been verified. Windows notification actions/activation routing, startup preference wiring, configurable shortcut registration, backup/restore/import/export, recurrence generation, subtasks/dependencies, calendar view, batch selection and notification history clearing remain unfinished. The currently registered shortcut is Ctrl+Shift+Space. Shortcut registration errors are reported in Settings diagnostics. The command palette supports Ctrl+K or Ctrl+Shift+P. Settings fields for unsupported integrations are not exposed as working controls.
+**Come back with a choice.** Returned tasks wait in Resurfaced. Start one, schedule it, pause it again, or let it go. A reminder never decides that you're working on something.
 
-## Windows acceptance checklist
+[How tasks return](docs/TASK-WORKFLOW.md) explains Settled, Snoozed, Waiting, and the review queue.
 
-Install the NSIS package before checking notifications: Tauri documents that Windows notifications require an installed app. Check a due reminder while visible and while hidden in the tray; confirm Focus/DND behavior and Windows permission settings. Confirm dismissal leaves Resurfaced untouched. Quit, let a reminder expire, then relaunch and check one reconciled queue entry. Test sleep/resume, clock changes and timezone changes. Verify single instance, capture shortcut, tray reopen and persistence after restart. Notification activation and action buttons are not implemented and must not be represented as passing.
+## Get Reprise
 
-API references: https://v2.tauri.app/plugin/notification/ Â· https://v2.tauri.app/plugin/global-shortcut/ Â· https://v2.tauri.app/plugin/autostart/
+Reprise runs on **Windows 11, x64**. No account is required, and your tasks are stored on your device.
 
+Download the `.exe` installer from the [latest Stable release](https://github.com/Ninefarer/Reprise/releases/latest), run it, and open Reprise. You do not need Node or Rust to use the app.
 
+The repository is currently private; downloads and issues require repository access.
 
-UI refinement details, file map and QA: [docs/UI-REFINEMENT.md](docs/UI-REFINEMENT.md).
+Want to help test upcoming changes? [Nightly builds](https://github.com/Ninefarer/Reprise/releases?q=nightly&expanded=true) are marked **Pre-release**. They install separately and keep their own task data. Stable is the everyday download; Nightly may have bugs or unfinished changes.
 
+[Installation and first run](docs/GETTING-STARTED.md) covers updates, running in the tray, and using both channels.
 
-Quality pass, file map and verification: [docs/QUALITY-PASS.md](docs/QUALITY-PASS.md).
+## A few things worth knowing
 
-Sidebar navigation refinement and verification: [docs/SIDEBAR-POLISH.md](docs/SIDEBAR-POLISH.md).
+- Core task management works offline. No cloud service is required.
+- Closing the window can leave Reprise running in the tray so reminders can return. **Quit Reprise** stops that background process.
+- Windows controls whether a notification appears. Reprise also keeps its own notification history.
+- Updates are currently installed manually; the signed in-app update feed is not connected.
 
-Visual System 2.0, component map and verification limits: [docs/VISUAL-SYSTEM.md](docs/VISUAL-SYSTEM.md).
+## Find your way around
 
-Manual update checks, notification actions and future repository setup: [docs/UPDATES.md](docs/UPDATES.md).
+- [Getting started](docs/GETTING-STARTED.md): install, capture a task, and find Settings.
+- [Task workflow](docs/TASK-WORKFLOW.md): choose what to do now and what to return to later.
+- [Full changelog](CHANGELOG.md): additions, changes, and fixes in Stable 3.3.0.
+- [All documentation](docs/README.md): user guides and the engineering records behind the app.
 
-Native Windows Clear/Acrylic Glass, implementation and verification limits: [docs/NATIVE-GLASS.md](docs/NATIVE-GLASS.md).
+Found something wrong? [Open an issue](https://github.com/Ninefarer/Reprise/issues) with what you expected, what happened, and your version. Keep private task details out of screenshots and reports.
+
+## Working on Reprise
+
+Reprise uses Tauri 2, Rust, React, TypeScript, and SQLite. See [Building Reprise](docs/BUILDING.md) for prerequisites, local builds, and checks, or [Architecture and reliability](docs/ARCHITECTURE.md) for storage and scheduling details.

@@ -1,3 +1,4 @@
+import { TextContextMenus } from "./TextContextMenu";
 import { isNightly, NightlyDisclosure } from "./Nightly";
 import { Onboarding, RedoOnboardingDialog } from "./Onboarding";
 import { QuickCapture } from "./QuickCapture";
@@ -49,6 +50,7 @@ import "./accents.css";
 import "./motion.css";
 import "./desktop-glass.css";
 import "./density.css";
+import "./context-menu.css";
 import { taskCategory, reviewCategory } from "./taskColors";
 import type { UpdateActivity } from "./updates";
 const captureWindowMode = new URLSearchParams(location.search).has("capture");
@@ -68,7 +70,7 @@ const descriptions: Partial<Record<View, string>> = {
   "Notification History": "Waitin' for ya",
   Settings: "Make Reprise fit your rhythm.",
 };
-export function App({
+function Application({
   captureMode = captureWindowMode,
 }: { captureMode?: boolean } = {}) {
   const quick = captureMode;
@@ -1212,6 +1214,7 @@ export function App({
       )}
       {context && data.tasks.some((t) => t.id === context.task.id) && (
         <TaskMenu
+          request={context}
           task={data.tasks.find((t) => t.id === context.task.id)!}
           x={context.x}
           y={context.y}
@@ -1287,5 +1290,14 @@ export function App({
         />
       )}
     </div>
+  );
+}
+
+export function App(props: { captureMode?: boolean } = {}) {
+  return (
+    <>
+      <Application {...props} />
+      <TextContextMenus />
+    </>
   );
 }

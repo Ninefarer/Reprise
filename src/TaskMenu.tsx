@@ -17,12 +17,14 @@ export const actionCategory: Partial<Record<ActionId, TaskCategory>> = {
 };
 export function TaskMenu({
   task,
+  request,
   x,
   y,
   onClose,
   onAction,
 }: {
   task: Task;
+  request?: object;
   x: number;
   y: number;
   onClose: () => void;
@@ -31,12 +33,15 @@ export function TaskMenu({
   return (
     <PopupMenu
       label={`Actions for ${task.title}`}
+      request={request}
       x={x}
       y={y}
       onClose={onClose}
       actions={taskActions(task).map((a) => ({
         ...a,
         danger: a.id === "delete",
+        separatorBefore:
+          a.id === "edit" || a.id === "history" || a.id === "delete",
         category: actionCategory[a.id],
         onSelect: () => onAction(a.id),
       }))}

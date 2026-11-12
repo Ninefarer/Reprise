@@ -28,6 +28,30 @@ export function Onboarding({
   onCancel: () => void;
 }) {
   const [step, setStep] = useState(0);
+  const [leaving, setLeaving] = useState(false);
+  const stepTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (stepTimer.current) clearTimeout(stepTimer.current);
+    },
+    [],
+  );
+  function changeStep(next: number) {
+    if (leaving) return;
+    const reduced =
+      document.documentElement.dataset.motion === "off" ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced || document.visibilityState === "hidden") {
+      setStep(next);
+      return;
+    }
+    setLeaving(true);
+    stepTimer.current = setTimeout(() => {
+      setStep(next);
+      setLeaving(false);
+      stepTimer.current = null;
+    }, 140);
+  }
   const [draft, setDraft] = useState(() => ({
     name: settings.name,
     workspace: settings.workspace,
@@ -68,15 +92,15 @@ export function Onboarding({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (step < 2) setStep(step + 1);
+            if (step < 2) changeStep(step + 1);
             else void finish();
           }}
           aria-busy={busy}
         >
-          <fieldset disabled={busy} className="setup-fields">
+          <fieldset disabled={busy || leaving} className="setup-fields">
             <section
               key={step}
-              className="setup-step"
+              className={`setup-step${leaving ? " setup-leaving" : ""}`}
               aria-labelledby="setup-title"
             >
               <h1 ref={heading} tabIndex={-1} id="setup-title">
@@ -266,7 +290,7 @@ export function Onboarding({
               </button>
               <div>
                 {step > 0 && (
-                  <button type="button" onClick={() => setStep(step - 1)}>
+                  <button type="button" onClick={() => changeStep(step - 1)}>
                     Back
                   </button>
                 )}
