@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Settings, VisualPreferences } from "./model";
 import { AvatarEditor } from "./Profile";
-import { NightlyBadge } from "./Nightly";
 import "./onboarding.css";
 
 /** Setup edits preferences only. Replaying it never resets the database or onboarded flag. */
@@ -63,11 +62,7 @@ export function Onboarding({
     <main className={`setup-screen${nightlyVersion ? " setup-nightly" : ""}`}>
       <div className="setup-shell">
         <header className="setup-progress">
-          {nightlyVersion ? (
-            <NightlyBadge version={nightlyVersion} />
-          ) : (
-            <span>Reprise</span>
-          )}
+          {!nightlyVersion && <span>Reprise</span>}
           <span aria-label={`Step ${step + 1} of 3`}>{step + 1} / 3</span>
         </header>
         <form

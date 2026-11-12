@@ -25,6 +25,9 @@
   margin: 0;
   min-width: 0;
 }
+.setup-progress > span:last-child {
+  margin-inline-start: auto;
+}
 .setup-step {
   min-height: 440px;
   animation: setup-arrive var(--motion-modal) var(--motion-ease) both;

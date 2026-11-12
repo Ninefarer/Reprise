@@ -155,6 +155,7 @@ describe("Nightly channel", () => {
       name: "A little space for your intentions.",
     });
     expect(screen.queryByRole("navigation")).toBeNull();
+    expect(screen.queryByRole("note", { name: /Nightly build/ })).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Check for updates" }),

@@ -71,6 +71,22 @@ export interface Release {
 }
 export const releases: Release[] = [
   {
+    version: "3.2.1-nightly.20261112.5",
+    date: "2026-11-12",
+    title: "Just the sky.",
+    sections: [
+      {
+        heading: "THE LITTLE THINGS",
+        accent: "little",
+        entries: [
+          {
+            text: "Removed the Nightly badge from onboarding. The night sky and step indicator remain; the main sidebar still identifies Nightly builds.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.2.1-nightly.20261112.4",
     date: "2026-11-12",
     title: "A quieter beginning.",
