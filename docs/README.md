@@ -45,5 +45,6 @@ These documents record implementation passes and checks performed at that time. 
 
 - [3.1 release record](RELEASE-3.1.md)
 - [3.2.0 maintenance record](RELEASE-3.2.0.md)
+- [3.3.0 release record](RELEASE-3.3.0.md)
 - [Develop and early Nightly work](DEVELOPMENT.md)
 - [Implementation progress](PROGRESS.md)
