@@ -5,6 +5,8 @@ mod domain;
 mod notifications;
 #[cfg(test)]
 mod performance_baseline;
+#[cfg(feature = "performance-qa")]
+mod performance_probe;
 mod profile;
 mod releases;
 mod scheduler;
@@ -99,6 +101,8 @@ fn snapshot(
     db: tauri::State<Db>,
     app: tauri::AppHandle,
     measure: Option<bool>,
+    window: tauri::WebviewWindow,
+    probe: Option<String>,
 ) -> Result<serde_json::Value, String> {
     let started = measure.unwrap_or(false).then(std::time::Instant::now);
     let clock = || {
@@ -122,6 +126,15 @@ fn snapshot(
     if started.is_some() {
         result["performance"] = serde_json::json!({"mutex_wait_ms":locked,"tasks_ms":tasks_done-locked,"settings_ms":settings_done-tasks_done,"notifications_ms":notices_done-settings_done,"avatar_system_ms":visuals_done-notices_done,"snapshot_total_ms":clock()});
     }
+    #[cfg(feature = "performance-qa")]
+    {
+        drop(d);
+        if started.is_some() {
+            performance_probe::record(&app, &window, probe.as_deref(), &result);
+        }
+    }
+    #[cfg(not(feature = "performance-qa"))]
+    let _ = (window, probe);
     Ok(result)
 }
 #[tauri::command]
@@ -279,7 +292,11 @@ fn main() {
                     .build()?;
             }
             use tauri_plugin_global_shortcut::GlobalShortcutExt;
-            if let Err(e) = app.global_shortcut().register("Ctrl+Shift+Space") {
+            #[cfg(feature = "performance-qa")]
+            let capture_shortcut = performance_probe::capture_shortcut(&app.config().identifier);
+            #[cfg(not(feature = "performance-qa"))]
+            let capture_shortcut = "Ctrl+Shift+Space";
+            if let Err(e) = app.global_shortcut().register(capture_shortcut) {
                 app.state::<diagnostics::RuntimeHealth>()
                     .lock()
                     .unwrap()

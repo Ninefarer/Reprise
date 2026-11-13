@@ -292,7 +292,10 @@ function Application({
     try {
       const next = await (started === null
         ? invoke<Snapshot>("snapshot")
-        : invoke<Snapshot>("snapshot", { measure: true }));
+        : invoke<Snapshot>("snapshot", {
+            measure: true,
+            probe: `${reason}:${document.visibilityState}`,
+          }));
       traceSnapshot(`snapshot.${reason}`, started, next);
       await Promise.all(
         next.tasks

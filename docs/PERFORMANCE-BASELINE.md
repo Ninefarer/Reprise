@@ -33,3 +33,5 @@ These are backend microbenchmarks, not startup, IPC, WebView decoding, React ren
 3. **Large-list UI work.** Record search and render latency with disposable representative profiles before changing memoization, filtering or list rendering. The backend measurements cannot justify virtualization on their own.
 
 The agreed process remains measurement, ranked review, then behavior changes. This commit adds the reproducible measurement only; refresh frequency, lifecycle semantics and scheduling are unchanged.
+
+Actual visible/hidden/minimized window observations are now recorded in [the refresh activity investigation](qa/refresh-activity-2026-11-12.md), with a native-window-aware suspension proposed for review.

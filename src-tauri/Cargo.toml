@@ -4,6 +4,7 @@ version = "3.3.3"
 edition = "2021"
 [features]
 updater-e2e = []
+performance-qa = []
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 [dependencies]
