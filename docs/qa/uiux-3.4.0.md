@@ -166,6 +166,22 @@ Remaining acceptance scenarios:
 - Actual visual sign-off, native interactions and installed Nightly evaluation
   are incomplete. Issue #2 stays open; no release publication is authorized.
 
+## Settings tab presentation follow-up
+
+Local source `cf2fdc8` replaces the button-style Settings navigation with one
+borderless tab row. A shared accent underline measures the selected label and
+transitions between labels, using the existing motion tokens and reduced-motion
+overrides. Muted inactive labels, subtle hover text, stronger active text and
+inset keyboard focus remain accessible. A horizontal scroll container replaces
+wrapping; tab roles, panel relationships, roving focus and Left/Right/Home/End
+handling are preserved. Settings contents and save behavior are unchanged.
+
+The full frontend suite passed (199 tests), formatting/diff checks passed and the
+optimized isolated Windows QA build succeeded. Per the owner's request, the QA
+app is opened for their visual review; no agent visual acceptance is claimed for
+this presentation follow-up. The ordinary Nightly hash above identifies the
+earlier `4c95ab9` build; the current target executable is the isolated QA build.
+
 ## GitHub App reporting
 
 Automation alone was promoted through [PR #3](https://github.com/Ninefarer/Reprise/pull/3)
