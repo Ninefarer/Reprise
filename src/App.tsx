@@ -31,7 +31,8 @@ import {
 } from "./model";
 import { Icon } from "./navigation";
 import { TaskDialog, type TaskIntent } from "./TaskDialog";
-import { Preferences } from "./Preferences";
+import { Preferences, type SettingsEditor } from "./Preferences";
+import { UnsavedSettingsDialog } from "./UnsavedSettingsDialog";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { Sidebar } from "./Sidebar";
 import { NotificationSidebar } from "./NotificationSidebar";
@@ -102,6 +103,14 @@ function Application({
     [notificationsOpen, setNotificationsOpen] = useState(false);
   const [replayingSetup, setReplayingSetup] = useState(false);
   const [confirmSetup, setConfirmSetup] = useState(false);
+  const settingsEditor = useRef<SettingsEditor | null>(null);
+  const registerSettingsEditor = useCallback(
+    (editor: SettingsEditor | null) => {
+      settingsEditor.current = editor;
+    },
+    [],
+  );
+  const [settingsLeave, setSettingsLeave] = useState<(() => void) | null>(null);
   const setupActive = !data?.settings.onboarded || replayingSetup;
   const setupCaptured = useRef(false);
   const [nightlySeen, setNightlySeen] = useState(false);
@@ -635,6 +644,14 @@ function Application({
   async function visual(patch: Partial<VisualPreferences>) {
     await run(() => invoke("visual_preferences", { patch }));
   }
+  function afterSettings(action: () => void) {
+    if (
+      view === "Settings" &&
+      (settingsEditor.current?.dirty || settingsEditor.current?.busy)
+    )
+      setSettingsLeave(() => action);
+    else action();
+  }
   function navigate(v: View, anchor?: string) {
     if (v === "Notification History") {
       setNotificationsOpen(true);
@@ -643,12 +660,18 @@ function Application({
       );
       return;
     }
-    setView(v);
-    setQuery("");
-    if (anchor)
-      requestAnimationFrame(() =>
-        document.getElementById(anchor)?.scrollIntoView?.({ block: "center" }),
-      );
+    const go = () => {
+      setView(v);
+      setQuery("");
+      if (anchor)
+        requestAnimationFrame(() =>
+          document
+            .getElementById(anchor)
+            ?.scrollIntoView?.({ block: "center" }),
+        );
+    };
+    if (v === "Settings") go();
+    else afterSettings(go);
   }
   async function special(t: Task, action: string) {
     return run(async () => {
@@ -1007,6 +1030,11 @@ function Application({
         view={view}
         count={count}
         onNavigate={navigate}
+        onQuit={() =>
+          afterSettings(() => {
+            void run(() => invoke("quit_app"));
+          })
+        }
         onPatch={async (p) => {
           await run(() =>
             invoke("sidebar_preferences", {
@@ -1056,7 +1084,10 @@ function Application({
               settings={settings}
               avatar={data.avatar}
               onRefresh={load}
-              onRedoOnboarding={() => setConfirmSetup(true)}
+              onRedoOnboarding={() =>
+                afterSettings(() => setConfirmSetup(true))
+              }
+              onEditor={registerSettingsEditor}
               onSave={preferences}
               onVisual={visual}
               system={data.system_visuals}
@@ -1162,6 +1193,24 @@ function Application({
           )}
         </>
       </main>
+      {settingsLeave && (
+        <UnsavedSettingsDialog
+          onStay={() => setSettingsLeave(null)}
+          onDiscard={() => {
+            settingsEditor.current?.discard();
+            const go = settingsLeave;
+            setSettingsLeave(null);
+            go();
+          }}
+          onSave={async () => {
+            if (!(await settingsEditor.current?.save())) return false;
+            const go = settingsLeave;
+            setSettingsLeave(null);
+            go();
+            return true;
+          }}
+        />
+      )}
       {confirmSetup && (
         <RedoOnboardingDialog
           onCancel={() => setConfirmSetup(false)}
@@ -1219,7 +1268,7 @@ function Application({
           onManage={(action, ids) =>
             run(() => invoke("manage_notifications", { action, ids }))
           }
-          onUpdate={installUpdate}
+          onUpdate={async (id) => afterSettings(() => void installUpdate(id))}
           updateActivity={updateActivity}
         />
       )}

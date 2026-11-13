@@ -1,5 +1,13 @@
 # Reprise changelog
 
+## 3.3.3 - November 12, 2026 - Hotfix
+
+### Fixed
+
+- Unsaved Settings drafts now prompt Save, Discard, or Keep editing before navigation, replaying setup, quitting from the profile menu, or installing an update. Failed saves keep the draft and pending action open.
+- Settings show a sticky save bar and distinguish immediately saved appearance and picture changes from profile and reminder drafts.
+- Saved tasks and persisted preferences were unaffected by the original issue. Updater signing, channels, task lifecycle and reminder schedules remain unchanged.
+
 ## 3.3.2 ? November 12, 2026
 
 ### Added

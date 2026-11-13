@@ -1,9 +1,29 @@
 import { categoryLabel, reminderCategories } from "./notifications";
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Settings, Snapshot, VisualPreferences } from "./model";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { AvatarEditor } from "./Profile";
 import { Diagnostics, TestNotification } from "./Diagnostics";
+export interface SettingsEditor {
+  dirty: boolean;
+  busy: boolean;
+  save: () => Promise<boolean>;
+  discard: () => void;
+}
+const editableKeys = [
+  "name",
+  "workspace",
+  "settlement_mode",
+  "return_time",
+  "review_time",
+  "daily_review",
+  "quiet_start",
+  "quiet_end",
+  "notifications",
+  "categories",
+  "close_to_tray",
+  "command_shortcut",
+] as const;
 export function Preferences({
   settings,
   onSave,
@@ -17,6 +37,7 @@ export function Preferences({
   onCheckUpdates,
   checkingUpdates,
   updateCheckMessage,
+  onEditor,
 }: {
   settings: Settings;
   onRedoOnboarding: () => void;
@@ -30,23 +51,70 @@ export function Preferences({
   onCheckUpdates: () => Promise<void>;
   checkingUpdates: boolean;
   updateCheckMessage?: string;
+  onEditor?: (editor: SettingsEditor | null) => void;
 }) {
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [draft, setDraft] = useState(settings),
     [saved, setSaved] = useState(false),
     [busy, setBusy] = useState(false);
+  const [baseline, setBaseline] = useState(settings);
+  const [saveError, setSaveError] = useState("");
+  const form = useRef<HTMLFormElement>(null);
+  const submitting = useRef(false);
+  const dirty = editableKeys.some(
+    (k) => JSON.stringify(draft[k]) !== JSON.stringify(baseline[k]),
+  );
+  async function save() {
+    if (submitting.current || !form.current?.reportValidity()) return false;
+    submitting.current = true;
+    setBusy(true);
+    setSaved(false);
+    setSaveError("");
+    const submitted = draft;
+    try {
+      const ok = await onSave(submitted);
+      if (ok) {
+        setBaseline(submitted);
+        setSaved(true);
+      }
+      return ok;
+    } catch (error) {
+      setSaveError(String(error));
+      return false;
+    } finally {
+      submitting.current = false;
+      setBusy(false);
+    }
+  }
+  function discard() {
+    setDraft(settings);
+    setBaseline(settings);
+    setSaved(false);
+  }
+  useLayoutEffect(() => {
+    onEditor?.({ dirty, busy, save, discard });
+  });
+  useEffect(() => () => onEditor?.(null), [onEditor]);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => {
     setSaved(false);
     setDraft((d) => ({ ...d, [k]: v }));
   };
   return (
     <form
+      ref={form}
       className="preferences"
       onSubmit={async (e) => {
         e.preventDefault();
-        setBusy(true);
-        setSaved(await onSave(draft));
-        setBusy(false);
+        await save();
       }}
     >
       <section className="settings-section" id="profile-section">
@@ -79,6 +147,10 @@ export function Preferences({
         system={system}
         onChange={onVisual}
       />
+      <p className="hint">
+        Appearance and pictures save immediately. Use Save preferences for
+        profile and reminder changes.
+      </p>
       <section className="settings-section">
         <h2>Returning to your intentions</h2>
         <div className="fields">
@@ -201,11 +273,25 @@ export function Preferences({
           actionable status; older tasks without one return to Inbox.
         </p>
       </section>
-      <div className="save-bar">
+      <div className="save-bar settings-save-bar">
         <button className="primary" disabled={busy}>
           Save preferences
         </button>
-        <span role="status">{saved ? "Preferences saved." : ""}</span>
+        {dirty && (
+          <button type="button" disabled={busy} onClick={discard}>
+            Discard changes
+          </button>
+        )}
+        <span role="status">
+          {busy
+            ? "Saving…"
+            : dirty
+              ? "Unsaved changes"
+              : saved
+                ? "Preferences saved."
+                : "No unsaved changes"}
+        </span>
+        {saveError && <span role="alert">{saveError}</span>}
       </div>
       <details
         className="settings-section"

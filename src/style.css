@@ -673,6 +673,16 @@ label > textarea {
   color: var(--accent);
   padding: 8px 0;
 }
+.settings-save-bar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 2;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  flex-wrap: wrap;
+}
 .task-dialog {
   width: 610px;
   max-width: calc(100vw - 40px);

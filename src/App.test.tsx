@@ -142,6 +142,88 @@ async function openSettings(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByLabelText(/Profile menu for/));
   await user.click(await screen.findByRole("menuitem", { name: "Settings" }));
 }
+describe("Settings draft protection", () => {
+  it("keeps edits when staying and discards only after an explicit choice", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.clear(screen.getByLabelText("Display name"));
+    await user.type(screen.getByLabelText("Display name"), "Unsaved name");
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Home" }));
+    let dialog = screen.getByRole("dialog", {
+      name: "Save your Settings changes?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Keep editing" }),
+    );
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Unsaved name");
+    await user.click(screen.getByRole("button", { name: "Home" }));
+    dialog = screen.getByRole("dialog", {
+      name: "Save your Settings changes?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Discard changes" }),
+    );
+    expect(data.settings.name).toBe("Test");
+    await openSettings(user);
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Test");
+  });
+  it("saves before completing the requested navigation", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.clear(screen.getByLabelText("Display name"));
+    await user.type(screen.getByLabelText("Display name"), "Saved name");
+    await user.click(screen.getByRole("button", { name: "Home" }));
+    const dialog = screen.getByRole("dialog", {
+      name: "Save your Settings changes?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Save and continue" }),
+    );
+    await screen.findByLabelText(/Profile menu for Saved name/);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByLabelText("Display name")).toBeNull();
+  });
+  it("retains the draft and navigation prompt if saving fails", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    const original = mocks.invoke.getMockImplementation()!;
+    mocks.invoke.mockImplementation(async (cmd, args) => {
+      if (cmd === "save_settings") throw Error("Storage unavailable");
+      return original(cmd, args);
+    });
+    await user.type(screen.getByLabelText("Display name"), " edited");
+    await user.click(screen.getByRole("button", { name: "Home" }));
+    const dialog = screen.getByRole("dialog", {
+      name: "Save your Settings changes?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Save and continue" }),
+    );
+    await within(dialog).findByRole("alert");
+    expect(data.settings.name).toBe("Test");
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Test edited");
+  });
+  it("does not call appearance-only changes unsaved", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.selectOptions(screen.getByLabelText("Theme"), "pitch-black");
+    await user.click(screen.getByRole("button", { name: "Home" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(data.settings.theme_family).toBe("pitch-black");
+  });
+});
+
 it.each([
   [true, false, 1],
   [false, false, 0],
@@ -1570,6 +1652,56 @@ describe("right notification panel", () => {
       expect(data.notifications[0].submitted_at).toBeNull();
     },
   );
+  it("protects unsaved Settings before restarting for an update", async () => {
+    data.notifications = [
+      {
+        id: "update:available:3.4.0",
+        task_id: null,
+        category: "Updates",
+        title: "Reprise v3.4.0 is available",
+        message: "Click to update",
+        created_at: 100,
+        scheduled_at: 100,
+        submitted_at: null,
+        state: "UpdateAvailable",
+        read: false,
+      },
+    ];
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.type(screen.getByLabelText("Display name"), " edited");
+    await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
+    const update = await screen.findByRole("button", {
+      name: "Update Reprise to v3.4.0",
+    });
+    await user.click(update);
+    let dialog = await screen.findByRole("dialog", {
+      name: "Save your Settings changes?",
+    });
+    expect(
+      mocks.invoke.mock.calls.some(([cmd]) => cmd === "install_update"),
+    ).toBe(false);
+    await user.click(
+      within(dialog).getByRole("button", { name: "Keep editing" }),
+    );
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Test edited");
+    await user.click(update);
+    dialog = await screen.findByRole("dialog", {
+      name: "Save your Settings changes?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Save and continue" }),
+    );
+    await waitFor(() =>
+      expect(mocks.invoke).toHaveBeenCalledWith("install_update", {
+        noticeId: "update:available:3.4.0",
+      }),
+    );
+    expect(data.settings.name).toBe("Test edited");
+  });
   it("installs from the update notification and exposes download errors for retry", async () => {
     let rejectInstall: (error: Error) => void = () => {};
     const original = mocks.invoke.getMockImplementation()!;
