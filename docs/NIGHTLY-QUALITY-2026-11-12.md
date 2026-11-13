@@ -4,7 +4,7 @@
 
 The task editor submitted the original task from its Do now, Settle and Finish buttons, discarding unsaved fields. Stable 3.3.1 fixes this with draft-based submission, revision checks and failure retention; Nightly includes the fix.
 
-Settings formerly let users leave edited profile/reminder fields without a warning. The editor now tracks those fields against its saved baseline and shares one Save/Discard/Keep editing guard across app navigation, setup replay and profile-menu Quit. Immediately persisted appearance/pictures do not become pending edits. Failed saves retain the editor and prompt. Native tray Quit and OS shutdown are unchanged.
+Settings formerly let users leave edited profile/reminder fields without a warning. The editor now tracks those fields against its saved baseline and shares one Save/Discard/Keep editing guard across app navigation, setup replay and profile-menu Quit and update installation. Immediately persisted appearance/pictures do not become pending edits. Failed saves retain the editor and prompt. Native tray Quit and OS shutdown are unchanged.
 
 Task dialogs now have accessible names; the command palette announces result counts. User-facing copy is shorter and current public-repository guides no longer claim repository access is required. Historical release text and the owner's personal message were preserved.
 
@@ -26,6 +26,6 @@ Explicit per-window `?perf=1` instrumentation now stores at most 256 local in-me
 
 ## Checks
 
-Final local frontend suite: 171 passed. Rust suite: 49 passed, one opt-in real-toast probe ignored. TypeScript/Vite build, Rust formatting, strict Clippy and both signed-artifact verifier checks passed. The release workflow repeats the final checks before signing and publishing.
+Final local frontend suite: 172 passed. Rust suite: 49 passed, one opt-in real-toast probe ignored. TypeScript/Vite build, Rust formatting, strict Clippy and both signed-artifact verifier checks passed. The release workflow repeats the final checks before signing and publishing.
 
 Not freshly qualified: physical trackpad gestures, multi-monitor DPI, the complete theme/accessibility matrix, native Glass composition over changing backgrounds and long-session performance. These are QA gaps, not confirmed regressions. Existing native composition and task lifecycle code were preserved.

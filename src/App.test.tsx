@@ -1701,6 +1701,56 @@ describe("right notification panel", () => {
       expect(data.notifications[0].submitted_at).toBeNull();
     },
   );
+  it("protects unsaved Settings before restarting for an update", async () => {
+    data.notifications = [
+      {
+        id: "update:available:3.4.0",
+        task_id: null,
+        category: "Updates",
+        title: "Reprise v3.4.0 is available",
+        message: "Click to update",
+        created_at: 100,
+        scheduled_at: 100,
+        submitted_at: null,
+        state: "UpdateAvailable",
+        read: false,
+      },
+    ];
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.type(screen.getByLabelText("Display name"), " edited");
+    await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
+    const update = await screen.findByRole("button", {
+      name: "Update Reprise to v3.4.0",
+    });
+    await user.click(update);
+    let dialog = await screen.findByRole("dialog", {
+      name: "Save your Settings changes?",
+    });
+    expect(
+      mocks.invoke.mock.calls.some(([cmd]) => cmd === "install_update"),
+    ).toBe(false);
+    await user.click(
+      within(dialog).getByRole("button", { name: "Keep editing" }),
+    );
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Test edited");
+    await user.click(update);
+    dialog = await screen.findByRole("dialog", {
+      name: "Save your Settings changes?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Save and continue" }),
+    );
+    await waitFor(() =>
+      expect(mocks.invoke).toHaveBeenCalledWith("install_update", {
+        noticeId: "update:available:3.4.0",
+      }),
+    );
+    expect(data.settings.name).toBe("Test edited");
+  });
   it("installs from the update notification and exposes download errors for retry", async () => {
     let rejectInstall: (error: Error) => void = () => {};
     const original = mocks.invoke.getMockImplementation()!;

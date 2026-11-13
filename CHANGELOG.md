@@ -2,7 +2,7 @@
 
 ## 3.3.3-nightly.20261112.1 ? November 12, 2026
 
-- Guard unsaved profile and reminder drafts, preserve failed saves, and distinguish immediately saved appearance changes.
+- Guard unsaved profile and reminder drafts before navigation, setup replay, profile-menu Quit and update installation; preserve failed saves and distinguish immediately saved appearance changes.
 - Include the task-editor data-loss hotfix and signed, channel-specific updater bootstrap.
 - Handle missing Windows notification permission records without treating them as an explicit block.
 - Keep diagnostic notification testing and technical history controls coherent on Nightly.

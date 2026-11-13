@@ -1298,7 +1298,7 @@ function Application({
           onManage={(action, ids) =>
             run(() => invoke("manage_notifications", { action, ids }))
           }
-          onUpdate={installUpdate}
+          onUpdate={async (id) => afterSettings(() => void installUpdate(id))}
           updateActivity={updateActivity}
         />
       )}

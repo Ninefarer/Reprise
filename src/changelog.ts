@@ -80,7 +80,7 @@ export const releases: Release[] = [
         accent: "fixes",
         entries: [
           {
-            text: "Settings warns before leaving unsaved profile or reminder changes. Save, discard, or keep editing; a failed save keeps your draft.",
+            text: "Settings warns before leaving unsaved profile or reminder changes, including when installing an update. Save, discard, or keep editing; a failed save keeps your draft.",
           },
           {
             text: "Task-detail actions keep edited fields when changing status, including the Stable 3.3.1 hotfix.",
