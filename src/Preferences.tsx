@@ -70,6 +70,28 @@ export function Preferences({
   const [baseline, setBaseline] = useState(settings);
   const [saveError, setSaveError] = useState("");
   const form = useRef<HTMLFormElement>(null);
+  const tabs = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const bar = tabs.current!;
+    const measure = () => {
+      const label = bar.querySelector<HTMLElement>(
+        '[aria-selected="true"] span',
+      );
+      if (!label) return;
+      const bounds = label.getBoundingClientRect();
+      bar.style.setProperty(
+        "--tab-left",
+        `${bounds.left - bar.getBoundingClientRect().left}px`,
+      );
+      bar.style.setProperty("--tab-width", `${bounds.width}px`);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(bar);
+    bar.querySelectorAll("button").forEach((tab) => observer.observe(tab));
+    return () => observer.disconnect();
+  }, [section]);
   const submitting = useRef(false);
   const dirty = editableKeys.some(
     (k) => JSON.stringify(draft[k]) !== JSON.stringify(baseline[k]),
@@ -165,45 +187,49 @@ export function Preferences({
         await save(sections[section]);
       }}
     >
-      <div
-        role="tablist"
-        aria-label="Settings sections"
-        className="settings-tabs"
-      >
-        {(Object.keys(sections) as Section[]).map((name, index, names) => (
-          <button
-            type="button"
-            role="tab"
-            key={name}
-            id={`settings-tab-${name}`}
-            aria-controls={`settings-panel-${name}`}
-            aria-selected={section === name}
-            tabIndex={section === name ? 0 : -1}
-            onClick={() => setSection(name)}
-            onKeyDown={(event) => {
-              if (
-                ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
-              ) {
-                event.preventDefault();
-                const next =
-                  names[
-                    event.key === "Home"
-                      ? 0
-                      : event.key === "End"
-                        ? names.length - 1
-                        : (index +
-                            (event.key === "ArrowRight" ? 1 : -1) +
-                            names.length) %
-                          names.length
-                  ];
-                setSection(next);
-                document.getElementById(`settings-tab-${next}`)?.focus();
-              }
-            }}
-          >
-            {name}
-          </button>
-        ))}
+      <div className="settings-tabs-scroll">
+        <div
+          ref={tabs}
+          role="tablist"
+          aria-label="Settings sections"
+          aria-orientation="horizontal"
+          className="settings-tabs"
+        >
+          {(Object.keys(sections) as Section[]).map((name, index, names) => (
+            <button
+              type="button"
+              role="tab"
+              key={name}
+              id={`settings-tab-${name}`}
+              aria-controls={`settings-panel-${name}`}
+              aria-selected={section === name}
+              tabIndex={section === name ? 0 : -1}
+              onClick={() => setSection(name)}
+              onKeyDown={(event) => {
+                if (
+                  ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
+                ) {
+                  event.preventDefault();
+                  const next =
+                    names[
+                      event.key === "Home"
+                        ? 0
+                        : event.key === "End"
+                          ? names.length - 1
+                          : (index +
+                              (event.key === "ArrowRight" ? 1 : -1) +
+                              names.length) %
+                            names.length
+                    ];
+                  setSection(next);
+                  document.getElementById(`settings-tab-${next}`)?.focus();
+                }
+              }}
+            >
+              <span>{name}</span>
+            </button>
+          ))}
+        </div>
       </div>
       <div
         role="tabpanel"

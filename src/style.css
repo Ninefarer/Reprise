@@ -1605,17 +1605,58 @@ legend {
   }
 }
 
-.settings-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
+.settings-tabs-scroll {
+  overflow-x: auto;
+  scrollbar-width: thin;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 6px;
   margin-bottom: 12px;
+}
+.settings-tabs {
+  position: relative;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 16px;
+  width: max-content;
+  min-width: 100%;
+}
+.settings-tabs::after {
+  content: "";
+  position: absolute;
+  inset: auto auto 0 0;
+  width: var(--tab-width, 0px);
+  border-bottom: 2px solid var(--accent);
+  transform: translateX(var(--tab-left, 0px));
+  transition:
+    transform var(--motion-menu) var(--motion-ease),
+    width var(--motion-menu) var(--motion-ease);
+  pointer-events: none;
+}
+.settings-tabs button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 9px 4px 11px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.settings-tabs button:hover {
+  background: transparent;
+  color: var(--text);
 }
 .settings-tabs [aria-selected="true"] {
   color: var(--accent);
-  background: var(--hover);
+  font-weight: 600;
+}
+.settings-tabs button:focus-visible {
+  outline-offset: -2px;
+}
+.settings-tabs button:active {
+  translate: none;
 }
 .setup-row {
   display: flex;
@@ -1747,10 +1788,4 @@ body {
   .fields {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-
-.settings-tabs button {
-  padding: 5px 9px;
-  font-size: 12px;
-  min-height: 28px;
 }
