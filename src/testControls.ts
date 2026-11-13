@@ -5,6 +5,11 @@ export async function selectOption(
   control: HTMLElement,
   value: string,
 ) {
+  const panel = control.closest<HTMLElement>("[data-settings-panel]");
+  if (panel?.hidden)
+    await user.click(
+      screen.getByRole("tab", { name: panel.dataset.settingsPanel }),
+    );
   await user.click(control);
   const option = screen
     .getAllByRole("option")

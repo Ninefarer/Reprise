@@ -126,6 +126,10 @@ beforeEach(() => {
       data.release.should_show = false;
       return;
     }
+    if (cmd === "save_preference_patch") {
+      Object.assign(data.settings, args.patch);
+      return;
+    }
     if (cmd === "save_settings") {
       data.settings = args.settings;
       return;
@@ -371,6 +375,31 @@ describe("native-window snapshot suspension", () => {
   });
 });
 describe("Settings draft protection", () => {
+  it("saves one section without discarding drafts or overwriting independent settings", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.type(screen.getByLabelText("Display name"), " changed");
+    await user.click(screen.getByRole("tab", { name: "Reminders" }));
+    fireEvent.change(screen.getByLabelText("Daily review time"), {
+      target: { value: "10:31" },
+    });
+    await user.click(screen.getByRole("tab", { name: "Profile" }));
+    data.settings.sidebar_width = 310;
+    await user.click(screen.getByRole("button", { name: "Save preferences" }));
+    await waitFor(() => expect(data.settings.name).toBe("Test changed"));
+    expect(mocks.invoke).toHaveBeenCalledWith("save_preference_patch", {
+      patch: { name: "Test changed" },
+    });
+    expect(data.settings.review_time).toBe("09:00");
+    expect(data.settings.sidebar_width).toBe(310);
+    await user.click(screen.getByRole("tab", { name: "Reminders" }));
+    expect(
+      (screen.getByLabelText("Daily review time") as HTMLInputElement).value,
+    ).toBe("10:31");
+    await user.click(screen.getByRole("button", { name: "Save preferences" }));
+    await waitFor(() => expect(data.settings.review_time).toBe("10:31"));
+  });
   it("keeps edits when staying and discards only after an explicit choice", async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -424,7 +453,7 @@ describe("Settings draft protection", () => {
     await openSettings(user);
     const original = mocks.invoke.getMockImplementation()!;
     mocks.invoke.mockImplementation(async (cmd, args) => {
-      if (cmd === "save_settings") throw Error("Storage unavailable");
+      if (cmd === "save_preference_patch") throw Error("Storage unavailable");
       return original(cmd, args);
     });
     await user.type(screen.getByLabelText("Display name"), " edited");
@@ -574,8 +603,6 @@ describe("Nightly channel", () => {
     const app = render(<App />);
     await user.clear(await screen.findByLabelText("Display name"));
     await user.type(screen.getByLabelText("Display name"), "Dim");
-    await user.clear(screen.getByLabelText("Space name"));
-    await user.type(screen.getByLabelText("Space name"), "field");
     await selectOption(user, screen.getByLabelText("Theme"), "pitch-black");
     await waitFor(() => expect(data.settings.theme_family).toBe("pitch-black"));
     await user.click(screen.getByRole("button", { name: /Continue/ }));
@@ -623,7 +650,7 @@ describe("Nightly channel", () => {
     await screen.findByLabelText(/Profile menu for Dim/);
     expect(data.settings).toMatchObject({
       name: "Dim",
-      workspace: "field",
+      workspace: "Studio",
       onboarded: true,
       settlement_mode: "next_day",
       return_time: "10:30",
@@ -1012,6 +1039,7 @@ describe("workspace UI", () => {
       await screen.findByRole("button", { name: "Continue to Nightly" }),
     );
     await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "About" }));
     await user.click(screen.getByText("Advanced / Diagnostics"));
     const original = mocks.invoke.getMockImplementation()!;
     let fail = true;
@@ -1196,6 +1224,7 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "About" }));
     await user.click(screen.getByRole("button", { name: "Check for updates" }));
     await screen.findByText("Update source not configured.");
     expect(data.notifications).toHaveLength(0);
@@ -1207,6 +1236,7 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "Reminders" }));
     expect(screen.queryByText("Advanced / Diagnostics")).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Test Windows notification" }),
@@ -1232,6 +1262,7 @@ describe("workspace UI", () => {
       await screen.findByRole("button", { name: "Continue to Nightly" }),
     );
     await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "About" }));
     expect(screen.queryByRole("button", { name: "What's New" })).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Test Windows notification" }),
@@ -1239,6 +1270,7 @@ describe("workspace UI", () => {
     expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "diagnostics")).toBe(
       false,
     );
+    await user.click(screen.getByRole("tab", { name: "About" }));
     await user.click(screen.getByText("Advanced / Diagnostics"));
     await screen.findByText("com.reprise.desktop");
     const diagnostic = screen
@@ -1471,6 +1503,7 @@ describe("closed tasks and deletion", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "About" }));
     expect(
       screen.getByRole("heading", { name: "About / Updates" }),
     ).toBeTruthy();
@@ -1542,7 +1575,7 @@ describe("personalization and command palette", () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((el) => el.textContent),
-    ).toEqual(["Profile", "Appearance", "Settings", "Quit Reprise"]);
+    ).toEqual(["Settings", "Quit Reprise"]);
   });
   it("supports keyboard navigation of a task context menu", async () => {
     data.tasks = [closedTask("Dropped")];
@@ -1845,25 +1878,17 @@ describe("personal sidebar navigation", () => {
       ),
     );
   });
-  it("uses Space name in Settings and updates the footer after save", async () => {
-    data.settings.workspace = "";
+  it("removes Space name from settings and the footer while retaining legacy storage", async () => {
+    data.settings.workspace = "Legacy studio";
     const user = userEvent.setup();
     render(<App />);
-    await screen.findByRole("navigation");
-    expect(screen.getByText("Personal", { selector: "small" })).toBeTruthy();
     await openSettings(user);
-    expect(screen.getByRole("heading", { name: "Your space" })).toBeTruthy();
-    await user.type(
-      screen.getByRole("textbox", { name: "Space name" }),
-      "Quiet studio",
-    );
+    expect(screen.queryByLabelText("Space name")).toBeNull();
+    expect(document.querySelector(".profile-text small")).toBeNull();
+    await user.type(screen.getByLabelText("Display name"), " changed");
     await user.click(screen.getByRole("button", { name: "Save preferences" }));
-    await waitFor(() =>
-      expect(
-        screen.getByText("Quiet studio", { selector: "small" }),
-      ).toBeTruthy(),
-    );
-    expect(data.settings.workspace).toBe("Quiet studio");
+    await waitFor(() => expect(data.settings.name).toBe("Test changed"));
+    expect(data.settings.workspace).toBe("Legacy studio");
   });
   it("executes group context actions and supports keyboard invocation", async () => {
     const user = userEvent.setup();
@@ -1930,6 +1955,7 @@ describe("right notification panel", () => {
       render(<App />);
       await openSettings(user);
       expect(mocks.invoke).not.toHaveBeenCalledWith("check_updates");
+      await user.click(screen.getByRole("tab", { name: "About" }));
       await user.click(
         screen.getByRole("button", { name: "Check for updates" }),
       );
@@ -2023,6 +2049,7 @@ describe("right notification panel", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "About" }));
     await user.click(screen.getByRole("button", { name: "Check for updates" }));
     await user.click(
       await screen.findByRole("button", { name: "Update Reprise to v3.2.0" }),

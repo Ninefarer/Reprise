@@ -319,7 +319,6 @@ export function Sidebar({
           <Avatar src={avatar} name={settings.name} />
           <span className="profile-text">
             <strong>{settings.name || "Your profile"}</strong>
-            <small>{settings.workspace.trim() || "Personal"}</small>
           </span>
         </summary>
         {profileOpen && (
@@ -346,22 +345,15 @@ export function Sidebar({
               }
             }}
           >
-            {[
-              ["Profile", "profile-section"],
-              ["Appearance", "appearance-section"],
-              ["Settings", ""],
-            ].map(([text, anchor]) => (
-              <button
-                role="menuitem"
-                key={text}
-                onClick={(e) => {
-                  e.currentTarget.closest("details")!.open = false;
-                  onNavigate("Settings", anchor);
-                }}
-              >
-                {text}
-              </button>
-            ))}
+            <button
+              role="menuitem"
+              onClick={(event) => {
+                event.currentTarget.closest("details")!.open = false;
+                onNavigate("Settings");
+              }}
+            >
+              Settings
+            </button>
             <button
               role="menuitem"
               onClick={() => (onQuit ? onQuit() : void invoke("quit_app"))}

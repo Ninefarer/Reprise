@@ -690,10 +690,10 @@ function Application({
       captureSaving.current = false;
     }
   }
-  async function preferences(s: Settings) {
+  async function preferences(s: Partial<Settings>) {
     return run(() =>
-      invoke("save_settings", {
-        settings: { ...s, theme: data!.settings.theme },
+      invoke("save_preference_patch", {
+        patch: s,
       }),
     );
   }

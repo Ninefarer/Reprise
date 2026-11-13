@@ -56,7 +56,6 @@ export function Onboarding({
   }
   const [draft, setDraft] = useState(() => ({
     name: settings.name,
-    workspace: settings.workspace,
     settlement_mode: settings.settlement_mode,
     return_time: settings.return_time,
     daily_review: settings.daily_review,
@@ -138,15 +137,6 @@ export function Onboarding({
                         maxLength={100}
                         value={draft.name}
                         onChange={(e) => set("name", e.target.value)}
-                      />
-                    </label>
-                    <label>
-                      Space name
-                      <input
-                        maxLength={120}
-                        placeholder="Personal"
-                        value={draft.workspace}
-                        onChange={(e) => set("workspace", e.target.value)}
                       />
                     </label>
                     <label>

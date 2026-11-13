@@ -7,6 +7,7 @@ mod notifications;
 mod performance_baseline;
 #[cfg(feature = "performance-qa")]
 mod performance_probe;
+mod preferences;
 mod profile;
 mod releases;
 mod scheduler;
@@ -224,6 +225,18 @@ fn save_settings(
     app.emit("refresh", ()).map_err(|e| e.to_string())
 }
 #[tauri::command]
+fn save_preference_patch(
+    patch: serde_json::Map<String, serde_json::Value>,
+    db: tauri::State<Db>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    db.lock()
+        .map_err(|e| e.to_string())?
+        .preference_patch(patch)?;
+    let _ = app.emit("refresh", ());
+    Ok(())
+}
+#[tauri::command]
 fn task_history(id: String, db: tauri::State<Db>) -> Result<Vec<serde_json::Value>, String> {
     db.lock().unwrap().history(&id)
 }
@@ -267,6 +280,7 @@ fn main() {
             capture,
             save_task,
             save_settings,
+            save_preference_patch,
             task_history,
             read_notice,
             delete_task,
