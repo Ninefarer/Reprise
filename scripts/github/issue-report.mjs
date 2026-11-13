@@ -98,9 +98,15 @@ export function main(args = process.argv.slice(2)) {
   const issue = validateIssue(options["--issue"] ?? "2");
   let body;
   if (options["--body-file"])
-    body = validateBody(readFileSync(options["--body-file"], "utf8"));
+    body = validateBody(
+      readFileSync(options["--body-file"], "utf8").replace(/^\uFEFF/, ""),
+    );
   if (options["--report"])
-    body = formatReport(JSON.parse(readFileSync(options["--report"], "utf8")));
+    body = formatReport(
+      JSON.parse(
+        readFileSync(options["--report"], "utf8").replace(/^\uFEFF/, ""),
+      ),
+    );
   if (!options["--dispatch"] && !options["--check"]) {
     if (!body)
       throw Error(
