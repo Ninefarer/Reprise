@@ -56,22 +56,6 @@ import "./context-menu.css";
 import { taskCategory, reviewCategory } from "./taskColors";
 import type { UpdateActivity } from "./updates";
 const captureWindowMode = new URLSearchParams(location.search).has("capture");
-const descriptions: Partial<Record<View, string>> = {
-  Home: "Pick up where you left off.",
-  "Daily Review": "Review what’s due, what’s returned, and what to do next.",
-  Inbox: "Captured for later. Choose a next step when you’re ready.",
-  DoNow: "What you’ve chosen to work on now.",
-  Scheduled: "Tasks with a planned start date.",
-  Settled: "Paused until their return time.",
-  Snoozed: "Out of the way until the time you chose.",
-  Waiting: "Keep the context while you wait for someone or something.",
-  Resurfaced: "Ready for another look. You decide what happens next.",
-  Finished: "Completed tasks and their history.",
-  Dropped: "Deliberately let go. Restore anything you want to return to.",
-  "All Tasks": "Active, finished, and dropped tasks.",
-  "Notification History": "Waitin' for ya",
-  Settings: "Appearance, reminders, and app preferences.",
-};
 function Application({
   captureMode = captureWindowMode,
 }: { captureMode?: boolean } = {}) {
@@ -1148,8 +1132,7 @@ function Application({
         )}
         <>
           <div className="page-heading">
-            <h1>{pageTitle}</h1>
-            <p>{descriptions[view]}</p>
+            <h1>{pageTitle}{!["Home", "Settings", "Daily Review"].includes(view) && <span aria-hidden="true" className="count-badge">{visible.length}</span>}</h1>
           </div>
           {view === "Settings" ? (
             <Preferences
@@ -1207,7 +1190,6 @@ function Application({
                               {g.tasks.length}
                             </span>
                           </h2>
-                          <p>{g.description}</p>
                         </div>
                       </div>
                       {g.tasks.length ? (
@@ -1226,10 +1208,11 @@ function Application({
                 <>
                   <div
                     className="section-heading"
+                    hidden={view !== "Home"}
                     data-status={taskCategory(view)}
                   >
                     <h2>
-                      {view === "Home" ? "In focus" : label(view)}
+                      {view === "Home" ? "In focus" : null}
                       <span className="count-badge">
                         {
                           tasksForView(tasks, view, now).filter((t) =>
@@ -1238,11 +1221,6 @@ function Application({
                         }
                       </span>
                     </h2>
-                    {(view === "Settled" || view === "Snoozed") && (
-                      <span className="hint">
-                        Returned tasks move to Resurfaced
-                      </span>
-                    )}
                   </div>
                   {visible.length
                     ? visible

@@ -6,7 +6,7 @@ const paths: Record<string, string> = {
   DoNow: "m9 5 11 7-11 7z",
   Scheduled: "M4 5h16v16H4z M8 2v6 M16 2v6 M4 10h16",
   Settled: "M8 4v16 M16 4v16",
-  Snoozed: "M12 3a9 9 0 1 0 9 9 M12 7v6l4 2 M16 3h5l-5 5h5",
+  Snoozed: "M7 3 3 7 M17 3l4 4 M7 20l-2 2 M17 20l2 2 M12 8v5l3 2 M20 13a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
   Waiting: "M6 3h12 M6 21h12 M7 3c0 6 10 12 10 18 M17 3c0 6-10 12-10 18",
   Resurfaced: "M4 10a8 8 0 1 1 0 5 M4 4v6h6",
   "All Tasks": "M8 5h13 M8 12h13 M8 19h13 M3 5h1 M3 12h1 M3 19h1",
@@ -39,10 +39,10 @@ export const navigation: {
   title: string;
   items: View[];
 }[] = [
-  { id: "general", title: "General", items: ["Home", "Daily Review"] },
+  { id: "general", title: "Hub", items: ["Home", "Daily Review"] },
   {
     id: "tasks",
-    title: "Tasks",
+    title: "Ongoing",
     items: [
       "Inbox",
       "DoNow",
@@ -55,8 +55,8 @@ export const navigation: {
   },
   {
     id: "history",
-    title: "History",
-    items: ["All Tasks", "Finished", "Dropped"],
+    title: "Archive",
+    items: ["Finished", "Dropped"],
   },
 ];
 // Utility destinations stay searchable even though they do not live in the left rail.

@@ -650,7 +650,7 @@ describe("Nightly channel", () => {
       name: "Go through setup again?",
     });
     await user.click(
-      within(dialog).getByRole("button", { name: "Keep working" }),
+      within(dialog).getByRole("button", { name: "Nevermind" }),
     );
     expect(screen.queryByRole("dialog")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Redo onboarding" }));
@@ -1758,7 +1758,7 @@ describe("personal sidebar navigation", () => {
       within(nav)
         .getAllByRole("heading")
         .map((h) => h.textContent),
-    ).toEqual(["General", "Tasks", "History"]);
+    ).toEqual(["Hub", "Ongoing", "Archive"]);
     expect(
       within(nav)
         .getAllByRole("button")
@@ -1770,7 +1770,7 @@ describe("personal sidebar navigation", () => {
   it("collapses groups independently and keeps their state across remounts", async () => {
     const user = userEvent.setup();
     const app = render(<App />);
-    await user.click(await screen.findByRole("button", { name: "Tasks" }));
+    await user.click(await screen.findByRole("button", { name: "Ongoing" }));
     await waitFor(() =>
       expect(data.settings.sidebar_groups?.tasks).toBe(false),
     );
@@ -1780,7 +1780,7 @@ describe("personal sidebar navigation", () => {
       }),
     ).toBeNull();
     expect(screen.getByRole("button", { name: /^Finished/ })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "History" }));
+    await user.click(screen.getByRole("button", { name: "Archive" }));
     await waitFor(() =>
       expect(data.settings.sidebar_groups?.history).toBe(false),
     );
@@ -1789,12 +1789,12 @@ describe("personal sidebar navigation", () => {
     await screen.findByRole("navigation");
     expect(
       screen
-        .getByRole("button", { name: "Tasks" })
+        .getByRole("button", { name: "Ongoing" })
         .getAttribute("aria-expanded"),
     ).toBe("false");
     expect(
       screen
-        .getByRole("button", { name: "General" })
+        .getByRole("button", { name: "Hub" })
         .getAttribute("aria-expanded"),
     ).toBe("true");
   });
@@ -1854,13 +1854,13 @@ describe("personal sidebar navigation", () => {
     const user = userEvent.setup();
     render(<App />);
     const tasks = await screen.findByRole("button", {
-      name: "Tasks",
+      name: "Ongoing",
     });
     tasks.focus();
     await user.keyboard("{Shift>}{F10}{/Shift}");
     const menu = screen.getByRole("menu", { name: "Sidebar actions" });
     await user.click(
-      within(menu).getByRole("menuitem", { name: "Show only Tasks" }),
+      within(menu).getByRole("menuitem", { name: "Show only Ongoing" }),
     );
     await waitFor(() =>
       expect(data.settings.sidebar_groups).toEqual({
@@ -2298,7 +2298,7 @@ describe("semantic task presentation", () => {
       expect(button.querySelector("svg")).toBeTruthy();
       expect(button.querySelector(".nav-count")).toBeNull();
     }
-    for (const name of ["Home", "Daily Review", "All Tasks"])
+    for (const name of ["Home", "Daily Review"])
       expect(
         within(nav)
           .getByRole("button", {

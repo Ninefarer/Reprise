@@ -336,11 +336,11 @@ export function RedoOnboardingDialog({
         <p>
           Your tasks, history, notifications, and saved preferences will stay.
           Setup starts with your current preferences; only changes you choose
-          will be saved. Picture and theme changes apply immediately.
+          will be saved. Avatar and theme changes apply immediately.
         </p>
         <div className="dialog-actions">
           <button autoFocus onClick={onCancel}>
-            Keep working
+            Nevermind
           </button>
           <button className="primary" onClick={onConfirm}>
             Redo onboarding

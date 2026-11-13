@@ -131,7 +131,6 @@ export function TaskDialog({
       >
         <div className="dialog-head">
           <div>
-            <p className="eyebrow">TASK DETAILS</p>
             <h2 id="task-editor-heading">Edit task</h2>
           </div>
           <button
@@ -319,7 +318,7 @@ export function TaskDialog({
             disabled={busy}
             onClick={() => void submit("DoNow")}
           >
-            Do now
+            Make current
           </button>
           <button
             type="button"

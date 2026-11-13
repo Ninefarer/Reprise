@@ -112,7 +112,7 @@ export function ReleaseDialog({
               <option value={current}>{current} — notes unavailable</option>
             )}
             {releases
-              .filter((r) => !isNightly(current) || isNightly(r.version))
+              .filter((r) => isNightly(current) === isNightly(r.version))
               .map((r) => (
                 <option key={r.version} value={r.version}>
                   v{r.version}

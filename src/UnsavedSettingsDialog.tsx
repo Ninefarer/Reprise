@@ -33,7 +33,7 @@ export function UnsavedSettingsDialog({
         <h2 id="unsaved-settings-title">Save your Settings changes?</h2>
         <p>
           Your profile and reminder changes haven’t been saved. Appearance and
-          picture changes are already saved.
+          avatar changes are already saved.
         </p>
         {error && <p role="alert">{error}</p>}
         <div className="dialog-actions">

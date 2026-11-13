@@ -120,7 +120,7 @@ export function Preferences({
     >
       <section className="settings-section" id="profile-section">
         <h2>Your space</h2>
-        <p>Choose your picture, display name, and space name.</p>
+        <p>Choose your avatar, display name, and space name.</p>
         <AvatarEditor
           avatar={avatar}
           name={settings.name}
@@ -149,7 +149,7 @@ export function Preferences({
         onChange={onVisual}
       />
       <p className="hint">
-        Appearance and pictures save immediately. Use Save preferences for
+        Appearance and avatars save immediately. Use Save preferences for
         profile and reminder changes.
       </p>
       <section className="settings-section">
@@ -329,11 +329,6 @@ export function Preferences({
           >
             {checkingUpdates ? "Checking…" : "Check for updates"}
           </button>
-          {!isNightly(version) && (
-            <button type="button" onClick={() => onReleaseNotes("new")}>
-              What's New
-            </button>
-          )}
           <button type="button" onClick={() => onReleaseNotes("history")}>
             Release Notes history
           </button>

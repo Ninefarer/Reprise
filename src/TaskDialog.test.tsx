@@ -46,7 +46,7 @@ it("announces an accessible name for task editing", () => {
   expect(screen.getByRole("dialog", { name: "Edit task" })).toBeTruthy();
 });
 it.each([
-  ["Do now", "DoNow"],
+  ["Make current", "DoNow"],
   ["Settle", "Settled"],
   ["Finish", "Finished"],
 ] as const)(

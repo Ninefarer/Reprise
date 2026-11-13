@@ -35,13 +35,12 @@ export function QuickCapture({
       >
         <div>
           <strong>Quick Capture</strong>
-          <span>Inbox</span>
         </div>
         <button
           type="button"
           className="quick-close"
           aria-label="Close Quick Capture"
-          title="Close (Esc)"
+          title="Close Quick Capture"
           disabled={busy}
           onClick={() => void close()}
         >
@@ -59,16 +58,7 @@ export function QuickCapture({
         <p role="alert" className="error">
           {error}
         </p>
-      ) : (
-        <footer className="quick-foot">
-          <span>
-            <kbd>Enter</kbd> save to Inbox
-          </span>
-          <span>
-            <kbd>Esc</kbd> close
-          </span>
-        </footer>
-      )}
+      ) : null}
     </main>
   );
 }
