@@ -2,6 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import {
   formatReport,
   dispatchPayload,
@@ -16,6 +21,35 @@ const workflow = readFileSync(
 const scripts = [
   ...workflow.matchAll(/node <<'NODE'\n([\s\S]*?)          NODE/g),
 ].map((match) => match[1].replace(/^          /gm, ""));
+test("CLI reads Windows UTF-8 BOM reports without changing their content", () => {
+  const directory = mkdtempSync(join(tmpdir(), "reprise-report-test-"));
+  try {
+    const file = join(directory, "report.json");
+    writeFileSync(
+      file,
+      "\uFEFF" +
+        JSON.stringify({
+          batch: "BOM test",
+          changes: ["test"],
+          verification: ["local preview"],
+          status: "In Progress",
+        }),
+    );
+    const result = spawnSync(
+      process.execPath,
+      [
+        fileURLToPath(new URL("./issue-report.mjs", import.meta.url)),
+        "--report",
+        file,
+      ],
+      { encoding: "utf8", shell: false, windowsHide: true },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /BOM test/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 function sandbox(
   env = {},
   fetch = async () => {
