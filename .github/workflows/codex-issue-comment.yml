@@ -1,0 +1,103 @@
+name: Codex issue comment
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number within Ninefarer/Reprise
+        type: string
+        required: true
+      comment_body:
+        description: Markdown comment body (maximum 50000 UTF-8 bytes)
+        type: string
+        required: true
+
+# The built-in token is unused. Only the narrowly scoped App token can comment.
+permissions: {}
+
+jobs:
+  comment:
+    if: github.repository == 'Ninefarer/Reprise' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ISSUE_NUMBER: ${{ inputs.issue_number }}
+      COMMENT_BODY: ${{ inputs.comment_body }}
+    steps:
+      # No checkout: user-provided comment text and branch code are never executed.
+      - name: Validate inputs before requesting credentials
+        shell: bash
+        run: |
+          node <<'NODE'
+          const issue = process.env.ISSUE_NUMBER ?? '';
+          const body = process.env.COMMENT_BODY ?? '';
+          if (!/^[1-9]\d*$/.test(issue) || !Number.isSafeInteger(Number(issue))) {
+            console.error('Issue number must be a positive safe integer.');
+            process.exit(1);
+          }
+          if (!body.trim() || Buffer.byteLength(body, 'utf8') > 50000) {
+            console.error('Comment body must contain text and fit within 50000 UTF-8 bytes.');
+            process.exit(1);
+          }
+          NODE
+
+      - name: Create repository-scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.REPRISE_BOT_APP_ID }}
+          private-key: ${{ secrets.REPRISE_BOT_PRIVATE_KEY }}
+          owner: Ninefarer
+          repositories: Reprise
+          permission-issues: write
+          # Default post-step revocation is deliberately retained.
+
+      - name: Post and verify bot comment
+        shell: bash
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          node <<'NODE'
+          const { appendFileSync } = require('node:fs');
+          async function main() {
+            const token = process.env.APP_TOKEN;
+            const slug = process.env.APP_SLUG;
+            if (!token || !slug) throw Error('The App token action did not return its token and App identity.');
+            const issue = process.env.ISSUE_NUMBER;
+            const base = 'https://api.github.com/repos/Ninefarer/Reprise';
+            const headers = {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+              'Content-Type': 'application/json',
+            };
+            async function request(path, options = {}) {
+              let response;
+              try {
+                response = await fetch(`${base}${path}`, {
+                  ...options, headers, redirect: 'error', signal: AbortSignal.timeout(30000),
+                });
+              } catch {
+                throw Error('GitHub API connection failed. Check the issue before retrying; a submitted comment may already exist.');
+              }
+              if (!response.ok) throw Error(`GitHub API returned HTTP ${response.status}. Check App installation access and Issues: write permission.`);
+              return response.json();
+            }
+            const target = await request(`/issues/${issue}`);
+            if (target.pull_request) throw Error('This workflow accepts issues only, not pull requests.');
+            if (target.locked) throw Error('The issue is locked; unlock it before posting.');
+            const comment = await request(`/issues/${issue}/comments`, {
+              method: 'POST', body: JSON.stringify({ body: process.env.COMMENT_BODY }),
+            });
+            const expected = `${slug}[bot]`;
+            if (comment.user?.type !== 'Bot' || comment.user?.login !== expected) {
+              throw Error('Comment was created but its author did not match the expected GitHub App bot. Inspect the issue before retrying.');
+            }
+            const url = `https://github.com/Ninefarer/Reprise/issues/${issue}#issuecomment-${comment.id}`;
+            console.log(`Verified GitHub App comment: ${url}`);
+            // Do not place the user-supplied body, API response or credentials in logs.
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY, `Verified comment by **${expected}**: ${url}\n`);
+          }
+          main().catch(error => { console.error(error.message); process.exitCode = 1; });
+          NODE
