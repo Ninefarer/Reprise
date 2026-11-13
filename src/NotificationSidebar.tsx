@@ -100,7 +100,8 @@ export function NotificationSidebar({
     clearTimeout(timer.current);
     timer.current = undefined;
   };
-  const blocked = () => !!document.querySelector("dialog[open], .menu-shield");
+  const blocked = () =>
+    !!document.querySelector("dialog[open], .menu-shield, .control-shield");
   function restoreFocus() {
     const target =
       opener.current?.isConnected &&
@@ -176,8 +177,14 @@ export function NotificationSidebar({
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [shown, pinned, onOpenChange]);
-  const categories = ["All", ...new Set(notices.map((n) => n.category))];
-  const activeCategory = categories.includes(category) ? category : "All";
+  const categories = [
+    "All",
+    ...new Set([
+      ...notices.map((n) => n.category),
+      ...(category === "All" ? [] : [category]),
+    ]),
+  ];
+  const activeCategory = category;
   const filtered = filterNotices(notices, activeCategory, unread, query);
   return (
     <>
@@ -258,15 +265,6 @@ export function NotificationSidebar({
                 <path d="M8 3h8l-1 7 4 4v2H5v-2l4-4-1-7ZM12 16v6" />
               </svg>
             </button>
-            {!pinned && (
-              <button
-                aria-label="Close notifications"
-                title="Close notifications"
-                onClick={close}
-              >
-                ×
-              </button>
-            )}
           </header>
           <div className="notification-filters">
             <label className="notification-search">

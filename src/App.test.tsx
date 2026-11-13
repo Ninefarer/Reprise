@@ -2112,9 +2112,7 @@ describe("right notification panel", () => {
     render(<App />);
     await screen.findByRole("navigation");
     await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
-    await user.click(
-      screen.getByRole("button", { name: "Close notifications" }),
-    );
+    await user.keyboard("{Escape}");
     const exiting = document.querySelector(".notification-dock")!;
     expect(exiting.getAttribute("data-exiting")).toBe("true");
     expect(exiting.hasAttribute("inert")).toBe(true);
@@ -2129,9 +2127,7 @@ describe("right notification panel", () => {
     expect(
       screen.getByRole("complementary", { name: "Notifications" }),
     ).toBeTruthy();
-    await user.click(
-      screen.getByRole("button", { name: "Close notifications" }),
-    );
+    await user.keyboard("{Escape}");
     await waitFor(() =>
       expect(document.querySelector(".notification-dock")).toBeNull(),
     );
@@ -2143,9 +2139,7 @@ describe("right notification panel", () => {
     render(<App />);
     await screen.findByRole("navigation");
     await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
-    await user.click(
-      screen.getByRole("button", { name: "Close notifications" }),
-    );
+    await user.keyboard("{Escape}");
     expect(document.querySelector(".notification-dock")).toBeNull();
   });
   it("reveals at the right edge, tucks away after leaving, and ignores open dialogs", async () => {
@@ -2205,9 +2199,7 @@ describe("right notification panel", () => {
     await waitFor(() =>
       expect(data.settings.notification_panel_pinned).toBe(false),
     );
-    await user.click(
-      screen.getByRole("button", { name: "Close notifications" }),
-    );
+    await user.keyboard("{Escape}");
     expect(
       screen.queryByRole("complementary", { name: "Notifications" }),
     ).toBeNull();

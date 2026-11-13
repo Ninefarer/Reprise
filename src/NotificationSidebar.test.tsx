@@ -80,6 +80,25 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 describe("notification management", () => {
+  it("retains the chosen category when its final record disappears", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByLabelText("Category"));
+    await user.click(screen.getByRole("option", { name: "Daily Review" }));
+    await user.click(
+      screen.getByRole("button", { name: "Dismiss Reminder daily" }),
+    );
+    expect(
+      screen.getByRole("combobox", { name: "Category" }).textContent,
+    ).toContain("Daily Review");
+    expect(screen.getByText("No matching reminders.")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Close notifications" }),
+    ).toBeNull();
+    await user.click(screen.getByLabelText("Category"));
+    await user.click(screen.getByRole("option", { name: "All" }));
+    expect(screen.getByText("Reminder other")).toBeTruthy();
+  });
   it("formats stored identifiers without changing filter values", async () => {
     render(<Harness />);
     const user = userEvent.setup();
