@@ -218,6 +218,7 @@ export function TaskDialog({
             <label>
               Scheduled start
               <DateTimeField
+                aria-label="Scheduled start"
                 type="datetime-local"
                 required={draft.status === "Scheduled"}
                 value={localInput(draft.scheduled_at)}
@@ -229,6 +230,7 @@ export function TaskDialog({
             <label>
               Deadline
               <DateTimeField
+                aria-label="Deadline"
                 type="datetime-local"
                 value={localInput(draft.due_at)}
                 onChange={(e) => set("due_at", parseInput(e.target.value))}
@@ -262,6 +264,7 @@ export function TaskDialog({
               <label>
                 Custom return time
                 <DateTimeField
+                  aria-label="Custom return time"
                   type="datetime-local"
                   required
                   min={localInput(Math.floor(Date.now() / 1000))}
@@ -282,6 +285,7 @@ export function TaskDialog({
             <label>
               Return time
               <DateTimeField
+                aria-label="Return time"
                 type="datetime-local"
                 required
                 value={localInput(draft.wake_at)}
@@ -301,6 +305,7 @@ export function TaskDialog({
               <label>
                 Follow-up time
                 <DateTimeField
+                  aria-label="Follow-up time"
                   type="datetime-local"
                   value={localInput(draft.wake_at)}
                   onChange={(e) => set("wake_at", parseInput(e.target.value))}

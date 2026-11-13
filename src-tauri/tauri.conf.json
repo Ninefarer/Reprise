@@ -26,7 +26,7 @@
         "title": "Capture an intention",
         "url": "index.html?capture=1",
         "width": 560,
-        "height": 200,
+        "height": 128,
         "resizable": false,
         "visible": false,
         "create": false,

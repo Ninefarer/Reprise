@@ -60,7 +60,7 @@ describe("theme polish contrast", () => {
       /:root:has\(\.quick\)\s*\{[^}]*scrollbar-gutter:\s*auto/,
     );
     expect(capture.resizable).toBe(false);
-    expect(capture.height).toBe(200);
+    expect(capture.height).toBe(128);
     expect(windows.find((w) => w.label === "main").decorations).not.toBe(false);
     const capability = JSON.parse(
       read("../src-tauri/capabilities/capture.json"),

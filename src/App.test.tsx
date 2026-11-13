@@ -396,7 +396,7 @@ describe("Settings draft protection", () => {
     await user.click(screen.getByRole("tab", { name: "Reminders" }));
     expect(
       (screen.getByLabelText("Daily review time") as HTMLInputElement).value,
-    ).toBe("10:31");
+    ).toBe("10:31 AM");
     await user.click(screen.getByRole("button", { name: "Save preferences" }));
     await waitFor(() => expect(data.settings.review_time).toBe("10:31"));
   });

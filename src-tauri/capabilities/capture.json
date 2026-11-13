@@ -4,6 +4,7 @@
     "capture"
   ],
   "permissions": [
-    "core:window:allow-start-dragging"
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-size"
   ]
 }

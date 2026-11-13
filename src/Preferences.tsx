@@ -271,6 +271,7 @@ export function Preferences({
             <label>
               Preferred next-day time
               <DateTimeField
+                aria-label="Preferred next-day time"
                 type="time"
                 required
                 value={draft.return_time}
@@ -280,6 +281,7 @@ export function Preferences({
             <label>
               Daily review time
               <DateTimeField
+                aria-label="Daily review time"
                 type="time"
                 required
                 value={draft.review_time}
@@ -302,6 +304,7 @@ export function Preferences({
             <label>
               Quiet hours begin
               <DateTimeField
+                aria-label="Quiet hours begin"
                 type="time"
                 required
                 value={draft.quiet_start}
@@ -311,6 +314,7 @@ export function Preferences({
             <label>
               Quiet hours end
               <DateTimeField
+                aria-label="Quiet hours end"
                 type="time"
                 required
                 value={draft.quiet_end}

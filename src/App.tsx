@@ -824,7 +824,6 @@ function Application({
           void add();
         }}
       >
-        <span aria-hidden="true">＋</span>
         <input
           ref={captureRef}
           autoFocus={quick}

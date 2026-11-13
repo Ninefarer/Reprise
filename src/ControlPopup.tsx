@@ -22,7 +22,8 @@ export function ControlPopup({
   const callback = useRef(onClose);
   callback.current = onClose;
   const [host] = useState(
-    () => anchor.current?.closest("dialog[open]") ?? document.body,
+    () =>
+      anchor.current?.closest("dialog[open], .setup-screen") ?? document.body,
   );
   useLayoutEffect(() => {
     const surface = layer.current!,

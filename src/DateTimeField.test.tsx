@@ -2,8 +2,40 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { DateTimeField, validLocalValue } from "./DateTimeField";
 afterEach(cleanup);
+it("accepts human dates without rewriting an entry mid-typing and preserves canonical local values", async () => {
+  const user = userEvent.setup();
+  function Example() {
+    const [value, setValue] = useState("2026-11-13T12:34");
+    return (
+      <>
+        <DateTimeField
+          aria-label="Scheduled start"
+          type="datetime-local"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+        />
+        <output>{value}</output>
+        <button>Leave field</button>
+      </>
+    );
+  }
+  render(<Example />);
+  const field = screen.getByRole("textbox", { name: "Scheduled start" });
+  await user.clear(field);
+  await user.type(field, "march 3rd, 2027 at 2:30pm");
+  expect((field as HTMLInputElement).value).toBe("march 3rd, 2027 at 2:30pm");
+  expect(screen.getByRole("status").textContent).toBe("2027-03-03T14:30");
+  await user.click(screen.getByRole("button", { name: "Leave field" }));
+  expect((field as HTMLInputElement).value).toBe("March 3, 2027 at 2:30 PM");
+  await user.clear(field);
+  await user.type(field, "march 4th, 2027");
+  await user.tab();
+  expect(screen.getByRole("status").textContent).toBe("2027-03-04T14:30");
+  expect((field as HTMLInputElement).value).toBe("March 4, 2027 at 2:30 PM");
+});
 it("allows replacing the calendar year and retains invalid partial text without emitting a timestamp", async () => {
   const user = userEvent.setup(),
     change = vi.fn();

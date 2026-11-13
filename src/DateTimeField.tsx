@@ -1,22 +1,9 @@
+import { displayDateInput, parseDateInput, validLocalValue } from "./dateInput";
+export { validLocalValue } from "./dateInput";
 import { useEffect, useId, useRef, useState } from "react";
 import { ControlPopup } from "./ControlPopup";
 import "./controls.css";
 
-export function validLocalValue(
-  value: string,
-  type: "time" | "datetime-local",
-) {
-  if (type === "time") return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
-  if (!/^\d{4}-\d\d-\d\dT([01]\d|2[0-3]):[0-5]\d$/.test(value)) return false;
-  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
-  const date = new Date(year, month - 1, day, 12);
-  return (
-    year >= 1000 &&
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
-}
 export function DateTimeField({
   type,
   value,
@@ -37,18 +24,27 @@ export function DateTimeField({
     trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false),
     [error, setError] = useState("");
-  const [text, setText] = useState(value);
-  useEffect(() => setText(value), [value]);
+  const editing = useRef(false);
+  // Keep the last explicit clock when replacing a date, even after clearing it.
+  const previous = useRef(value);
+  if (validLocalValue(value, type)) previous.current = value;
+  const [text, setText] = useState(() => displayDateInput(value, type));
+  useEffect(() => {
+    if (!editing.current) setText(displayDateInput(value, type));
+  }, [value, type]);
+  const parsed = parseDateInput(text, type, previous.current);
   const errorId = useId();
   const message =
-    text && (!validLocalValue(text, type) || (min && text < min))
-      ? min && validLocalValue(text, type)
+    text.trim() && (parsed === null || (min && parsed < min))
+      ? parsed !== null
         ? "Choose a later time."
         : type === "time"
-          ? "Use HH:mm (24-hour time)."
-          : "Use YYYY-MM-DDTHH:mm."
-      : required && !text
-        ? "Choose a time."
+          ? "Enter a time such as 9am or 2:30pm."
+          : "Enter a date such as March 3, 2027 at 9am."
+      : required && !text.trim()
+        ? type === "time"
+          ? "Choose a time."
+          : "Choose a date and time."
         : "";
   useEffect(() => {
     input.current?.setCustomValidity(message);
@@ -63,15 +59,26 @@ export function DateTimeField({
         value={text}
         required={required}
         spellCheck={false}
-        placeholder={type === "time" ? "HH:mm" : "YYYY-MM-DDTHH:mm"}
+        placeholder={type === "time" ? "9:00 AM" : "March 3, 2027 at 9am"}
         aria-invalid={!!error}
         aria-describedby={error ? errorId : undefined}
         onChange={(event) => {
           setText(event.target.value);
-          if (!event.target.value || validLocalValue(event.target.value, type))
-            onChange(event);
+          const next = parseDateInput(
+            event.target.value,
+            type,
+            previous.current,
+          );
+          if (next !== null) onChange({ target: { value: next } });
         }}
-        onBlur={() => setError(message)}
+        onFocus={() => {
+          editing.current = true;
+        }}
+        onBlur={() => {
+          editing.current = false;
+          setError(message);
+          if (parsed !== null) setText(displayDateInput(parsed, type));
+        }}
         onInvalid={(event) => {
           event.preventDefault();
           setError(message);
@@ -82,7 +89,13 @@ export function DateTimeField({
         ref={trigger}
         type="button"
         className="date-picker-trigger"
-        aria-label={type === "time" ? "Choose time" : "Choose date and time"}
+        aria-label={
+          props["aria-label"]
+            ? `Choose ${type === "time" ? "time" : "date and time"} for ${props["aria-label"]}`
+            : type === "time"
+              ? "Choose time"
+              : "Choose date and time"
+        }
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
@@ -114,7 +127,7 @@ export function DateTimeField({
             required={required}
             onCancel={() => setOpen(false)}
             onApply={(next) => {
-              setText(next);
+              setText(displayDateInput(next, type));
               onChange({ target: { value: next } });
               setOpen(false);
               trigger.current?.focus();

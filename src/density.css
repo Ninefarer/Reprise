@@ -80,8 +80,11 @@
   padding-block: 6px;
 }
 
-:root[data-density="compact"] .select-trigger,
-:root[data-density="compact"] .date-picker-trigger {
+:root[data-density="compact"] .quick .capture {
+  margin-bottom: 0;
+}
+
+:root[data-density="compact"] .select-trigger {
   min-height: 30px;
   padding-block: 5px;
 }
@@ -90,7 +93,8 @@
   padding-block: 5px;
 }
 :root[data-density="compact"] .settings-tabs button {
-  padding: 6px 10px;
+  min-height: 26px;
+  padding: 4px 8px;
 }
 :root[data-density="compact"] .editor-section {
   margin: 14px 0;

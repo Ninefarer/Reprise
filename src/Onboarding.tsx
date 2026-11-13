@@ -193,6 +193,7 @@ export function Onboarding({
                       <label>
                         Preferred return time
                         <DateTimeField
+                          aria-label="Preferred return time"
                           type="time"
                           required
                           value={draft.return_time}
@@ -222,6 +223,7 @@ export function Onboarding({
                       <label>
                         Daily review time
                         <DateTimeField
+                          aria-label="Daily review time"
                           type="time"
                           required
                           value={draft.review_time}
@@ -232,6 +234,7 @@ export function Onboarding({
                     <label>
                       Quiet hours begin
                       <DateTimeField
+                        aria-label="Quiet hours begin"
                         type="time"
                         required
                         value={draft.quiet_start}
@@ -241,6 +244,7 @@ export function Onboarding({
                     <label>
                       Quiet hours end
                       <DateTimeField
+                        aria-label="Quiet hours end"
                         type="time"
                         required
                         value={draft.quiet_end}

@@ -4,6 +4,20 @@ import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { Select } from "./Select";
 afterEach(cleanup);
+it("inherits the scoped Nightly setup palette instead of the root application theme", async () => {
+  render(
+    <main className="setup-screen setup-nightly">
+      <label>
+        Mode
+        <Select value="a" onChange={vi.fn()}>
+          <option value="a">Alpha</option>
+        </Select>
+      </label>
+    </main>,
+  );
+  await userEvent.click(screen.getByRole("combobox", { name: "Mode" }));
+  expect(screen.getByRole("listbox").closest(".setup-nightly")).toBeTruthy();
+});
 it("keeps the selection surface inside its modal and dismisses without cancelling the dialog", async () => {
   const user = userEvent.setup();
   render(

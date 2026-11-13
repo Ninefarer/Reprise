@@ -109,7 +109,18 @@ export function Select({
           {options.find((o) => o.value === String(value))?.label ??
             String(value)}
         </span>
-        <span aria-hidden="true">⌄</span>
+        <svg
+          className="select-chevron"
+          aria-hidden="true"
+          width="14"
+          height="14"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        >
+          <path d="m4 6 4 4 4-4" />
+        </svg>
       </button>
       {open && (
         <ControlPopup anchor={trigger} onClose={() => setOpen(false)}>

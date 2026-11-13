@@ -76,17 +76,33 @@
 
 .date-field {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  gap: 0;
   align-items: start;
 }
-.date-field input {
+.date-field > input {
+  grid-area: 1 / 1 / 2 / 3;
+  padding-inline-end: 40px;
   min-width: 0;
   width: 100%;
 }
 .date-picker-trigger {
-  min-height: 36px;
-  padding: 6px 10px;
+  grid-area: 1 / 2 / 2 / 3;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+  min-height: 0;
+  margin: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.select-chevron {
+  flex-shrink: 0;
+}
+.select-trigger[aria-expanded="true"] .select-chevron {
+  transform: rotate(180deg);
 }
 .field-error {
   grid-column: 1/-1;

@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { LogicalSize } from "@tauri-apps/api/dpi";
 export function QuickCapture({
   children,
   error,
@@ -11,6 +12,29 @@ export function QuickCapture({
   busy: boolean;
   onError: (error: string) => void;
 }) {
+  const root = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    if (typeof ResizeObserver === "undefined" || !root.current) return;
+    let lastHeight = 0;
+    const resize = () => {
+      const height = Math.max(
+        96,
+        Math.min(
+          360,
+          Math.ceil(root.current?.getBoundingClientRect().height ?? 0),
+        ),
+      );
+      if (height === lastHeight) return;
+      lastHeight = height;
+      void getCurrentWindow()
+        .setSize(new LogicalSize(window.innerWidth, height))
+        .catch((error) => onError(String(error)));
+    };
+    const observer = new ResizeObserver(resize);
+    observer.observe(root.current);
+    resize();
+    return () => observer.disconnect();
+  }, [onError]);
   async function close() {
     try {
       await getCurrentWindow().hide();
@@ -19,7 +43,12 @@ export function QuickCapture({
     }
   }
   return (
-    <main className="quick" aria-label="Quick Capture" aria-busy={busy}>
+    <main
+      ref={root}
+      className="quick"
+      aria-label="Quick Capture"
+      aria-busy={busy}
+    >
       <header
         className="quick-head"
         onPointerDown={(event) => {
