@@ -1,0 +1,13 @@
+{
+  "batch": "Integration test — GitHub App issue reporting",
+  "changes": [
+    "This is a clearly labeled integration test of the dedicated GitHub App reporting workflow.",
+    "This comment makes no claim that the Reprise 3.4.0 UI/UX overhaul or native Windows acceptance is complete."
+  ],
+  "verification": [
+    "Local reporting tests passed (8 tests); actionlint and workflow YAML formatting checks passed.",
+    "The workflow checks this comment's author against its GitHub App bot identity after posting; inspect the run summary for the live verification result.",
+    "No application release is published by this workflow."
+  ],
+  "status": "In Progress"
+}
