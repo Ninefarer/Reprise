@@ -1516,6 +1516,32 @@ describe("closed tasks and deletion", () => {
 });
 
 describe("personalization and command palette", () => {
+  it("records a custom shortcut, rejects conflicts and retains the saved binding after remount", async () => {
+    const user = userEvent.setup();
+    const app = render(<App />);
+    await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "Keyboard" }));
+    await user.click(screen.getByLabelText("Command palette shortcut"));
+    await user.keyboard("{Control>}f{/Control}");
+    expect(screen.getByRole("alert").textContent).toContain("reserved");
+    expect(
+      screen.queryByRole("dialog", { name: "Command palette" }),
+    ).toBeNull();
+    await user.keyboard("{Control>}j{/Control}");
+    await user.click(screen.getByRole("button", { name: "Save preferences" }));
+    await waitFor(() => expect(data.settings.command_shortcut).toBe("Ctrl+J"));
+    app.unmount();
+    render(<App />);
+    await screen.findByRole("navigation");
+    await user.keyboard("{Control>}k{/Control}");
+    expect(
+      screen.queryByRole("dialog", { name: "Command palette" }),
+    ).toBeNull();
+    await user.keyboard("{Control>}j{/Control}");
+    expect(
+      screen.getByRole("dialog", { name: "Command palette" }),
+    ).toBeTruthy();
+  });
   it("opens global search from Settings by keyboard and finds closed tasks", async () => {
     data.tasks = [closedTask("Finished")];
     const user = userEvent.setup();

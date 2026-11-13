@@ -196,9 +196,7 @@ fn save_settings(
     if !["system", "light", "dark"].contains(&settings.theme.as_str()) {
         return Err("Choose System, Light or Dark".into());
     }
-    if !["Ctrl+K", "Ctrl+Shift+P"].contains(&settings.command_shortcut.as_str()) {
-        return Err("Choose a supported command shortcut".into());
-    }
+    preferences::validate_command_shortcut(&settings.command_shortcut)?;
     let d = db.lock().map_err(|e| e.to_string())?;
     let current = d.settings()?;
     settings.profile_image = current.profile_image;

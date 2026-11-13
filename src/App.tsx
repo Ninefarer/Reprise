@@ -1,3 +1,4 @@
+import { matchesShortcut } from "./shortcuts";
 import { TextContextMenus } from "./TextContextMenu";
 import { trace, traceSnapshot, traceStart } from "./performance";
 import { isNightly, NightlyDisclosure } from "./Nightly";
@@ -584,10 +585,11 @@ function Application({
       if (
         !quick &&
         !setupActive &&
-        (e.ctrlKey || e.metaKey) &&
-        (shortcut === "Ctrl+K"
-          ? e.key.toLowerCase() === "k" && !e.shiftKey
-          : e.key.toLowerCase() === "p" && e.shiftKey)
+        !(
+          e.target instanceof Element &&
+          e.target.closest("[data-shortcut-recorder]")
+        ) &&
+        matchesShortcut(e, shortcut)
       ) {
         e.preventDefault();
         setPalette((p) => !p);

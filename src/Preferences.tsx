@@ -1,3 +1,4 @@
+import { ShortcutRecorder } from "./ShortcutRecorder";
 import { DateTimeField } from "./DateTimeField";
 import { Select } from "./Select";
 import { isNightly } from "./Nightly";
@@ -353,16 +354,10 @@ export function Preferences({
       >
         <section className="settings-section">
           <h2>Keyboard</h2>
-          <label>
-            Command palette shortcut
-            <Select
-              value={draft.command_shortcut ?? "Ctrl+K"}
-              onChange={(e) => set("command_shortcut", e.target.value)}
-            >
-              <option value="Ctrl+K">Ctrl+K</option>
-              <option value="Ctrl+Shift+P">Ctrl+Shift+P</option>
-            </Select>
-          </label>
+          <ShortcutRecorder
+            value={draft.command_shortcut ?? "Ctrl+K"}
+            onChange={(value) => set("command_shortcut", value)}
+          />
         </section>
       </div>
       {sections[section].some(
