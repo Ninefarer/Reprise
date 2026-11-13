@@ -1,0 +1,113 @@
+name: Codex open issue
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_title:
+        description: Issue title
+        type: string
+        required: true
+      issue_body:
+        description: Markdown issue body (maximum 50000 UTF-8 bytes)
+        type: string
+        required: true
+      labels:
+        description: Optional comma-separated labels (must already exist in the repository)
+        type: string
+        required: false
+
+# The built-in token is unused. Only the narrowly scoped App token can open issues.
+permissions: {}
+
+jobs:
+  open:
+    if: github.repository == 'Ninefarer/Reprise' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ISSUE_TITLE: ${{ inputs.issue_title }}
+      ISSUE_BODY: ${{ inputs.issue_body }}
+      ISSUE_LABELS: ${{ inputs.labels }}
+    steps:
+      # No checkout: user-provided issue text is never executed.
+      - name: Validate inputs before requesting credentials
+        shell: bash
+        run: |
+          node <<'NODE'
+          const title = process.env.ISSUE_TITLE ?? '';
+          const body = process.env.ISSUE_BODY ?? '';
+          const rawLabels = process.env.ISSUE_LABELS ?? '';
+          if (!title.trim() || Buffer.byteLength(title, 'utf8') > 256) {
+            console.error('Issue title must contain text and fit within 256 UTF-8 bytes.');
+            process.exit(1);
+          }
+          if (!body.trim() || Buffer.byteLength(body, 'utf8') > 50000) {
+            console.error('Issue body must contain text and fit within 50000 UTF-8 bytes.');
+            process.exit(1);
+          }
+          const labels = rawLabels.split(',').map(s => s.trim()).filter(Boolean);
+          if (rawLabels.trim() && labels.length === 0) {
+            console.error('Labels must be comma-separated label names.');
+            process.exit(1);
+          }
+          NODE
+
+      - name: Create repository-scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.REPRISE_BOT_APP_ID }}
+          private-key: ${{ secrets.REPRISE_BOT_PRIVATE_KEY }}
+          owner: Ninefarer
+          repositories: Reprise
+          permission-issues: write
+          # Default post-step revocation is deliberately retained.
+
+      - name: Open and verify bot issue
+        shell: bash
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          node <<'NODE'
+          const { appendFileSync } = require('node:fs');
+          async function main() {
+            const token = process.env.APP_TOKEN;
+            const slug = process.env.APP_SLUG;
+            if (!token || !slug) throw Error('The App token action did not return its token and App identity.');
+            const base = 'https://api.github.com/repos/Ninefarer/Reprise';
+            const headers = {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+              'Content-Type': 'application/json',
+            };
+            async function request(path, options = {}) {
+              let response;
+              try {
+                response = await fetch(`${base}${path}`, {
+                  ...options, headers, redirect: 'error', signal: AbortSignal.timeout(30000),
+                });
+              } catch {
+                throw Error('GitHub API connection failed. Check the repository before retrying; a submitted issue may already exist.');
+              }
+              if (!response.ok) throw Error(`GitHub API returned HTTP ${response.status}. Check App installation access and Issues: write permission.`);
+              return response.json();
+            }
+            const labels = (process.env.ISSUE_LABELS ?? '').split(',').map(s => s.trim()).filter(Boolean);
+            const payload = { title: process.env.ISSUE_TITLE, body: process.env.ISSUE_BODY };
+            if (labels.length > 0) payload.labels = labels;
+            const issue = await request('/issues', {
+              method: 'POST', body: JSON.stringify(payload),
+            });
+            const expected = `${slug}[bot]`;
+            if (issue.user?.type !== 'Bot' || issue.user?.login !== expected) {
+              throw Error('Issue was created but its author did not match the expected GitHub App bot. Inspect the repository before retrying.');
+            }
+            const url = `https://github.com/Ninefarer/Reprise/issues/${issue.number}`;
+            console.log(`Verified GitHub App issue: ${url}`);
+            // Do not place the user-supplied title, body, API response or credentials in logs.
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY, `Verified issue by **${expected}**: ${url}\n`);
+          }
+          main().catch(error => { console.error(error.message); process.exitCode = 1; });
+          NODE
