@@ -12,7 +12,7 @@ import {
 const workflow = readFileSync(
   new URL("../../.github/workflows/codex-issue-comment.yml", import.meta.url),
   "utf8",
-);
+).replace(/\r\n/g, "\n");
 const scripts = [
   ...workflow.matchAll(/node <<'NODE'\n([\s\S]*?)          NODE/g),
 ].map((match) => match[1].replace(/^          /gm, ""));
