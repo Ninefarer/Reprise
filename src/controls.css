@@ -1,10 +1,150 @@
-.select-trigger { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:36px; text-align:left; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:8px 10px; font:inherit; }
-.select-trigger > span:first-child { overflow:hidden; text-overflow:ellipsis; }
-.control-shield { position:fixed; inset:0; width:100vw; height:100vh; max-width:none; max-height:none; margin:0; padding:0; border:0; background:transparent; overflow:visible; z-index:10000; }
-.control-shield::backdrop { background:transparent; }
-.control-popup { position:fixed; max-width:calc(100vw - 16px); max-height:calc(100vh - 16px); overflow:auto; border:1px solid var(--border); border-radius:8px; padding:5px; background:var(--surface); color:var(--text); box-shadow:0 8px 28px #0004; }
-.select-options { max-height:min(320px, calc(100vh - 36px)); overflow:auto; }
-.select-options button { display:flex; width:100%; align-items:center; justify-content:space-between; gap:16px; min-height:34px; padding:7px 10px; text-align:left; border:0; background:transparent; }
-.select-options button:focus, .select-options button:hover { background:var(--hover); }
-.select-options [aria-selected=true] { color:var(--accent); }
-.capture-validation { margin-top:-12px; color:var(--danger, var(--text)); }
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 36px;
+  text-align: left;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font: inherit;
+}
+.select-trigger > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.control-shield {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  z-index: 10000;
+}
+.control-shield::backdrop {
+  background: transparent;
+}
+.control-popup {
+  position: fixed;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 8px 28px #0004;
+}
+.select-options {
+  max-height: min(320px, calc(100vh - 36px));
+  overflow: auto;
+}
+.select-options button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 34px;
+  padding: 7px 10px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+}
+.select-options button:focus,
+.select-options button:hover {
+  background: var(--hover);
+}
+.select-options [aria-selected="true"] {
+  color: var(--accent);
+}
+.capture-validation {
+  margin-top: -12px;
+  color: var(--danger, var(--text));
+}
+
+.date-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px;
+  align-items: start;
+}
+.date-field input {
+  min-width: 0;
+  width: 100%;
+}
+.date-picker-trigger {
+  min-height: 36px;
+  padding: 6px 10px;
+}
+.field-error {
+  grid-column: 1/-1;
+  font-size: 12px;
+  color: var(--danger, var(--text));
+}
+.date-picker {
+  width: 288px;
+  padding: 8px;
+}
+.calendar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.calendar-heading input {
+  width: 66px;
+  padding: 6px;
+}
+.calendar-weekdays,
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+.calendar-weekdays {
+  font-size: 11px;
+  color: var(--muted);
+  padding-bottom: 4px;
+}
+.calendar-days button {
+  min-height: 32px;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+}
+.calendar-days [aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--hover);
+  outline: 1px solid var(--accent);
+}
+.date-picker label {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+  font-size: 12px;
+}
+.picker-actions,
+.time-presets {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.time-presets button {
+  font-size: 11px;
+  padding: 5px;
+}

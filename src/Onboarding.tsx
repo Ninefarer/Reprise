@@ -1,3 +1,4 @@
+import { DateTimeField } from "./DateTimeField";
 import { Select } from "./Select";
 import { useEffect, useRef, useState } from "react";
 import type { Settings, VisualPreferences } from "./model";
@@ -201,7 +202,7 @@ export function Onboarding({
                     {draft.settlement_mode === "next_day" && (
                       <label>
                         Preferred return time
-                        <input
+                        <DateTimeField
                           type="time"
                           required
                           value={draft.return_time}
@@ -230,7 +231,7 @@ export function Onboarding({
                     {draft.daily_review && (
                       <label>
                         Daily review time
-                        <input
+                        <DateTimeField
                           type="time"
                           required
                           value={draft.review_time}
@@ -240,7 +241,7 @@ export function Onboarding({
                     )}
                     <label>
                       Quiet hours begin
-                      <input
+                      <DateTimeField
                         type="time"
                         required
                         value={draft.quiet_start}
@@ -249,7 +250,7 @@ export function Onboarding({
                     </label>
                     <label>
                       Quiet hours end
-                      <input
+                      <DateTimeField
                         type="time"
                         required
                         value={draft.quiet_end}

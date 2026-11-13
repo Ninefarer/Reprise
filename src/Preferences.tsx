@@ -1,3 +1,4 @@
+import { DateTimeField } from "./DateTimeField";
 import { Select } from "./Select";
 import { isNightly } from "./Nightly";
 import { categoryLabel, reminderCategories } from "./notifications";
@@ -168,7 +169,7 @@ export function Preferences({
           </label>
           <label>
             Preferred next-day time
-            <input
+            <DateTimeField
               type="time"
               required
               value={draft.return_time}
@@ -177,7 +178,7 @@ export function Preferences({
           </label>
           <label>
             Daily review time
-            <input
+            <DateTimeField
               type="time"
               required
               value={draft.review_time}
@@ -199,7 +200,7 @@ export function Preferences({
         <div className="fields">
           <label>
             Quiet hours begin
-            <input
+            <DateTimeField
               type="time"
               required
               value={draft.quiet_start}
@@ -208,7 +209,7 @@ export function Preferences({
           </label>
           <label>
             Quiet hours end
-            <input
+            <DateTimeField
               type="time"
               required
               value={draft.quiet_end}

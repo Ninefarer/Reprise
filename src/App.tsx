@@ -806,37 +806,48 @@ function Application({
   }
   const capture = (
     <>
-    <form
-      className="capture"
-      noValidate
-      aria-busy={busy}
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!title.trim()) { setCaptureError("Enter a task title."); captureRef.current?.focus(); return; }
-        setCaptureError("");
-        void add();
-      }}
-    >
-      <span aria-hidden="true">＋</span>
-      <input
-        ref={captureRef}
-        autoFocus={quick}
-        disabled={busy}
-        required
-        maxLength={500}
-        aria-invalid={!!captureError}
-        aria-describedby={captureError ? "capture-error" : undefined}
-        aria-label="Capture a task"
-        placeholder="What would you like to come back to?"
-        value={title}
-        onChange={(e) => { setTitle(e.target.value); setCaptureError(""); }}
-      />
-      <button disabled={busy} className="primary">
-        {busy ? "Saving..." : quick ? "Save" : "Add to Inbox"}{" "}
-        <span aria-hidden="true">↵</span>
-      </button>
-    </form>
-    {captureError && <p id="capture-error" className="capture-validation" role="alert">{captureError}</p>}
+      <form
+        className="capture"
+        noValidate
+        aria-busy={busy}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!title.trim()) {
+            setCaptureError("Enter a task title.");
+            captureRef.current?.focus();
+            return;
+          }
+          setCaptureError("");
+          void add();
+        }}
+      >
+        <span aria-hidden="true">＋</span>
+        <input
+          ref={captureRef}
+          autoFocus={quick}
+          disabled={busy}
+          required
+          maxLength={500}
+          aria-invalid={!!captureError}
+          aria-describedby={captureError ? "capture-error" : undefined}
+          aria-label="Capture a task"
+          placeholder="What would you like to come back to?"
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            setCaptureError("");
+          }}
+        />
+        <button disabled={busy} className="primary">
+          {busy ? "Saving..." : quick ? "Save" : "Add to Inbox"}{" "}
+          <span aria-hidden="true">↵</span>
+        </button>
+      </form>
+      {captureError && (
+        <p id="capture-error" className="capture-validation" role="alert">
+          {captureError}
+        </p>
+      )}
     </>
   );
   if (quick)
@@ -1141,7 +1152,14 @@ function Application({
         )}
         <>
           <div className="page-heading">
-            <h1>{pageTitle}{!["Home", "Settings", "Daily Review"].includes(view) && <span aria-hidden="true" className="count-badge">{visible.length}</span>}</h1>
+            <h1>
+              {pageTitle}
+              {!["Home", "Settings", "Daily Review"].includes(view) && (
+                <span aria-hidden="true" className="count-badge">
+                  {visible.length}
+                </span>
+              )}
+            </h1>
           </div>
           {view === "Settings" ? (
             <Preferences

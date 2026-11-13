@@ -1,3 +1,4 @@
+import { DateTimeField } from "./DateTimeField";
 import { Select } from "./Select";
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
@@ -209,7 +210,7 @@ export function TaskDialog({
           </label>
           <label>
             Scheduled start
-            <input
+            <DateTimeField
               type="datetime-local"
               required={draft.status === "Scheduled"}
               value={localInput(draft.scheduled_at)}
@@ -218,7 +219,7 @@ export function TaskDialog({
           </label>
           <label>
             Deadline
-            <input
+            <DateTimeField
               type="datetime-local"
               value={localInput(draft.due_at)}
               onChange={(e) => set("due_at", parseInput(e.target.value))}
@@ -248,7 +249,7 @@ export function TaskDialog({
             </div>
             <label>
               Custom return time
-              <input
+              <DateTimeField
                 type="datetime-local"
                 required
                 min={localInput(Math.floor(Date.now() / 1000))}
@@ -267,7 +268,7 @@ export function TaskDialog({
         {draft.status === "Settled" && intent === "return" && (
           <label>
             Return time
-            <input
+            <DateTimeField
               type="datetime-local"
               required
               value={localInput(draft.wake_at)}
@@ -286,7 +287,7 @@ export function TaskDialog({
             </label>
             <label>
               Follow-up time
-              <input
+              <DateTimeField
                 type="datetime-local"
                 value={localInput(draft.wake_at)}
                 onChange={(e) => set("wake_at", parseInput(e.target.value))}

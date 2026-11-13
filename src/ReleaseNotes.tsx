@@ -1,5 +1,5 @@
 import { Select } from "./Select";
-﻿import { isNightly } from "./Nightly";
+import { isNightly } from "./Nightly";
 import { useEffect, useRef, useState } from "react";
 import {
   releases,

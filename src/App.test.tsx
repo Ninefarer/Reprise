@@ -586,7 +586,8 @@ describe("Nightly channel", () => {
       ).toBe(false),
     );
     await screen.findByRole("heading", { name: "Choose when tasks return." });
-    await selectOption(user, 
+    await selectOption(
+      user,
       screen.getByLabelText("Settled tasks return"),
       "next_day",
     );
@@ -650,9 +651,7 @@ describe("Nightly channel", () => {
     let dialog = screen.getByRole("dialog", {
       name: "Go through setup again?",
     });
-    await user.click(
-      within(dialog).getByRole("button", { name: "Nevermind" }),
-    );
+    await user.click(within(dialog).getByRole("button", { name: "Nevermind" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Redo onboarding" }));
     dialog = screen.getByRole("dialog", { name: "Go through setup again?" });
@@ -811,23 +810,27 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await selectOption(user, 
+    await selectOption(
+      user,
       screen.getByLabelText("Window appearance"),
       "glass",
     );
-    await selectOption(user, 
+    await selectOption(
+      user,
       screen.getByLabelText("Glass material"),
       "acrylic",
     );
     await waitFor(() => expect(data.settings.desktop_material).toBe("acrylic"));
     expect(data.settings.desktop_glass).toBe(true);
     expect(data.settings.theme).toBe("system");
-    await selectOption(user, 
+    await selectOption(
+      user,
       screen.getByLabelText("Glass intensity"),
       "balanced",
     );
     await waitFor(() => expect(data.settings.desktop_tint).toBe(60));
-    await selectOption(user, 
+    await selectOption(
+      user,
       screen.getByLabelText("Window appearance"),
       "default",
     );
@@ -1321,7 +1324,8 @@ describe("workspace UI", () => {
     );
     expect(data.settings.theme).toBe("dark");
     expect(mocks.setTheme).toHaveBeenCalledWith("dark");
-    await selectOption(user, 
+    await selectOption(
+      user,
       screen.getByLabelText("Appearance mode"),
       "system",
     );
@@ -1662,10 +1666,15 @@ describe("Quick Capture regression", () => {
   it("shows inline validation for a blank title without invoking capture", async () => {
     const user = userEvent.setup();
     render(<App captureMode />);
-    await user.type(screen.getByRole("textbox", { name: "Capture a task" }), "   ");
+    await user.type(
+      screen.getByRole("textbox", { name: "Capture a task" }),
+      "   ",
+    );
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(screen.getByRole("alert").textContent).toBe("Enter a task title.");
-    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "capture")).toBe(false);
+    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "capture")).toBe(
+      false,
+    );
   });
   it("supports the shared editing menu without losing its draft or closing capture on menu Escape", async () => {
     const user = userEvent.setup();
@@ -1801,9 +1810,7 @@ describe("personal sidebar navigation", () => {
         .getAttribute("aria-expanded"),
     ).toBe("false");
     expect(
-      screen
-        .getByRole("button", { name: "Hub" })
-        .getAttribute("aria-expanded"),
+      screen.getByRole("button", { name: "Hub" }).getAttribute("aria-expanded"),
     ).toBe("true");
   });
   it("keeps every destination available in the rail and shows keyboard tooltips", async () => {
