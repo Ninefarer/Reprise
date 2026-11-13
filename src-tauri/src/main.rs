@@ -3,6 +3,8 @@ mod actions;
 mod diagnostics;
 mod domain;
 mod notifications;
+#[cfg(test)]
+mod performance_baseline;
 mod profile;
 mod releases;
 mod scheduler;

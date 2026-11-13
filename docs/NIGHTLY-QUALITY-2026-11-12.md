@@ -29,3 +29,15 @@ Explicit per-window `?perf=1` instrumentation now stores at most 256 local in-me
 Final local frontend suite: 172 passed. Rust suite: 49 passed, one opt-in real-toast probe ignored. TypeScript/Vite build, Rust formatting, strict Clippy and both signed-artifact verifier checks passed. The release workflow repeats the final checks before signing and publishing.
 
 Not freshly qualified: physical trackpad gestures, multi-monitor DPI, the complete theme/accessibility matrix, native Glass composition over changing backgrounds and long-session performance. These are QA gaps, not confirmed regressions. Existing native composition and task lifecycle code were preserved.
+
+## Published releases and final desktop check
+
+Stable 3.3.3 includes the targeted Settings safeguard. Nightly `3.3.3-nightly.20261112.1` includes the broader quality work. Both public HTTPS feeds, installer signatures, signed versions and checksum sidecars were verified after publication. Stable remained Latest; the rolling Nightly manifest points to the immutable prerelease installer.
+
+- Stable source: `bd3066245d3270718c68a2d157765fc60e7e65dd`; installer SHA-256 `45fd1d342cc712d739157797ece9376ecf76d5c1cc60895aca5ff7e9ee4a5123`.
+- Nightly source: `bac6001accc6f53c9d07365aef91e9f043e25a99`; installer SHA-256 `bf8842bd9b2741e5a545a81e2afbcf51564e92d8cbf3a9ac992e63531b52acf5`.
+- Nightly Actions build: https://github.com/Ninefarer/Reprise/actions/runs/43356993732. Stable Actions build: https://github.com/Ninefarer/Reprise/actions/runs/43357893770.
+
+The final update-restart guard was also checked in an isolated desktop build with a synthetic update offer. With an unsaved display name, clicking the offer opened Save / Discard / Keep editing. Keep editing retained the draft, and the offer stayed `UpdateAvailable`, demonstrating installation had not begun. The regression test additionally verifies that Save completes before `install_update` is called. The synthetic offer and QA process were cleaned up; no real user profile was edited.
+
+After merging the Stable hotfix back into develop, all 172 frontend tests passed. Subsequent performance measurements are recorded separately in [the baseline](PERFORMANCE-BASELINE.md) and are not changes to these published installers.
