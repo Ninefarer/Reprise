@@ -120,10 +120,12 @@
 .context-menu button > span[data-status] {
   color: var(--task-accent);
 }
-select[data-status] {
+select[data-status],
+.select-trigger[data-status] {
   border-inline-start: 3px solid var(--task-accent);
 }
-select option[data-status] {
+select option[data-status],
+.select-options [data-status] {
   color: var(--task-accent);
 }
 .dialog-statuses {

@@ -87,7 +87,18 @@ export function DateTimeField({
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        ◷
+        <svg
+          aria-hidden="true"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v6l4 2" />
+        </svg>
       </button>
       {error && (
         <span id={errorId} role="alert" className="field-error">
@@ -174,11 +185,13 @@ function DateTimePicker({
             <input
               aria-label="Calendar year"
               inputMode="numeric"
-              value={month.getFullYear()}
-              onChange={(e) => {
+              key={month.getFullYear()}
+              defaultValue={month.getFullYear()}
+              onBlur={(e) => {
                 const year = Number(e.target.value);
-                if (year >= 1000 && year <= 9999)
+                if (Number.isInteger(year) && year >= 1000 && year <= 9999)
                   setMonth(new Date(year, month.getMonth(), 1, 12));
+                else e.target.value = String(month.getFullYear());
               }}
             />
             <button

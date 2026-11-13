@@ -1677,3 +1677,71 @@ legend {
   color: var(--muted);
   font-size: 11px;
 }
+
+/* One page heading, complete glyph line boxes, and restrained control spacing. */
+[hidden] {
+  display: none !important;
+}
+body {
+  font-kerning: normal;
+}
+.page-heading h1 {
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.page-heading .count-badge {
+  vertical-align: middle;
+  margin-inline-start: 12px;
+}
+.sidebar-label {
+  line-height: 1.5;
+  padding-block: 1px;
+}
+.nav-group button svg {
+  flex-shrink: 0;
+}
+.sidebar .nav-group button > .sidebar-label {
+  flex: 1 1 auto;
+}
+.nav-count {
+  flex-shrink: 0;
+}
+.nav-group h2 {
+  letter-spacing: 0.07em;
+}
+.preferences .fields {
+  align-items: start;
+}
+.preferences .settings-section > label {
+  width: min(100%, 340px);
+}
+.shortcut-recorder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+}
+.shortcut-recorder label {
+  flex: 1;
+  min-width: 220px;
+}
+.shortcut-recorder p {
+  width: 100%;
+  margin: 0;
+  font-size: 12px;
+}
+.task-dialog .dialog-actions {
+  gap: 8px;
+}
+.task-dialog .dialog-actions button {
+  min-height: 34px;
+}
+.sidebar-tooltip {
+  max-width: min(240px, calc(100vw - 24px));
+}
+@media (max-width: 900px) {
+  .fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,3 +1,4 @@
+import { greeting } from "./greeting";
 import { matchesShortcut } from "./shortcuts";
 import { TextContextMenus } from "./TextContextMenu";
 import { trace, traceSnapshot, traceStart } from "./performance";
@@ -1093,9 +1094,7 @@ function Application({
       />
     );
   const pageTitle =
-    view === "Home"
-      ? `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${settings.name ? ", " + settings.name : ""}.`
-      : label(view);
+    view === "Home" ? greeting(now, settings.name) : label(view);
   return (
     <div className="app" data-density={settings.density}>
       <Sidebar

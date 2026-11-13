@@ -7,7 +7,8 @@ const paths: Record<string, string> = {
   surface: "M4 8a6 6 0 1 1 0 5M4 3v5h5",
   schedule: "M4 5h12v12H4ZM7 3v4m6-4v4M4 9h12",
   followup: "M4 5h12v12H4ZM7 3v4m6-4v4M4 9h12",
-  snooze: "M10 3a7 7 0 1 0 7 7 7 7 0 0 0-7-7Zm0 3v4l3 2",
+  snooze:
+    "M6 2 2 6m12-4 4 4M6 17l-2 2m10-2 2 2M10 6v5l3 2M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0",
   return: "M10 3a7 7 0 1 0 7 7 7 7 0 0 0-7-7Zm0 3v4l3 2",
   settle: "M7 4v12m6-12v12",
   inbox: "M3 5h14v11H3Zm0 6h4l1 2h4l1-2h4",

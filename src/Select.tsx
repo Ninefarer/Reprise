@@ -13,6 +13,7 @@ interface Option {
   value: string;
   label: ReactNode;
   disabled?: boolean;
+  status?: string;
 }
 function optionsFrom(children: ReactNode): Option[] {
   return Children.toArray(children).flatMap((child) => {
@@ -21,6 +22,7 @@ function optionsFrom(children: ReactNode): Option[] {
         value?: string | number;
         children?: ReactNode;
         disabled?: boolean;
+        "data-status"?: string;
       }>(child)
     )
       return [];
@@ -30,6 +32,7 @@ function optionsFrom(children: ReactNode): Option[] {
             value: String(child.props.value ?? ""),
             label: child.props.children,
             disabled: child.props.disabled,
+            status: child.props["data-status"],
           },
         ]
       : optionsFrom(child.props.children);
@@ -206,6 +209,7 @@ function SelectOption({
       type="button"
       value={option.value}
       data-value={option.value}
+      data-status={option.status}
       aria-selected={selected}
       disabled={option.disabled}
       tabIndex={active ? 0 : -1}

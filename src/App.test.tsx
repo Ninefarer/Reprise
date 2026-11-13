@@ -1882,7 +1882,9 @@ describe("personal sidebar navigation", () => {
     for (let i = 0; i < 30 && document.activeElement !== inbox; i++)
       await user.tab();
     expect(document.activeElement).toBe(inbox);
-    expect(screen.getByRole("tooltip").textContent).toBe("Inbox");
+    expect(screen.getByRole("tooltip").textContent).toBe(
+      "Captured tasks ready for a next step.",
+    );
     expect(inbox.getAttribute("aria-describedby")).toBe("sidebar-tooltip");
     expect(within(nav).queryByRole("button", { name: "Settings" })).toBeNull();
   });

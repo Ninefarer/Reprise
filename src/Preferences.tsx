@@ -74,6 +74,17 @@ export function Preferences({
   const dirty = editableKeys.some(
     (k) => JSON.stringify(draft[k]) !== JSON.stringify(baseline[k]),
   );
+  useEffect(() => {
+    const clean = editableKeys.filter(
+      (key) =>
+        JSON.stringify(draft[key]) === JSON.stringify(baseline[key]) &&
+        JSON.stringify(settings[key]) !== JSON.stringify(baseline[key]),
+    );
+    if (!clean.length) return;
+    const patch = Object.fromEntries(clean.map((key) => [key, settings[key]]));
+    setDraft((previous) => ({ ...previous, ...patch }));
+    setBaseline((previous) => ({ ...previous, ...patch }));
+  }, [settings, baseline, draft]);
   async function save(keys: readonly (keyof Settings)[] = editableKeys) {
     if (submitting.current) return false;
     const fields =

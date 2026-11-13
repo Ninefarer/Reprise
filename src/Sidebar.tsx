@@ -3,7 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Settings, View } from "./model";
 import { label } from "./model";
-import { navigation, Icon, type NavigationGroup } from "./navigation";
+import {
+  navigation,
+  navigationHelp,
+  Icon,
+  type NavigationGroup,
+} from "./navigation";
 import { Avatar } from "./Profile";
 import { createPortal } from "react-dom";
 import { taskCategory } from "./taskColors";
@@ -234,12 +239,12 @@ export function Sidebar({
                   <button
                     key={v}
                     data-status={taskCategory(v)}
-                    title={collapsed ? undefined : label(v)}
+
                     aria-describedby={
                       tooltip?.view === v ? "sidebar-tooltip" : undefined
                     }
                     onMouseEnter={(e) => {
-                      if (collapsed) {
+                      {
                         const r = e.currentTarget.getBoundingClientRect();
                         setTooltip({
                           view: v,
@@ -253,7 +258,7 @@ export function Sidebar({
                     }}
                     onMouseLeave={() => setTooltip(null)}
                     onFocus={(e) => {
-                      if (collapsed) {
+                      {
                         const r = e.currentTarget.getBoundingClientRect();
                         setTooltip({
                           view: v,
@@ -264,6 +269,7 @@ export function Sidebar({
                     }}
                     onBlur={() => setTooltip(null)}
                     onKeyDown={(e) => {
+                      if (e.key === "Escape") setTooltip(null);
                       if (
                         e.key === "ContextMenu" ||
                         (e.shiftKey && e.key === "F10")
@@ -417,8 +423,7 @@ export function Sidebar({
           onClose={() => setMenu(null)}
         />
       )}
-      {collapsed &&
-        tooltip &&
+      {tooltip &&
         !menu &&
         createPortal(
           <div
@@ -427,7 +432,7 @@ export function Sidebar({
             className="sidebar-tooltip"
             style={{ left: tooltip.x, top: tooltip.y }}
           >
-            {label(tooltip.view)}
+            {navigationHelp[tooltip.view] ?? label(tooltip.view)}
           </div>,
           document.body,
         )}

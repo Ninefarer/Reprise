@@ -4,6 +4,27 @@ import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { Select } from "./Select";
 afterEach(cleanup);
+it("keeps the selection surface inside its modal and dismisses without cancelling the dialog", async () => {
+  const user = userEvent.setup();
+  render(
+    <dialog open>
+      <label>
+        Mode
+        <Select value="a" onChange={vi.fn()}>
+          <option value="a">Alpha</option>
+          <option value="b">Beta</option>
+        </Select>
+      </label>
+    </dialog>,
+  );
+  await user.click(screen.getByRole("combobox", { name: "Mode" }));
+  expect(screen.getByRole("listbox").closest("dialog")).toBe(
+    screen.getByRole("dialog"),
+  );
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("listbox")).toBeNull();
+  expect(screen.getByRole("dialog")).toBeTruthy();
+});
 it("opens at the selected value, skips disabled choices and restores focus", async () => {
   const change = vi.fn(),
     user = userEvent.setup();
