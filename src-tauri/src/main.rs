@@ -15,6 +15,7 @@ mod store;
 mod tests;
 mod toasts;
 mod updates;
+mod view_data;
 mod visuals;
 use domain::*;
 use std::sync::Mutex;
@@ -103,7 +104,19 @@ fn snapshot(
     measure: Option<bool>,
     window: tauri::WebviewWindow,
     probe: Option<String>,
-) -> Result<serde_json::Value, String> {
+    background: Option<bool>,
+) -> Result<Option<serde_json::Value>, String> {
+    // Presentation-only gate. The Rust worker and all write commands remain independent.
+    if background.unwrap_or(false)
+        && (!window.is_visible().map_err(|e| e.to_string())?
+            || window.is_minimized().map_err(|e| e.to_string())?)
+    {
+        #[cfg(feature = "performance-qa")]
+        if measure == Some(true) {
+            performance_probe::record_skipped(&app, &window, probe.as_deref());
+        }
+        return Ok(None);
+    }
     let started = measure.unwrap_or(false).then(std::time::Instant::now);
     let clock = || {
         started
@@ -112,19 +125,21 @@ fn snapshot(
     };
     let d = db.lock().map_err(|e| e.to_string())?;
     let locked = clock();
-    let tasks = d.tasks()?;
-    let tasks_done = clock();
-    let settings = d.settings()?;
-    let settings_done = clock();
-    let notifications = d.notices()?;
-    let notices_done = clock();
-    let avatar = profile::avatar(&app, &settings.profile_image);
+    let capture = window.label() == "capture";
+    let view = view_data::read(&d, capture, started.is_some())?;
+    let data_done = clock();
+    let avatar = if capture {
+        None
+    } else {
+        profile::avatar(&app, &view.settings.profile_image)
+    };
     let system_visuals = visuals::system_visuals();
     let visuals_done = clock();
+    let settings = &view.settings;
     let version = app.package_info().version.to_string();
-    let mut result = serde_json::json!({"tasks":tasks,"settings":settings,"notifications":notifications,"avatar":avatar,"system_visuals":system_visuals,"release":{"version":version,"acknowledged":settings.last_seen_release,"should_show":releases::should_show(&version,settings.last_seen_release.as_deref())}});
+    let mut result = serde_json::json!({"tasks":view.tasks,"settings":settings,"notifications":view.notifications,"avatar":avatar,"system_visuals":system_visuals,"release":{"version":version,"acknowledged":settings.last_seen_release,"should_show":releases::should_show(&version,settings.last_seen_release.as_deref())}});
     if started.is_some() {
-        result["performance"] = serde_json::json!({"mutex_wait_ms":locked,"tasks_ms":tasks_done-locked,"settings_ms":settings_done-tasks_done,"notifications_ms":notices_done-settings_done,"avatar_system_ms":visuals_done-notices_done,"snapshot_total_ms":clock()});
+        result["performance"] = serde_json::json!({"mutex_wait_ms":locked,"tasks_ms":view.tasks_ms,"settings_ms":view.settings_ms,"notifications_ms":view.notifications_ms,"avatar_system_ms":visuals_done-data_done,"snapshot_total_ms":clock()});
     }
     #[cfg(feature = "performance-qa")]
     {
@@ -135,14 +150,17 @@ fn snapshot(
     }
     #[cfg(not(feature = "performance-qa"))]
     let _ = (window, probe);
-    Ok(result)
+    Ok(Some(result))
 }
 #[tauri::command]
-fn capture(title: String, db: tauri::State<Db>) -> Result<Task, String> {
+fn capture(title: String, db: tauri::State<Db>, app: tauri::AppHandle) -> Result<Task, String> {
     let now = chrono::Utc::now().timestamp();
-    db.lock()
-        .unwrap()
-        .save(Task::new(title, now), "Created", now)
+    let task = db
+        .lock()
+        .map_err(|e| e.to_string())?
+        .save(Task::new(title, now), "Created", now)?;
+    let _ = app.emit("refresh", ());
+    Ok(task)
 }
 #[tauri::command]
 fn save_task(mut task: Task, action: String, db: tauri::State<Db>) -> Result<Task, String> {

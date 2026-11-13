@@ -33,16 +33,22 @@ def summarize(rows, markers):
                 raise ValueError(f"No snapshots for {phase}/{window}")
             if any((r["visible"], r["minimized"]) != state for r in selected):
                 raise ValueError(f"Window state changed within {phase}/{window}")
-            if any(r["tasks"] != 100 or r["notifications"] != 100 for r in selected):
+            completed = [r for r in selected if r.get("kind") != "skipped"]
+            if any((r["tasks"], r["notifications"]) !=
+                   ((0, 0) if r.get("kind") == "capture" else (100, 100))
+                   for r in completed):
                 raise ValueError("Synthetic profile size changed")
-            timings = sorted(r["phases"]["snapshot_total_ms"] for r in selected)
+            timings = sorted(r["phases"]["snapshot_total_ms"] for r in completed)
             windows[window] = {
-                "snapshots": len(selected),
+                "snapshots": len(completed),
+                "full_snapshots": sum(r.get("kind", "full") == "full" for r in completed),
+                "capture_bootstraps": sum(r.get("kind") == "capture" for r in completed),
+                "skipped_requests": len(selected) - len(completed),
                 "reasons": dict(Counter(r["reason"] for r in selected)),
-                "per_minute": len(selected) / 1.5,
-                "logical_json_bytes": sum(r["bytes"] for r in selected),
-                "backend_median_ms": round(median(timings), 4),
-                "backend_p95_ms": round(timings[ceil(len(timings) * .95) - 1], 4),
+                "per_minute": len(completed) / 1.5,
+                "logical_json_bytes": sum(r["bytes"] for r in completed),
+                "backend_median_ms": round(median(timings), 4) if timings else None,
+                "backend_p95_ms": round(timings[ceil(len(timings) * .95) - 1], 4) if timings else None,
                 "native_visible": state[0],
                 "native_minimized": state[1],
                 "document_visibility": sorted({r.get("document_visibility", "not recorded")

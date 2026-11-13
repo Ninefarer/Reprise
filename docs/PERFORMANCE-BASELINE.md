@@ -35,3 +35,5 @@ These are backend microbenchmarks, not startup, IPC, WebView decoding, React ren
 The agreed process remains measurement, ranked review, then behavior changes. This commit adds the reproducible measurement only; refresh frequency, lifecycle semantics and scheduling are unchanged.
 
 Actual visible/hidden/minimized window observations are now recorded in [the refresh activity investigation](qa/refresh-activity-2026-11-12.md), with a native-window-aware suspension proposed for review.
+
+The approved first optimization and its before/after measurements are recorded in [native-window refresh suspension](qa/window-refresh-suspension-2026-11-13.md). That follow-up preserves the independent Rust engine, makes Capture bootstrap lightweight and documents the remaining manual acceptance gaps.

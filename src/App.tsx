@@ -164,8 +164,10 @@ function Application({
   const captureRef = useRef<HTMLInputElement>(null),
     searchRef = useRef<HTMLInputElement>(null),
     loading = useRef(false),
-    reloadRequested = useRef(false),
+    reloadRequested = useRef<string | null>(null),
     legacy = useRef(new Map<string, number>());
+  const suspended = useRef(false),
+    mounted = useRef(true);
   const themeReady = useTheme(data?.settings, data?.system_visuals);
   useScrollActivity();
   const windowShown = useRef(false),
@@ -283,19 +285,35 @@ function Application({
     error,
   ]);
   const load = useCallback(async (reason = "explicit"): Promise<void> => {
+    if (!mounted.current) return;
     if (loading.current) {
-      reloadRequested.current = true;
+      // Retain request priority: a queued worker refresh must not bypass the visibility gate.
+      if (
+        !reloadRequested.current ||
+        !["timer", "event", "focus", "resume"].includes(reason)
+      )
+        reloadRequested.current = reason;
       return;
     }
     loading.current = true;
     const started = traceStart();
     try {
-      const next = await (started === null
-        ? invoke<Snapshot>("snapshot")
-        : invoke<Snapshot>("snapshot", {
-            measure: true,
-            probe: `${reason}:${document.visibilityState}`,
-          }));
+      const background = ["timer", "event", "focus", "resume"].includes(reason);
+      const args = {
+        ...(background ? { background: true } : {}),
+        ...(started === null
+          ? {}
+          : { measure: true, probe: `${reason}:${document.visibilityState}` }),
+      };
+      const next = await (Object.keys(args).length
+        ? invoke<Snapshot | null>("snapshot", args)
+        : invoke<Snapshot | null>("snapshot"));
+      if (!mounted.current) return;
+      if (!next) {
+        suspended.current = true;
+        return;
+      }
+      suspended.current = false;
       traceSnapshot(`snapshot.${reason}`, started, next);
       await Promise.all(
         next.tasks
@@ -309,6 +327,7 @@ function Application({
             t.settled_at = legacy.current.get(t.id) ?? null;
           }),
       );
+      if (!mounted.current) return;
       const fresh = next.tasks.filter(
         (t) =>
           fetchedOnce.current &&
@@ -330,26 +349,32 @@ function Application({
         }));
       }
       snapshotStarted.current = started;
+      setNow(Math.floor(Date.now() / 1000));
       setData(next);
     } catch (e) {
-      setError(String(e));
+      if (mounted.current) setError(String(e));
     } finally {
       loading.current = false;
-      if (reloadRequested.current) {
-        reloadRequested.current = false;
-        queueMicrotask(() => void load());
+      if (reloadRequested.current && mounted.current) {
+        const reason = reloadRequested.current;
+        reloadRequested.current = null;
+        queueMicrotask(() => {
+          if (mounted.current) void load(reason);
+        });
       }
     }
   }, []);
   useEffect(() => {
+    mounted.current = true;
     void load("initial");
     const timer = setInterval(() => {
-      setNow(Math.floor(Date.now() / 1000));
-      void load("timer");
+      if (!dead) void load("timer");
     }, 15000);
-    let off: (() => void) | undefined;
+    let off: (() => void) | undefined, offResize: (() => void) | undefined;
     let dead = false;
-    void listen("refresh", () => void load("event"))
+    void listen("refresh", () => {
+      if (!dead) void load("event");
+    })
       .then((f) => {
         if (dead) f();
         else off = f;
@@ -358,13 +383,27 @@ function Application({
         if (!dead) setError(String(error));
       });
     const focus = () => {
-      void load("focus");
-      if (quick) captureRef.current?.focus();
+      void load("focus").then(() => {
+        if (!dead && quick) captureRef.current?.focus();
+      });
     };
+    void getCurrentWindow()
+      .onResized(() => {
+        if (!dead && suspended.current) void load("resume");
+      })
+      .then((f) => {
+        if (dead) f();
+        else offResize = f;
+      })
+      .catch((error) => {
+        if (!dead) setError(String(error));
+      });
     window.addEventListener("focus", focus);
     return () => {
       dead = true;
+      mounted.current = false;
       off?.();
+      offResize?.();
       clearInterval(timer);
       window.removeEventListener("focus", focus);
     };
@@ -382,7 +421,7 @@ function Application({
         }>("check_updates", { automatic: true });
         if (!disposed) {
           if (result?.message) setUpdateCheckMessage(result.message);
-          if (result?.notice_id) await load();
+          if (result?.notice_id) await load("event");
         }
       } catch (error) {
         if (!disposed)

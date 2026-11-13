@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   setBackgroundColor: vi.fn(),
   theme: vi.fn(),
   onThemeChanged: vi.fn(),
+  onResized: vi.fn(),
   hide: vi.fn(),
   startDragging: vi.fn(),
   listeners: new Map<string, (event: { payload: unknown }) => void>(),
@@ -78,6 +79,7 @@ beforeEach(() => {
   mocks.setTheme.mockResolvedValue(undefined);
   mocks.setBackgroundColor.mockResolvedValue(undefined);
   mocks.onThemeChanged.mockResolvedValue(() => {});
+  mocks.onResized.mockResolvedValue(() => {});
   mocks.invoke.mockImplementation(async (cmd, args) => {
     if (cmd === "diagnostics")
       return {
@@ -142,6 +144,231 @@ async function openSettings(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByLabelText(/Profile menu for/));
   await user.click(await screen.findByRole("menuitem", { name: "Settings" }));
 }
+describe("native-window snapshot suspension", () => {
+  function suspendSnapshots() {
+    let suspended = false;
+    const original = mocks.invoke.getMockImplementation()!;
+    mocks.invoke.mockImplementation(async (cmd, args) =>
+      cmd === "snapshot" && args?.background && suspended
+        ? null
+        : original(cmd, args),
+    );
+    return (value: boolean) => {
+      suspended = value;
+    };
+  }
+  it("initializes hidden windows once and preserves the view when periodic reads are skipped", async () => {
+    vi.useFakeTimers();
+    try {
+      const suspend = suspendSnapshots();
+      suspend(true);
+      render(<App />);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(mocks.invoke).toHaveBeenCalledWith("snapshot");
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(45001);
+      });
+      expect(
+        mocks.invoke.mock.calls.filter(
+          ([cmd, args]) => cmd === "snapshot" && args?.background,
+        ),
+      ).toHaveLength(3);
+      expect(screen.getByRole("navigation")).toBeTruthy();
+      expect(screen.queryByText("Opening Reprise…")).toBeNull();
+      expect(
+        mocks.invoke.mock.calls.some(
+          ([cmd, args]) => cmd === "check_updates" && args?.automatic,
+        ),
+      ).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it("refreshes tasks and countdowns immediately after six hours without waiting for a poll", async () => {
+    const now = Math.floor(Date.now() / 1000);
+    data.tasks = [
+      {
+        ...closedTask("Finished"),
+        title: "Long pause",
+        status: "Snoozed",
+        completed_at: null,
+        wake_at: now + 7 * 3600,
+      },
+    ];
+    const suspend = suspendSnapshots();
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(
+      await screen.findByRole("button", { name: /^Snoozed\s*1 items$/ }),
+    );
+    expect(screen.getByText(/Returns in 7h/)).toBeTruthy();
+    suspend(true);
+    data.tasks.push({
+      ...data.tasks[0],
+      id: "returned",
+      title: "Returned while hidden",
+      status: "Settled",
+      review_at: now + 100,
+      review_reason: "Settled reminder",
+    });
+    await act(async () => {
+      mocks.listeners.get("refresh")!({ payload: null });
+    });
+    expect(
+      screen.queryByRole("button", { name: /^Resurfaced\s*1 items$/ }),
+    ).toBeNull();
+    const clock = vi
+      .spyOn(Date, "now")
+      .mockReturnValue((now + 6 * 3600) * 1000);
+    try {
+      suspend(false);
+      fireEvent.focus(window);
+      await screen.findByText("Returns in 1h 0m");
+      expect(
+        screen.getByRole("button", { name: /^Resurfaced\s*1 items$/ }),
+      ).toBeTruthy();
+    } finally {
+      clock.mockRestore();
+    }
+  });
+  it("preserves an edited task draft and exposes revision conflicts after restoring", async () => {
+    data.tasks = [
+      { ...closedTask("Finished"), status: "Inbox", completed_at: null },
+    ];
+    const suspend = suspendSnapshots();
+    const original = mocks.invoke.getMockImplementation()!;
+    mocks.invoke.mockImplementation(async (cmd, args) => {
+      if (cmd === "save_task")
+        throw Error("This task changed elsewhere. Reload and try again.");
+      return original(cmd, args);
+    });
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(
+      await screen.findByRole("button", { name: /^Inbox\s*1 items$/ }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Finished intention" }),
+    );
+    const title = screen.getByLabelText("Title") as HTMLInputElement;
+    await user.clear(title);
+    await user.type(title, "Keep my unsaved draft");
+    suspend(true);
+    data.tasks[0] = {
+      ...data.tasks[0],
+      title: "Changed elsewhere",
+      updated_at: 999,
+    };
+    await act(async () => {
+      mocks.listeners.get("refresh")!({ payload: null });
+    });
+    suspend(false);
+    fireEvent.focus(window);
+    await waitFor(() =>
+      expect(mocks.invoke).toHaveBeenCalledWith("snapshot", {
+        background: true,
+      }),
+    );
+    expect(title.value).toBe("Keep my unsaved draft");
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await within(screen.getByRole("dialog", { name: "Edit task" })).findByRole(
+      "alert",
+    );
+    expect(title.value).toBe("Keep my unsaved draft");
+  });
+  it("catches up on native restore without a focus event and avoids fetching on ordinary resize", async () => {
+    const suspend = suspendSnapshots();
+    render(<App />);
+    await screen.findByRole("navigation");
+    const resize = mocks.onResized.mock.calls[0][0] as () => void;
+    mocks.invoke.mockClear();
+    await act(async () => resize());
+    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "snapshot")).toBe(
+      false,
+    );
+    suspend(true);
+    await act(async () => {
+      mocks.listeners.get("refresh")!({ payload: null });
+    });
+    data.tasks = [
+      { ...closedTask("Finished"), status: "Inbox", completed_at: null },
+    ];
+    suspend(false);
+    await act(async () => resize());
+    expect(
+      screen.getByRole("button", { name: /^Inbox\s*1 items$/ }),
+    ).toBeTruthy();
+    mocks.invoke.mockClear();
+    await act(async () => resize());
+    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "snapshot")).toBe(
+      false,
+    );
+  });
+  it("preserves a Settings draft while applying fresh appearance on restore", async () => {
+    const suspend = suspendSnapshots();
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.type(screen.getByLabelText("Display name"), " unsaved");
+    suspend(true);
+    data.settings.theme_family = "pitch-black";
+    await act(async () => {
+      mocks.listeners.get("refresh")!({ payload: null });
+    });
+    suspend(false);
+    fireEvent.focus(window);
+    await waitFor(() =>
+      expect(document.documentElement.dataset.family).toBe("pitch-black"),
+    );
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Test unsaved");
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+  });
+  it("retains the background gate when a refresh is queued behind initialization", async () => {
+    let resolve!: (value: Snapshot) => void;
+    const original = mocks.invoke.getMockImplementation()!;
+    let first = true;
+    mocks.invoke.mockImplementation(async (cmd, args) => {
+      if (cmd === "snapshot" && first) {
+        first = false;
+        return new Promise<Snapshot>((r) => {
+          resolve = r;
+        });
+      }
+      if (cmd === "snapshot" && args?.background) return null;
+      return original(cmd, args);
+    });
+    render(<App />);
+    await act(async () => {
+      await Promise.resolve();
+      mocks.listeners.get("refresh")!({ payload: null });
+      resolve(structuredClone(data));
+    });
+    await screen.findByRole("navigation");
+    expect(
+      mocks.invoke.mock.calls.filter(([cmd]) => cmd === "snapshot"),
+    ).toEqual([["snapshot"], ["snapshot", { background: true }]]);
+  });
+  it("cleans up a native restore listener that resolves after unmount", async () => {
+    let resolve!: (off: () => void) => void;
+    const off = vi.fn();
+    mocks.onResized.mockImplementation(
+      () =>
+        new Promise<() => void>((r) => {
+          resolve = r;
+        }),
+    );
+    const app = render(<App />);
+    app.unmount();
+    await act(async () => {
+      resolve(off);
+    });
+    expect(off).toHaveBeenCalledOnce();
+  });
+});
 describe("Settings draft protection", () => {
   it("keeps edits when staying and discards only after an explicit choice", async () => {
     const user = userEvent.setup();

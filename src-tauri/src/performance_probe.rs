@@ -20,7 +20,7 @@ fn metrics(snapshot: &Value, reason: Option<&str>) -> Value {
             (Some(reason), visibility)
         });
     let reason = match reason {
-        Some("initial" | "timer" | "event" | "focus" | "explicit") => reason.unwrap(),
+        Some("initial" | "timer" | "event" | "focus" | "resume" | "explicit") => reason.unwrap(),
         _ => "other",
     };
     let phases: serde_json::Map<_, _> = PHASES
@@ -55,10 +55,33 @@ pub fn record(
     reason: Option<&str>,
     snapshot: &Value,
 ) {
+    record_row(app, window, reason, Some(snapshot));
+}
+
+pub fn record_skipped(app: &tauri::AppHandle, window: &tauri::WebviewWindow, reason: Option<&str>) {
+    record_row(app, window, reason, None);
+}
+
+fn record_row(
+    app: &tauri::AppHandle,
+    window: &tauri::WebviewWindow,
+    reason: Option<&str>,
+    snapshot: Option<&Value>,
+) {
     if app.config().identifier != QA_ID {
         return;
     }
-    let mut row = metrics(snapshot, reason);
+    let mut row = metrics(snapshot.unwrap_or(&Value::Null), reason);
+    row["kind"] = json!(if snapshot.is_none() {
+        "skipped"
+    } else if window.label() == "capture" {
+        "capture"
+    } else {
+        "full"
+    });
+    if snapshot.is_none() {
+        row["bytes"] = json!(0);
+    }
     row["at_ms"] = json!(chrono::Utc::now().timestamp_millis());
     row["window"] = json!(window.label());
     row["visible"] = json!(window.is_visible().ok());
