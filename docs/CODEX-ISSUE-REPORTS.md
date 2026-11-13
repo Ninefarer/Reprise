@@ -92,7 +92,7 @@ comments. The action revokes the temporary token at job completion by default.
 ## Local checks
 
 ```powershell
-node --test scripts/github/issue-report.test.mjs
+node --test scripts/github/issue-report.checks.mjs
 npx prettier --check .github/workflows/codex-issue-comment.yml
 ```
 
