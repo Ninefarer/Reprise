@@ -22,6 +22,8 @@ Windows toasts and Reprise's internal notification history are independent. Nati
 
 Closing the window hides it by default while the tray process keeps scheduling. Quitting stops reminders until the next launch. Missed events are reconciled on launch. Native notification callbacks support the running process; terminated-process activation and native action buttons are not established supported features.
 
+On `develop`, background presentation refreshes skip full snapshots when their native window is hidden or minimized; Rust scheduling and notification delivery continue independently. Focus/restore requests fresh data and countdown time immediately. Existing editor drafts are retained, with optimistic revision checks on save. Quick Capture bootstraps settings without reading task/notification lists and saves through the same authoritative Store. See the [implementation and acceptance evidence](qa/window-refresh-suspension-2026-11-13.md) before attributing this development behavior to a published installer.
+
 A crash between OS submission and SQLite acknowledgement can repeat a notification: Windows submission and the database cannot share a transaction. Idempotent event processing does not remove that external-side-effect boundary.
 
 See [Native toasts and Quick Capture](NATIVE-TOASTS-CAPTURE.md), [notification-panel history](NOTIFICATION-PANEL.md), and [local notification fixes](SETTINGS-NOTIFICATION-CLEANUP.md) for implementation-pass evidence. Consult the exact release notes before attributing a development fix to a published build.

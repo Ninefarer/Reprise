@@ -1,4 +1,6 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { Select } from "./Select";
+import { isNightly } from "./Nightly";
+import { useEffect, useRef, useState } from "react";
 import {
   releases,
   releaseFor,
@@ -103,19 +105,21 @@ export function ReleaseDialog({
         <strong>{mode === "new" ? "What’s New" : "Release history"}</strong>
         <label>
           Version
-          <select
+          <Select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
           >
             {!releaseFor(current) && (
               <option value={current}>{current} — notes unavailable</option>
             )}
-            {releases.map((r) => (
-              <option key={r.version} value={r.version}>
-                v{r.version}
-              </option>
-            ))}
-          </select>
+            {releases
+              .filter((r) => isNightly(current) === isNightly(r.version))
+              .map((r) => (
+                <option key={r.version} value={r.version}>
+                  v{r.version}
+                </option>
+              ))}
+          </Select>
         </label>
       </div>
       <div className="release-scroll">

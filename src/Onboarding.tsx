@@ -1,3 +1,5 @@
+import { DateTimeField } from "./DateTimeField";
+import { Select } from "./Select";
 import { useEffect, useRef, useState } from "react";
 import type { Settings, VisualPreferences } from "./model";
 import { AvatarEditor } from "./Profile";
@@ -54,7 +56,6 @@ export function Onboarding({
   }
   const [draft, setDraft] = useState(() => ({
     name: settings.name,
-    workspace: settings.workspace,
     settlement_mode: settings.settlement_mode,
     return_time: settings.return_time,
     daily_review: settings.daily_review,
@@ -106,8 +107,8 @@ export function Onboarding({
               <h1 ref={heading} tabIndex={-1} id="setup-title">
                 {
                   [
-                    "A little space for your intentions.",
-                    "Let later have a time.",
+                    "Set up your space.",
+                    "Choose when tasks return.",
                     "Start with one thing.",
                   ][step]
                 }
@@ -116,7 +117,7 @@ export function Onboarding({
                 {
                   [
                     "Make yourself at home. You can change all of this later.",
-                    "Choose how Reprise helps you return, without rushing you.",
+                    "Set return times, daily review reminders, and quiet hours.",
                     "Capture something for later. No dates or priorities needed.",
                   ][step]
                 }
@@ -139,17 +140,8 @@ export function Onboarding({
                       />
                     </label>
                     <label>
-                      Space name
-                      <input
-                        maxLength={120}
-                        placeholder="Personal"
-                        value={draft.workspace}
-                        onChange={(e) => set("workspace", e.target.value)}
-                      />
-                    </label>
-                    <label>
                       Theme
-                      <select
+                      <Select
                         value={settings.theme_family ?? "classic"}
                         onChange={(e) =>
                           void onVisual({
@@ -161,12 +153,12 @@ export function Onboarding({
                         <option value="classic">Reprise Classic</option>
                         <option value="pitch-black">Pitch Black</option>
                         <option value="ashen-white">Ashen White</option>
-                      </select>
+                      </Select>
                     </label>
                     {(settings.theme_family ?? "classic") === "classic" && (
                       <label>
                         Appearance mode
-                        <select
+                        <Select
                           value={settings.theme}
                           onChange={(e) =>
                             void onVisual({
@@ -179,7 +171,7 @@ export function Onboarding({
                           </option>
                           <option value="light">Light</option>
                           <option value="dark">Dark</option>
-                        </select>
+                        </Select>
                       </label>
                     )}
                   </div>
@@ -189,18 +181,19 @@ export function Onboarding({
                   <div className="fields">
                     <label>
                       Settled tasks return
-                      <select
+                      <Select
                         value={draft.settlement_mode}
                         onChange={(e) => set("settlement_mode", e.target.value)}
                       >
                         <option value="next_day">The following day</option>
                         <option value="24h">Exactly 24 hours later</option>
-                      </select>
+                      </Select>
                     </label>
                     {draft.settlement_mode === "next_day" && (
                       <label>
                         Preferred return time
-                        <input
+                        <DateTimeField
+                          aria-label="Preferred return time"
                           type="time"
                           required
                           value={draft.return_time}
@@ -223,13 +216,14 @@ export function Onboarding({
                       checked={draft.daily_review}
                       onChange={(e) => set("daily_review", e.target.checked)}
                     />
-                    A daily moment to review
+                    Send a daily review reminder
                   </label>
                   <div className="fields">
                     {draft.daily_review && (
                       <label>
                         Daily review time
-                        <input
+                        <DateTimeField
+                          aria-label="Daily review time"
                           type="time"
                           required
                           value={draft.review_time}
@@ -239,7 +233,8 @@ export function Onboarding({
                     )}
                     <label>
                       Quiet hours begin
-                      <input
+                      <DateTimeField
+                        aria-label="Quiet hours begin"
                         type="time"
                         required
                         value={draft.quiet_start}
@@ -248,7 +243,8 @@ export function Onboarding({
                     </label>
                     <label>
                       Quiet hours end
-                      <input
+                      <DateTimeField
+                        aria-label="Quiet hours end"
                         type="time"
                         required
                         value={draft.quiet_end}
@@ -260,7 +256,7 @@ export function Onboarding({
               ) : (
                 <>
                   <label>
-                    Your first intention
+                    Your first task
                     <input
                       maxLength={500}
                       placeholder="What would you like to come back to?"
@@ -336,11 +332,11 @@ export function RedoOnboardingDialog({
         <p>
           Your tasks, history, notifications, and saved preferences will stay.
           Setup starts with your current preferences; only changes you choose
-          will be saved. Picture and theme changes apply immediately.
+          will be saved. Avatar and theme changes apply immediately.
         </p>
         <div className="dialog-actions">
           <button autoFocus onClick={onCancel}>
-            Keep working
+            Nevermind
           </button>
           <button className="primary" onClick={onConfirm}>
             Redo onboarding

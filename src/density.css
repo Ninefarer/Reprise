@@ -5,9 +5,9 @@
   --section-gap: 22px;
 }
 :root[data-density="compact"] {
-  --task-padding: 10px;
-  --task-gap: 6px;
-  --section-gap: 14px;
+  --task-padding: 8px;
+  --task-gap: 4px;
+  --section-gap: 12px;
 }
 .task-card {
   padding: var(--task-padding);
@@ -78,4 +78,28 @@
 :root[data-density="compact"] .capture {
   margin-bottom: 16px;
   padding-block: 6px;
+}
+
+:root[data-density="compact"] .quick .capture {
+  margin-bottom: 0;
+}
+
+:root[data-density="compact"] .select-trigger {
+  min-height: 30px;
+  padding-block: 5px;
+}
+:root[data-density="compact"] .select-options button {
+  min-height: 30px;
+  padding-block: 5px;
+}
+:root[data-density="compact"] .settings-tabs {
+  gap: 12px;
+}
+:root[data-density="compact"] .settings-tabs button {
+  min-height: 32px;
+  padding: 7px 4px 9px;
+}
+:root[data-density="compact"] .editor-section {
+  margin: 14px 0;
+  padding-top: 12px;
 }

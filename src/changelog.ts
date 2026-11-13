@@ -69,7 +69,84 @@ export interface Release {
   subtitle?: string;
   sections: ReleaseSection[];
 }
+const interface340: ReleaseSection[] = [
+  {
+    heading: "ADDITIONS",
+    accent: "new",
+    entries: [
+      {
+        text: "Custom date and time pickers, keyboard-friendly dropdowns, and a recorder for your command palette shortcut.",
+      },
+      {
+        text: "Explanatory navigation tooltips and greetings that vary throughout the day.",
+      },
+    ],
+  },
+  {
+    heading: "CHANGES",
+    accent: "little",
+    entries: [
+      {
+        text: "Hub, Ongoing and Archive organize the sidebar. Do Now is now called Current; your saved task states are preserved.",
+      },
+      {
+        text: "Settings use an underline tab bar and section Save/Discard controls. Avatar and appearance changes still save immediately.",
+      },
+      {
+        text: "Task editing groups status, timing and organization, with expandable history colored by its recorded destination.",
+      },
+      {
+        text: "Cleaner Quick Capture, task headings and notification controls, plus tighter Compact spacing.",
+      },
+      {
+        text: "Hidden and minimized windows skip full presentation snapshots. Returning to a window refreshes its data, and Quick Capture reads only the metadata it needs.",
+      },
+    ],
+  },
+  {
+    heading: "BUGFIXES",
+    accent: "fixes",
+    entries: [
+      {
+        text: "Release history stays within the installed channel, and notification filters retain their selected category.",
+      },
+      {
+        text: "Section saves preserve independent preferences. Task revision checks and unsaved drafts remain protected.",
+      },
+      {
+        text: "Quick Capture validation sits below its input, clock buttons and dropdown arrows align correctly, and dates support readable English entry.",
+      },
+      {
+        text: "Windows notification tests handle missing permission records without ignoring explicit blocks. Nested notification controls stay open while you use them.",
+      },
+    ],
+  },
+];
 export const releases: Release[] = [
+  {
+    version: "3.4.0",
+    date: "2026-11-13",
+    title: "A clearer place to return.",
+    sections: interface340,
+  },
+  {
+    version: "3.4.0-nightly.20261113.1",
+    date: "2026-11-13",
+    title: "UI overhaul and window refresh improvements",
+    subtitle: "Nightly candidate",
+    sections: [
+      ...interface340,
+      {
+        heading: "DEVELOPMENT STATUS",
+        accent: "known",
+        entries: [
+          {
+            text: "Native Windows visual, display-scaling and physical window-state acceptance is still pending. This candidate has not been published.",
+          },
+        ],
+      },
+    ],
+  },
   {
     version: "3.3.3",
     date: "2026-11-12",
@@ -85,6 +162,52 @@ export const releases: Release[] = [
           },
           {
             text: "A sticky save bar shows unsaved changes. Appearance and pictures continue saving immediately.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "3.3.3-nightly.20261112.1",
+    date: "2026-11-12",
+    title: "Keep your changes. Choose your updates.",
+    sections: [
+      {
+        heading: "BUGS, BEGONE",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Settings warns before leaving unsaved profile or reminder changes, including when installing an update. Save, discard, or keep editing; a failed save keeps your draft.",
+          },
+          {
+            text: "Task-detail actions keep edited fields when changing status, including the Stable 3.3.1 hotfix.",
+          },
+          {
+            text: "Windows notification tests can proceed when Windows has no permission record yet, while explicit notification blocks and other errors remain visible.",
+          },
+        ],
+      },
+      {
+        heading: "THE LITTLE THINGS",
+        accent: "little",
+        entries: [
+          {
+            text: "Nightly release history shows Nightly entries only. The redundant What's New action is removed on Nightly, and test notifications live under Advanced / Diagnostics.",
+          },
+          {
+            text: "Shorter labels and clearer instructions across setup, task details, Settings, and search. Task dialogs have accessible names, and the command palette announces its results.",
+          },
+        ],
+      },
+      {
+        heading: "UNDER THE HOOD",
+        accent: "technical",
+        entries: [
+          {
+            text: "Signed GitHub update feeds are now configured separately for Stable and Nightly. Checks wait until setup finishes, and installation remains your choice.",
+          },
+          {
+            text: "An opt-in, bounded performance trace supports follow-up measurements. Ordinary launches do not collect it; this build makes no measured speedup claim.",
           },
         ],
       },

@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { LogicalSize } from "@tauri-apps/api/dpi";
 export function QuickCapture({
   children,
   error,
@@ -11,6 +12,29 @@ export function QuickCapture({
   busy: boolean;
   onError: (error: string) => void;
 }) {
+  const root = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    if (typeof ResizeObserver === "undefined" || !root.current) return;
+    let lastHeight = 0;
+    const resize = () => {
+      const height = Math.max(
+        96,
+        Math.min(
+          360,
+          Math.ceil(root.current?.getBoundingClientRect().height ?? 0),
+        ),
+      );
+      if (height === lastHeight) return;
+      lastHeight = height;
+      void getCurrentWindow()
+        .setSize(new LogicalSize(window.innerWidth, height))
+        .catch((error) => onError(String(error)));
+    };
+    const observer = new ResizeObserver(resize);
+    observer.observe(root.current);
+    resize();
+    return () => observer.disconnect();
+  }, [onError]);
   async function close() {
     try {
       await getCurrentWindow().hide();
@@ -19,7 +43,12 @@ export function QuickCapture({
     }
   }
   return (
-    <main className="quick" aria-label="Quick Capture" aria-busy={busy}>
+    <main
+      ref={root}
+      className="quick"
+      aria-label="Quick Capture"
+      aria-busy={busy}
+    >
       <header
         className="quick-head"
         onPointerDown={(event) => {
@@ -35,13 +64,12 @@ export function QuickCapture({
       >
         <div>
           <strong>Quick Capture</strong>
-          <span>Inbox</span>
         </div>
         <button
           type="button"
           className="quick-close"
           aria-label="Close Quick Capture"
-          title="Close (Esc)"
+          title="Close Quick Capture"
           disabled={busy}
           onClick={() => void close()}
         >
@@ -59,16 +87,7 @@ export function QuickCapture({
         <p role="alert" className="error">
           {error}
         </p>
-      ) : (
-        <footer className="quick-foot">
-          <span>
-            <kbd>Enter</kbd> save to Inbox
-          </span>
-          <span>
-            <kbd>Esc</kbd> close
-          </span>
-        </footer>
-      )}
+      ) : null}
     </main>
   );
 }

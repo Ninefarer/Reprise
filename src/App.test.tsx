@@ -1,3 +1,4 @@
+import { selectOption } from "./testControls";
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -19,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   setBackgroundColor: vi.fn(),
   theme: vi.fn(),
   onThemeChanged: vi.fn(),
+  onResized: vi.fn(),
   hide: vi.fn(),
   startDragging: vi.fn(),
   listeners: new Map<string, (event: { payload: unknown }) => void>(),
@@ -78,6 +80,7 @@ beforeEach(() => {
   mocks.setTheme.mockResolvedValue(undefined);
   mocks.setBackgroundColor.mockResolvedValue(undefined);
   mocks.onThemeChanged.mockResolvedValue(() => {});
+  mocks.onResized.mockResolvedValue(() => {});
   mocks.invoke.mockImplementation(async (cmd, args) => {
     if (cmd === "diagnostics")
       return {
@@ -123,6 +126,10 @@ beforeEach(() => {
       data.release.should_show = false;
       return;
     }
+    if (cmd === "save_preference_patch") {
+      Object.assign(data.settings, args.patch);
+      return;
+    }
     if (cmd === "save_settings") {
       data.settings = args.settings;
       return;
@@ -142,7 +149,257 @@ async function openSettings(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByLabelText(/Profile menu for/));
   await user.click(await screen.findByRole("menuitem", { name: "Settings" }));
 }
+describe("native-window snapshot suspension", () => {
+  function suspendSnapshots() {
+    let suspended = false;
+    const original = mocks.invoke.getMockImplementation()!;
+    mocks.invoke.mockImplementation(async (cmd, args) =>
+      cmd === "snapshot" && args?.background && suspended
+        ? null
+        : original(cmd, args),
+    );
+    return (value: boolean) => {
+      suspended = value;
+    };
+  }
+  it("initializes hidden windows once and preserves the view when periodic reads are skipped", async () => {
+    vi.useFakeTimers();
+    try {
+      const suspend = suspendSnapshots();
+      suspend(true);
+      render(<App />);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(mocks.invoke).toHaveBeenCalledWith("snapshot");
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(45001);
+      });
+      expect(
+        mocks.invoke.mock.calls.filter(
+          ([cmd, args]) => cmd === "snapshot" && args?.background,
+        ),
+      ).toHaveLength(3);
+      expect(screen.getByRole("navigation")).toBeTruthy();
+      expect(screen.queryByText("Opening Reprise…")).toBeNull();
+      expect(
+        mocks.invoke.mock.calls.some(
+          ([cmd, args]) => cmd === "check_updates" && args?.automatic,
+        ),
+      ).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it("refreshes tasks and countdowns immediately after six hours without waiting for a poll", async () => {
+    const now = Math.floor(Date.now() / 1000);
+    data.tasks = [
+      {
+        ...closedTask("Finished"),
+        title: "Long pause",
+        status: "Snoozed",
+        completed_at: null,
+        wake_at: now + 7 * 3600,
+      },
+    ];
+    const suspend = suspendSnapshots();
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(
+      await screen.findByRole("button", { name: /^Snoozed\s*1 items$/ }),
+    );
+    expect(screen.getByText(/Returns in 7h/)).toBeTruthy();
+    suspend(true);
+    data.tasks.push({
+      ...data.tasks[0],
+      id: "returned",
+      title: "Returned while hidden",
+      status: "Settled",
+      review_at: now + 100,
+      review_reason: "Settled reminder",
+    });
+    await act(async () => {
+      mocks.listeners.get("refresh")!({ payload: null });
+    });
+    expect(
+      screen.queryByRole("button", { name: /^Resurfaced\s*1 items$/ }),
+    ).toBeNull();
+    const clock = vi
+      .spyOn(Date, "now")
+      .mockReturnValue((now + 6 * 3600) * 1000);
+    try {
+      suspend(false);
+      fireEvent.focus(window);
+      await screen.findByText("Returns in 1h 0m");
+      expect(
+        screen.getByRole("button", { name: /^Resurfaced\s*1 items$/ }),
+      ).toBeTruthy();
+    } finally {
+      clock.mockRestore();
+    }
+  });
+  it("preserves an edited task draft and exposes revision conflicts after restoring", async () => {
+    data.tasks = [
+      { ...closedTask("Finished"), status: "Inbox", completed_at: null },
+    ];
+    const suspend = suspendSnapshots();
+    const original = mocks.invoke.getMockImplementation()!;
+    mocks.invoke.mockImplementation(async (cmd, args) => {
+      if (cmd === "save_task")
+        throw Error("This task changed elsewhere. Reload and try again.");
+      return original(cmd, args);
+    });
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(
+      await screen.findByRole("button", { name: /^Inbox\s*1 items$/ }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Finished intention" }),
+    );
+    const title = screen.getByLabelText("Title") as HTMLInputElement;
+    await user.clear(title);
+    await user.type(title, "Keep my unsaved draft");
+    suspend(true);
+    data.tasks[0] = {
+      ...data.tasks[0],
+      title: "Changed elsewhere",
+      updated_at: 999,
+    };
+    await act(async () => {
+      mocks.listeners.get("refresh")!({ payload: null });
+    });
+    suspend(false);
+    fireEvent.focus(window);
+    await waitFor(() =>
+      expect(mocks.invoke).toHaveBeenCalledWith("snapshot", {
+        background: true,
+      }),
+    );
+    expect(title.value).toBe("Keep my unsaved draft");
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await within(screen.getByRole("dialog", { name: "Edit task" })).findByRole(
+      "alert",
+    );
+    expect(title.value).toBe("Keep my unsaved draft");
+  });
+  it("catches up on native restore without a focus event and avoids fetching on ordinary resize", async () => {
+    const suspend = suspendSnapshots();
+    render(<App />);
+    await screen.findByRole("navigation");
+    const resize = mocks.onResized.mock.calls[0][0] as () => void;
+    mocks.invoke.mockClear();
+    await act(async () => resize());
+    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "snapshot")).toBe(
+      false,
+    );
+    suspend(true);
+    await act(async () => {
+      mocks.listeners.get("refresh")!({ payload: null });
+    });
+    data.tasks = [
+      { ...closedTask("Finished"), status: "Inbox", completed_at: null },
+    ];
+    suspend(false);
+    await act(async () => resize());
+    expect(
+      screen.getByRole("button", { name: /^Inbox\s*1 items$/ }),
+    ).toBeTruthy();
+    mocks.invoke.mockClear();
+    await act(async () => resize());
+    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "snapshot")).toBe(
+      false,
+    );
+  });
+  it("preserves a Settings draft while applying fresh appearance on restore", async () => {
+    const suspend = suspendSnapshots();
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.type(screen.getByLabelText("Display name"), " unsaved");
+    suspend(true);
+    data.settings.theme_family = "pitch-black";
+    await act(async () => {
+      mocks.listeners.get("refresh")!({ payload: null });
+    });
+    suspend(false);
+    fireEvent.focus(window);
+    await waitFor(() =>
+      expect(document.documentElement.dataset.family).toBe("pitch-black"),
+    );
+    expect(
+      (screen.getByLabelText("Display name") as HTMLInputElement).value,
+    ).toBe("Test unsaved");
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+  });
+  it("retains the background gate when a refresh is queued behind initialization", async () => {
+    let resolve!: (value: Snapshot) => void;
+    const original = mocks.invoke.getMockImplementation()!;
+    let first = true;
+    mocks.invoke.mockImplementation(async (cmd, args) => {
+      if (cmd === "snapshot" && first) {
+        first = false;
+        return new Promise<Snapshot>((r) => {
+          resolve = r;
+        });
+      }
+      if (cmd === "snapshot" && args?.background) return null;
+      return original(cmd, args);
+    });
+    render(<App />);
+    await act(async () => {
+      await Promise.resolve();
+      mocks.listeners.get("refresh")!({ payload: null });
+      resolve(structuredClone(data));
+    });
+    await screen.findByRole("navigation");
+    expect(
+      mocks.invoke.mock.calls.filter(([cmd]) => cmd === "snapshot"),
+    ).toEqual([["snapshot"], ["snapshot", { background: true }]]);
+  });
+  it("cleans up a native restore listener that resolves after unmount", async () => {
+    let resolve!: (off: () => void) => void;
+    const off = vi.fn();
+    mocks.onResized.mockImplementation(
+      () =>
+        new Promise<() => void>((r) => {
+          resolve = r;
+        }),
+    );
+    const app = render(<App />);
+    app.unmount();
+    await act(async () => {
+      resolve(off);
+    });
+    expect(off).toHaveBeenCalledOnce();
+  });
+});
 describe("Settings draft protection", () => {
+  it("saves one section without discarding drafts or overwriting independent settings", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.type(screen.getByLabelText("Display name"), " changed");
+    await user.click(screen.getByRole("tab", { name: "Reminders" }));
+    fireEvent.change(screen.getByLabelText("Daily review time"), {
+      target: { value: "10:31" },
+    });
+    await user.click(screen.getByRole("tab", { name: "Profile" }));
+    data.settings.sidebar_width = 310;
+    await user.click(screen.getByRole("button", { name: "Save preferences" }));
+    await waitFor(() => expect(data.settings.name).toBe("Test changed"));
+    expect(mocks.invoke).toHaveBeenCalledWith("save_preference_patch", {
+      patch: { name: "Test changed" },
+    });
+    expect(data.settings.review_time).toBe("09:00");
+    expect(data.settings.sidebar_width).toBe(310);
+    await user.click(screen.getByRole("tab", { name: "Reminders" }));
+    expect(
+      (screen.getByLabelText("Daily review time") as HTMLInputElement).value,
+    ).toBe("10:31 AM");
+    await user.click(screen.getByRole("button", { name: "Save preferences" }));
+    await waitFor(() => expect(data.settings.review_time).toBe("10:31"));
+  });
   it("keeps edits when staying and discards only after an explicit choice", async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -196,7 +453,7 @@ describe("Settings draft protection", () => {
     await openSettings(user);
     const original = mocks.invoke.getMockImplementation()!;
     mocks.invoke.mockImplementation(async (cmd, args) => {
-      if (cmd === "save_settings") throw Error("Storage unavailable");
+      if (cmd === "save_preference_patch") throw Error("Storage unavailable");
       return original(cmd, args);
     });
     await user.type(screen.getByLabelText("Display name"), " edited");
@@ -217,7 +474,7 @@ describe("Settings draft protection", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await user.selectOptions(screen.getByLabelText("Theme"), "pitch-black");
+    await selectOption(user, screen.getByLabelText("Theme"), "pitch-black");
     await user.click(screen.getByRole("button", { name: "Home" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(data.settings.theme_family).toBe("pitch-black");
@@ -269,7 +526,7 @@ describe("Nightly channel", () => {
       data.release = { version, acknowledged: null, should_show: false };
       render(<App />);
       await screen.findByRole("heading", {
-        name: "A little space for your intentions.",
+        name: "Set up your space.",
       });
       expect(!!document.querySelector(".setup-nightly")).toBe(sky);
       expect(document.documentElement.dataset.family).toBe("pitch-black");
@@ -287,7 +544,7 @@ describe("Nightly channel", () => {
     const user = userEvent.setup();
     const app = render(<App />);
     await screen.findByRole("heading", {
-      name: "A little space for your intentions.",
+      name: "Set up your space.",
     });
     expect(screen.queryByRole("navigation")).toBeNull();
     expect(screen.queryByRole("note", { name: /Nightly build/ })).toBeNull();
@@ -346,9 +603,7 @@ describe("Nightly channel", () => {
     const app = render(<App />);
     await user.clear(await screen.findByLabelText("Display name"));
     await user.type(screen.getByLabelText("Display name"), "Dim");
-    await user.clear(screen.getByLabelText("Space name"));
-    await user.type(screen.getByLabelText("Space name"), "field");
-    await user.selectOptions(screen.getByLabelText("Theme"), "pitch-black");
+    await selectOption(user, screen.getByLabelText("Theme"), "pitch-black");
     await waitFor(() => expect(data.settings.theme_family).toBe("pitch-black"));
     await user.click(screen.getByRole("button", { name: /Continue/ }));
     await waitFor(() =>
@@ -357,8 +612,9 @@ describe("Nightly channel", () => {
           .disabled,
       ).toBe(false),
     );
-    await screen.findByRole("heading", { name: "Let later have a time." });
-    await user.selectOptions(
+    await screen.findByRole("heading", { name: "Choose when tasks return." });
+    await selectOption(
+      user,
       screen.getByLabelText("Settled tasks return"),
       "next_day",
     );
@@ -389,15 +645,12 @@ describe("Nightly channel", () => {
           .disabled,
       ).toBe(false),
     );
-    await user.type(
-      screen.getByLabelText("Your first intention"),
-      "Plan tomorrow",
-    );
+    await user.type(screen.getByLabelText("Your first task"), "Plan tomorrow");
     await user.click(screen.getByRole("button", { name: "Open Reprise" }));
     await screen.findByLabelText(/Profile menu for Dim/);
     expect(data.settings).toMatchObject({
       name: "Dim",
-      workspace: "field",
+      workspace: "Studio",
       onboarded: true,
       settlement_mode: "next_day",
       return_time: "10:30",
@@ -410,7 +663,7 @@ describe("Nightly channel", () => {
     await screen.findByLabelText(/Profile menu for Dim/);
     expect(
       screen.queryByRole("heading", {
-        name: "A little space for your intentions.",
+        name: "Set up your space.",
       }),
     ).toBeNull();
   });
@@ -425,9 +678,7 @@ describe("Nightly channel", () => {
     let dialog = screen.getByRole("dialog", {
       name: "Go through setup again?",
     });
-    await user.click(
-      within(dialog).getByRole("button", { name: "Keep working" }),
-    );
+    await user.click(within(dialog).getByRole("button", { name: "Nevermind" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Redo onboarding" }));
     dialog = screen.getByRole("dialog", { name: "Go through setup again?" });
@@ -537,7 +788,7 @@ describe("Nightly channel", () => {
           .disabled,
       ).toBe(false),
     );
-    await user.type(screen.getByLabelText("Your first intention"), "Only once");
+    await user.type(screen.getByLabelText("Your first task"), "Only once");
     await user.click(screen.getByRole("button", { name: "Open Reprise" }));
     await screen.findByRole("alert");
     expect(data.settings.onboarded).toBe(false);
@@ -556,11 +807,11 @@ describe("Nightly channel", () => {
     ).toBe(true);
     expect(
       screen.getByRole("heading", {
-        name: "A little space for your intentions.",
+        name: "Set up your space.",
       }),
     ).toBeTruthy();
     const second = await screen.findByRole("heading", {
-      name: "Let later have a time.",
+      name: "Choose when tasks return.",
     });
     expect(document.activeElement).toBe(second);
     document.documentElement.dataset.motion = "off";
@@ -586,23 +837,27 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await user.selectOptions(
+    await selectOption(
+      user,
       screen.getByLabelText("Window appearance"),
       "glass",
     );
-    await user.selectOptions(
+    await selectOption(
+      user,
       screen.getByLabelText("Glass material"),
       "acrylic",
     );
     await waitFor(() => expect(data.settings.desktop_material).toBe("acrylic"));
     expect(data.settings.desktop_glass).toBe(true);
     expect(data.settings.theme).toBe("system");
-    await user.selectOptions(
+    await selectOption(
+      user,
       screen.getByLabelText("Glass intensity"),
       "balanced",
     );
     await waitFor(() => expect(data.settings.desktop_tint).toBe(60));
-    await user.selectOptions(
+    await selectOption(
+      user,
       screen.getByLabelText("Window appearance"),
       "default",
     );
@@ -639,8 +894,8 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await user.selectOptions(screen.getByLabelText("Accent color"), "lavender");
-    await user.selectOptions(screen.getByLabelText("Animation"), "expressive");
+    await selectOption(user, screen.getByLabelText("Accent color"), "lavender");
+    await selectOption(user, screen.getByLabelText("Animation"), "expressive");
     await waitFor(() =>
       expect(document.documentElement.dataset.accent).toBe("lavender"),
     );
@@ -656,9 +911,9 @@ describe("workspace UI", () => {
       expect(document.documentElement.dataset.motion).toBe("off"),
     );
     expect(data.settings.animation).toBe("expressive");
-    await user.selectOptions(screen.getByLabelText("Theme"), "pitch-black");
+    await selectOption(user, screen.getByLabelText("Theme"), "pitch-black");
     expect(document.documentElement.dataset.accent).toBe("lavender");
-    await user.selectOptions(screen.getByLabelText("Accent color"), "theme");
+    await selectOption(user, screen.getByLabelText("Accent color"), "theme");
     await waitFor(() =>
       expect(document.documentElement.dataset.accent).toBe("neutral"),
     );
@@ -751,7 +1006,7 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await user.selectOptions(screen.getByLabelText("Theme"), "pitch-black");
+    await selectOption(user, screen.getByLabelText("Theme"), "pitch-black");
     await waitFor(() =>
       expect(document.documentElement.dataset.theme).toBe("dark"),
     );
@@ -762,20 +1017,30 @@ describe("workspace UI", () => {
     expect(screen.queryByLabelText("Material")).toBeNull();
     expect(screen.queryByLabelText("Glass coverage")).toBeNull();
     expect(screen.queryByText("Experimental Glass")).toBeNull();
-    await user.selectOptions(screen.getByLabelText("Theme"), "ashen-white");
+    await selectOption(user, screen.getByLabelText("Theme"), "ashen-white");
     await waitFor(() =>
       expect(document.documentElement.dataset.theme).toBe("light"),
     );
-    await user.selectOptions(screen.getByLabelText("Theme"), "classic");
+    await selectOption(user, screen.getByLabelText("Theme"), "classic");
     expect(
       ((await screen.findByLabelText("Appearance mode")) as HTMLSelectElement)
         .value,
     ).toBe("system");
   });
   it("reports notification submission honestly and recovers after failure", async () => {
+    data.release = {
+      version: "3.2.1-nightly.20261112.5",
+      acknowledged: null,
+      should_show: false,
+    };
     const user = userEvent.setup();
     render(<App />);
+    await user.click(
+      await screen.findByRole("button", { name: "Continue to Nightly" }),
+    );
     await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "About" }));
+    await user.click(screen.getByText("Advanced / Diagnostics"));
     const original = mocks.invoke.getMockImplementation()!;
     let fail = true;
     mocks.invoke.mockImplementation(async (cmd, args) => {
@@ -937,11 +1202,11 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await user.selectOptions(screen.getByLabelText("Density"), "compact");
+    await selectOption(user, screen.getByLabelText("Density"), "compact");
     await waitFor(() =>
       expect(document.documentElement.dataset.density).toBe("compact"),
     );
-    await user.selectOptions(screen.getByLabelText("Theme"), "ashen-white");
+    await selectOption(user, screen.getByLabelText("Theme"), "ashen-white");
     expect(data.settings.density).toBe("compact");
     await user.click(screen.getByRole("button", { name: "Home" }));
     await openSettings(user);
@@ -959,6 +1224,7 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "About" }));
     await user.click(screen.getByRole("button", { name: "Check for updates" }));
     await screen.findByText("Update source not configured.");
     expect(data.notifications).toHaveLength(0);
@@ -966,21 +1232,66 @@ describe("workspace UI", () => {
       screen.queryByRole("complementary", { name: "Notifications" }),
     ).toBeNull();
   });
-  it("loads diagnostics only when explicitly opened", async () => {
+  it("keeps diagnostics and notification tests out of stable Settings", async () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "Reminders" }));
+    expect(screen.queryByText("Advanced / Diagnostics")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Test Windows notification" }),
+    ).toBeNull();
     expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "diagnostics")).toBe(
       false,
     );
     expect(
-      screen.getByRole("button", { name: "Test Windows notification" }),
+      screen.getByRole("heading", {
+        name: "Notifications and background behavior",
+      }),
     ).toBeTruthy();
+  });
+  it("shows nightly-only diagnostics on demand and filters release history to the nightly channel", async () => {
+    data.release = {
+      version: "3.2.1-nightly.20261112.5",
+      acknowledged: null,
+      should_show: false,
+    };
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(
+      await screen.findByRole("button", { name: "Continue to Nightly" }),
+    );
+    await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "About" }));
+    expect(screen.queryByRole("button", { name: "What's New" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Test Windows notification" }),
+    ).toBeNull();
+    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "diagnostics")).toBe(
+      false,
+    );
+    await user.click(screen.getByRole("tab", { name: "About" }));
     await user.click(screen.getByText("Advanced / Diagnostics"));
     await screen.findByText("com.reprise.desktop");
-    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "diagnostics")).toBe(
-      true,
+    const diagnostic = screen
+      .getByRole("heading", { name: "Notification diagnostics" })
+      .closest("details")!;
+    expect(
+      within(diagnostic).getByRole("button", {
+        name: "Test Windows notification",
+      }),
+    ).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", { name: "Release Notes history" }),
     );
+    await user.click(screen.getByLabelText("Version"));
+    const versions = screen.getAllByRole("option");
+    expect(versions.length).toBeGreaterThan(1);
+    expect(
+      versions.every((option) =>
+        (option as HTMLOptionElement).value.includes("-nightly."),
+      ),
+    ).toBe(true);
   });
   it("waits for an idle Home view, acknowledges What's New, and does not repeat it", async () => {
     data.release = {
@@ -1039,13 +1350,14 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await user.selectOptions(screen.getByLabelText("Appearance mode"), "dark");
+    await selectOption(user, screen.getByLabelText("Appearance mode"), "dark");
     await waitFor(() =>
       expect(document.documentElement.dataset.theme).toBe("dark"),
     );
     expect(data.settings.theme).toBe("dark");
     expect(mocks.setTheme).toHaveBeenCalledWith("dark");
-    await user.selectOptions(
+    await selectOption(
+      user,
       screen.getByLabelText("Appearance mode"),
       "system",
     );
@@ -1191,18 +1503,45 @@ describe("closed tasks and deletion", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "About" }));
     expect(
       screen.getByRole("heading", { name: "About / Updates" }),
     ).toBeTruthy();
     await user.click(
       screen.getByRole("button", { name: "Release Notes history" }),
     );
-    await user.selectOptions(screen.getByLabelText("Version"), "0.1.0");
+    await selectOption(user, screen.getByLabelText("Version"), "0.1.0");
     expect(screen.getByText("TASK CONTROL AND NAVIGATION")).toBeTruthy();
   });
 });
 
 describe("personalization and command palette", () => {
+  it("records a custom shortcut, rejects conflicts and retains the saved binding after remount", async () => {
+    const user = userEvent.setup();
+    const app = render(<App />);
+    await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "Keyboard" }));
+    await user.click(screen.getByLabelText("Command palette shortcut"));
+    await user.keyboard("{Control>}f{/Control}");
+    expect(screen.getByRole("alert").textContent).toContain("reserved");
+    expect(
+      screen.queryByRole("dialog", { name: "Command palette" }),
+    ).toBeNull();
+    await user.keyboard("{Control>}j{/Control}");
+    await user.click(screen.getByRole("button", { name: "Save preferences" }));
+    await waitFor(() => expect(data.settings.command_shortcut).toBe("Ctrl+J"));
+    app.unmount();
+    render(<App />);
+    await screen.findByRole("navigation");
+    await user.keyboard("{Control>}k{/Control}");
+    expect(
+      screen.queryByRole("dialog", { name: "Command palette" }),
+    ).toBeNull();
+    await user.keyboard("{Control>}j{/Control}");
+    expect(
+      screen.getByRole("dialog", { name: "Command palette" }),
+    ).toBeTruthy();
+  });
   it("opens global search from Settings by keyboard and finds closed tasks", async () => {
     data.tasks = [closedTask("Finished")];
     const user = userEvent.setup();
@@ -1262,7 +1601,7 @@ describe("personalization and command palette", () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((el) => el.textContent),
-    ).toEqual(["Profile", "Appearance", "Settings", "Quit Reprise"]);
+    ).toEqual(["Settings", "Quit Reprise"]);
   });
   it("supports keyboard navigation of a task context menu", async () => {
     data.tasks = [closedTask("Dropped")];
@@ -1345,7 +1684,7 @@ it("defaults filtering to the current paused view and supports clearing", async 
   expect(screen.getByText("Studio letter")).toBeTruthy();
   expect(screen.queryByText("Studio closed")).toBeNull();
   await user.type(search, " missing");
-  expect(screen.getByText("No matching intentions.")).toBeTruthy();
+  expect(screen.getByText("No matching tasks.")).toBeTruthy();
   await user.click(screen.getByRole("button", { name: "Clear search" }));
   expect((search as HTMLInputElement).value).toBe("");
 });
@@ -1383,6 +1722,19 @@ it.each([
 });
 
 describe("Quick Capture regression", () => {
+  it("shows inline validation for a blank title without invoking capture", async () => {
+    const user = userEvent.setup();
+    render(<App captureMode />);
+    await user.type(
+      screen.getByRole("textbox", { name: "Capture a task" }),
+      "   ",
+    );
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByRole("alert").textContent).toBe("Enter a task title.");
+    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "capture")).toBe(
+      false,
+    );
+  });
   it("supports the shared editing menu without losing its draft or closing capture on menu Escape", async () => {
     const user = userEvent.setup();
     render(<App captureMode />);
@@ -1482,7 +1834,7 @@ describe("personal sidebar navigation", () => {
       within(nav)
         .getAllByRole("heading")
         .map((h) => h.textContent),
-    ).toEqual(["General", "Tasks", "History"]);
+    ).toEqual(["Hub", "Ongoing", "Archive"]);
     expect(
       within(nav)
         .getAllByRole("button")
@@ -1494,7 +1846,7 @@ describe("personal sidebar navigation", () => {
   it("collapses groups independently and keeps their state across remounts", async () => {
     const user = userEvent.setup();
     const app = render(<App />);
-    await user.click(await screen.findByRole("button", { name: "Tasks" }));
+    await user.click(await screen.findByRole("button", { name: "Ongoing" }));
     await waitFor(() =>
       expect(data.settings.sidebar_groups?.tasks).toBe(false),
     );
@@ -1504,7 +1856,7 @@ describe("personal sidebar navigation", () => {
       }),
     ).toBeNull();
     expect(screen.getByRole("button", { name: /^Finished/ })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "History" }));
+    await user.click(screen.getByRole("button", { name: "Archive" }));
     await waitFor(() =>
       expect(data.settings.sidebar_groups?.history).toBe(false),
     );
@@ -1513,13 +1865,11 @@ describe("personal sidebar navigation", () => {
     await screen.findByRole("navigation");
     expect(
       screen
-        .getByRole("button", { name: "Tasks" })
+        .getByRole("button", { name: "Ongoing" })
         .getAttribute("aria-expanded"),
     ).toBe("false");
     expect(
-      screen
-        .getByRole("button", { name: "General" })
-        .getAttribute("aria-expanded"),
+      screen.getByRole("button", { name: "Hub" }).getAttribute("aria-expanded"),
     ).toBe("true");
   });
   it("keeps every destination available in the rail and shows keyboard tooltips", async () => {
@@ -1532,7 +1882,9 @@ describe("personal sidebar navigation", () => {
     for (let i = 0; i < 30 && document.activeElement !== inbox; i++)
       await user.tab();
     expect(document.activeElement).toBe(inbox);
-    expect(screen.getByRole("tooltip").textContent).toBe("Inbox");
+    expect(screen.getByRole("tooltip").textContent).toBe(
+      "Captured tasks ready for a next step.",
+    );
     expect(inbox.getAttribute("aria-describedby")).toBe("sidebar-tooltip");
     expect(within(nav).queryByRole("button", { name: "Settings" })).toBeNull();
   });
@@ -1554,37 +1906,29 @@ describe("personal sidebar navigation", () => {
       ),
     );
   });
-  it("uses Space name in Settings and updates the footer after save", async () => {
-    data.settings.workspace = "";
+  it("removes Space name from settings and the footer while retaining legacy storage", async () => {
+    data.settings.workspace = "Legacy studio";
     const user = userEvent.setup();
     render(<App />);
-    await screen.findByRole("navigation");
-    expect(screen.getByText("Personal", { selector: "small" })).toBeTruthy();
     await openSettings(user);
-    expect(screen.getByRole("heading", { name: "Your space" })).toBeTruthy();
-    await user.type(
-      screen.getByRole("textbox", { name: "Space name" }),
-      "Quiet studio",
-    );
+    expect(screen.queryByLabelText("Space name")).toBeNull();
+    expect(document.querySelector(".profile-text small")).toBeNull();
+    await user.type(screen.getByLabelText("Display name"), " changed");
     await user.click(screen.getByRole("button", { name: "Save preferences" }));
-    await waitFor(() =>
-      expect(
-        screen.getByText("Quiet studio", { selector: "small" }),
-      ).toBeTruthy(),
-    );
-    expect(data.settings.workspace).toBe("Quiet studio");
+    await waitFor(() => expect(data.settings.name).toBe("Test changed"));
+    expect(data.settings.workspace).toBe("Legacy studio");
   });
   it("executes group context actions and supports keyboard invocation", async () => {
     const user = userEvent.setup();
     render(<App />);
     const tasks = await screen.findByRole("button", {
-      name: "Tasks",
+      name: "Ongoing",
     });
     tasks.focus();
     await user.keyboard("{Shift>}{F10}{/Shift}");
     const menu = screen.getByRole("menu", { name: "Sidebar actions" });
     await user.click(
-      within(menu).getByRole("menuitem", { name: "Show only Tasks" }),
+      within(menu).getByRole("menuitem", { name: "Show only Ongoing" }),
     );
     await waitFor(() =>
       expect(data.settings.sidebar_groups).toEqual({
@@ -1639,6 +1983,7 @@ describe("right notification panel", () => {
       render(<App />);
       await openSettings(user);
       expect(mocks.invoke).not.toHaveBeenCalledWith("check_updates");
+      await user.click(screen.getByRole("tab", { name: "About" }));
       await user.click(
         screen.getByRole("button", { name: "Check for updates" }),
       );
@@ -1732,6 +2077,7 @@ describe("right notification panel", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "About" }));
     await user.click(screen.getByRole("button", { name: "Check for updates" }));
     await user.click(
       await screen.findByRole("button", { name: "Update Reprise to v3.2.0" }),
@@ -1794,9 +2140,7 @@ describe("right notification panel", () => {
     render(<App />);
     await screen.findByRole("navigation");
     await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
-    await user.click(
-      screen.getByRole("button", { name: "Close notifications" }),
-    );
+    await user.keyboard("{Escape}");
     const exiting = document.querySelector(".notification-dock")!;
     expect(exiting.getAttribute("data-exiting")).toBe("true");
     expect(exiting.hasAttribute("inert")).toBe(true);
@@ -1811,9 +2155,7 @@ describe("right notification panel", () => {
     expect(
       screen.getByRole("complementary", { name: "Notifications" }),
     ).toBeTruthy();
-    await user.click(
-      screen.getByRole("button", { name: "Close notifications" }),
-    );
+    await user.keyboard("{Escape}");
     await waitFor(() =>
       expect(document.querySelector(".notification-dock")).toBeNull(),
     );
@@ -1825,9 +2167,7 @@ describe("right notification panel", () => {
     render(<App />);
     await screen.findByRole("navigation");
     await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
-    await user.click(
-      screen.getByRole("button", { name: "Close notifications" }),
-    );
+    await user.keyboard("{Escape}");
     expect(document.querySelector(".notification-dock")).toBeNull();
   });
   it("reveals at the right edge, tucks away after leaving, and ignores open dialogs", async () => {
@@ -1887,9 +2227,8 @@ describe("right notification panel", () => {
     await waitFor(() =>
       expect(data.settings.notification_panel_pinned).toBe(false),
     );
-    await user.click(
-      screen.getByRole("button", { name: "Close notifications" }),
-    );
+    await screen.findByRole("button", { name: "Pin notifications" });
+    await user.keyboard("{Escape}");
     expect(
       screen.queryByRole("complementary", { name: "Notifications" }),
     ).toBeNull();
@@ -2022,7 +2361,7 @@ describe("semantic task presentation", () => {
       expect(button.querySelector("svg")).toBeTruthy();
       expect(button.querySelector(".nav-count")).toBeNull();
     }
-    for (const name of ["Home", "Daily Review", "All Tasks"])
+    for (const name of ["Home", "Daily Review"])
       expect(
         within(nav)
           .getByRole("button", {

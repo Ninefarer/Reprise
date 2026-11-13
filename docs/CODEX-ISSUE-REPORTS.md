@@ -100,6 +100,21 @@ These checks do not create an installation token or post a comment. Live App
 verification remains pending until the workflow exists on the default branch and
 a real run succeeds.
 
+## Live activation evidence
+
+Owner-approved [PR #3](https://github.com/Ninefarer/Reprise/pull/3) merged the
+isolated automation into `main` as `3e847e45966291410b37813016b3bc339ffb7974`.
+Its diff contained only the five reporting files. The only follow-up to the
+original automation commit was normalization of CRLF in the test reader.
+
+The [first live run](https://github.com/Ninefarer/Reprise/actions/runs/43451416601)
+completed successfully on November 13, 2026. Input validation, installation-token
+creation, comment posting/identity verification and the token action's post-step
+all succeeded. An independent authenticated API read confirmed the
+[labeled test comment](https://github.com/Ninefarer/Reprise/issues/2#issuecomment-6857210668)
+has author `reprise-bot[bot]` and user type `Bot`. No permission expansion was
+needed. Subsequent development reports use this workflow.
+
 ## Preparation evidence (November 13, 2026)
 
 - GitHub CLI authenticated to Ninefarer/Reprise; active account Ninefarer reports

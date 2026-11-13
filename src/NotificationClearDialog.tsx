@@ -34,8 +34,7 @@ export function NotificationClearDialog({
         Clear {count} notification{count === 1 ? "" : "s"}?
       </h2>
       <p>
-        This permanently removes the selected local history. It does not clear
-        Windows Notification Center or change your tasks.
+        This permanently removes the selected notification history. Your tasks are kept.
       </p>
       {error && <p role="alert">{error}</p>}
       <div className="dialog-actions">

@@ -1,4 +1,7 @@
+import { greeting } from "./greeting";
+import { matchesShortcut } from "./shortcuts";
 import { TextContextMenus } from "./TextContextMenu";
+import { trace, traceSnapshot, traceStart } from "./performance";
 import { isNightly, NightlyDisclosure } from "./Nightly";
 import { Onboarding, RedoOnboardingDialog } from "./Onboarding";
 import { QuickCapture } from "./QuickCapture";
@@ -55,30 +58,18 @@ import "./context-menu.css";
 import { taskCategory, reviewCategory } from "./taskColors";
 import type { UpdateActivity } from "./updates";
 const captureWindowMode = new URLSearchParams(location.search).has("capture");
-const descriptions: Partial<Record<View, string>> = {
-  Home: "Pick up where you left off. One intention at a time.",
-  "Daily Review": "A calm moment to decide what needs your attention.",
-  Inbox: "Captured and safe. Choose a next step when you’re ready.",
-  DoNow: "A focused space for what you’re doing now.",
-  Scheduled: "Your plans, with room to change them.",
-  Settled: "Deliberately paused. Your place is saved.",
-  Snoozed: "Out of the way until the time you chose.",
-  Waiting: "Keep the context while you wait for someone or something.",
-  Resurfaced: "Ready for another look. You decide what happens next.",
-  Finished: "A record of what you followed through on.",
-  Dropped: "Deliberately let go. Restore anything you want to return to.",
-  "All Tasks": "Every intention, together.",
-  "Notification History": "Waitin' for ya",
-  Settings: "Make Reprise fit your rhythm.",
-};
 function Application({
   captureMode = captureWindowMode,
 }: { captureMode?: boolean } = {}) {
   const quick = captureMode;
+  const snapshotStarted = useRef<number | null>(null);
+  const searchStarted = useRef<number | null>(null);
+  const firstRender = useRef(traceStart());
   const [data, setData] = useState<Snapshot | null>(null),
     [view, setView] = useState<View>("Home"),
     [query, setQuery] = useState(""),
     [title, setTitle] = useState(""),
+    [captureError, setCaptureError] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [palette, setPalette] = useState(false),
@@ -160,8 +151,10 @@ function Application({
   const captureRef = useRef<HTMLInputElement>(null),
     searchRef = useRef<HTMLInputElement>(null),
     loading = useRef(false),
-    reloadRequested = useRef(false),
+    reloadRequested = useRef<string | null>(null),
     legacy = useRef(new Map<string, number>());
+  const suspended = useRef(false),
+    mounted = useRef(true);
   const themeReady = useTheme(data?.settings, data?.system_visuals);
   useScrollActivity();
   const windowShown = useRef(false),
@@ -278,14 +271,37 @@ function Application({
     busy,
     error,
   ]);
-  const load = useCallback(async (): Promise<void> => {
+  const load = useCallback(async (reason = "explicit"): Promise<void> => {
+    if (!mounted.current) return;
     if (loading.current) {
-      reloadRequested.current = true;
+      // Retain request priority: a queued worker refresh must not bypass the visibility gate.
+      if (
+        !reloadRequested.current ||
+        !["timer", "event", "focus", "resume"].includes(reason)
+      )
+        reloadRequested.current = reason;
       return;
     }
     loading.current = true;
+    const started = traceStart();
     try {
-      const next = await invoke<Snapshot>("snapshot");
+      const background = ["timer", "event", "focus", "resume"].includes(reason);
+      const args = {
+        ...(background ? { background: true } : {}),
+        ...(started === null
+          ? {}
+          : { measure: true, probe: `${reason}:${document.visibilityState}` }),
+      };
+      const next = await (Object.keys(args).length
+        ? invoke<Snapshot | null>("snapshot", args)
+        : invoke<Snapshot | null>("snapshot"));
+      if (!mounted.current) return;
+      if (!next) {
+        suspended.current = true;
+        return;
+      }
+      suspended.current = false;
+      traceSnapshot(`snapshot.${reason}`, started, next);
       await Promise.all(
         next.tasks
           .filter((t) => t.status === "Settled" && !t.settled_at)
@@ -298,6 +314,7 @@ function Application({
             t.settled_at = legacy.current.get(t.id) ?? null;
           }),
       );
+      if (!mounted.current) return;
       const fresh = next.tasks.filter(
         (t) =>
           fetchedOnce.current &&
@@ -318,26 +335,33 @@ function Application({
           ...Object.fromEntries(fresh.map((t) => [t.id, until])),
         }));
       }
+      snapshotStarted.current = started;
+      setNow(Math.floor(Date.now() / 1000));
       setData(next);
     } catch (e) {
-      setError(String(e));
+      if (mounted.current) setError(String(e));
     } finally {
       loading.current = false;
-      if (reloadRequested.current) {
-        reloadRequested.current = false;
-        queueMicrotask(() => void load());
+      if (reloadRequested.current && mounted.current) {
+        const reason = reloadRequested.current;
+        reloadRequested.current = null;
+        queueMicrotask(() => {
+          if (mounted.current) void load(reason);
+        });
       }
     }
   }, []);
   useEffect(() => {
-    void load();
+    mounted.current = true;
+    void load("initial");
     const timer = setInterval(() => {
-      setNow(Math.floor(Date.now() / 1000));
-      void load();
+      if (!dead) void load("timer");
     }, 15000);
-    let off: (() => void) | undefined;
+    let off: (() => void) | undefined, offResize: (() => void) | undefined;
     let dead = false;
-    void listen("refresh", () => void load())
+    void listen("refresh", () => {
+      if (!dead) void load("event");
+    })
       .then((f) => {
         if (dead) f();
         else off = f;
@@ -346,13 +370,27 @@ function Application({
         if (!dead) setError(String(error));
       });
     const focus = () => {
-      void load();
-      if (quick) captureRef.current?.focus();
+      void load("focus").then(() => {
+        if (!dead && quick) captureRef.current?.focus();
+      });
     };
+    void getCurrentWindow()
+      .onResized(() => {
+        if (!dead && suspended.current) void load("resume");
+      })
+      .then((f) => {
+        if (dead) f();
+        else offResize = f;
+      })
+      .catch((error) => {
+        if (!dead) setError(String(error));
+      });
     window.addEventListener("focus", focus);
     return () => {
       dead = true;
+      mounted.current = false;
       off?.();
+      offResize?.();
       clearInterval(timer);
       window.removeEventListener("focus", focus);
     };
@@ -370,7 +408,7 @@ function Application({
         }>("check_updates", { automatic: true });
         if (!disposed) {
           if (result?.message) setUpdateCheckMessage(result.message);
-          if (result?.notice_id) await load();
+          if (result?.notice_id) await load("event");
         }
       } catch (error) {
         if (!disposed)
@@ -389,6 +427,20 @@ function Application({
       clearInterval(interval);
     };
   }, [quick, setupActive, load]);
+  useLayoutEffect(() => {
+    if (!data) return;
+    trace("snapshot.commit", snapshotStarted.current);
+    snapshotStarted.current = null;
+    if (firstRender.current !== null) {
+      trace("startup.webview-first-data-commit", firstRender.current);
+      firstRender.current = null;
+    }
+  }, [data]);
+  useLayoutEffect(() => {
+    trace("search.commit", searchStarted.current);
+    searchStarted.current = null;
+  }, [query]);
+
   useEffect(() => {
     if (quick) return;
     let off: (() => void) | undefined,
@@ -534,10 +586,11 @@ function Application({
       if (
         !quick &&
         !setupActive &&
-        (e.ctrlKey || e.metaKey) &&
-        (shortcut === "Ctrl+K"
-          ? e.key.toLowerCase() === "k" && !e.shiftKey
-          : e.key.toLowerCase() === "p" && e.shiftKey)
+        !(
+          e.target instanceof Element &&
+          e.target.closest("[data-shortcut-recorder]")
+        ) &&
+        matchesShortcut(e, shortcut)
       ) {
         e.preventDefault();
         setPalette((p) => !p);
@@ -622,11 +675,17 @@ function Application({
   async function add() {
     if (!title.trim() || busy || captureSaving.current) return;
     captureSaving.current = true;
+    const started = traceStart();
     try {
-      const ok = await run(() => invoke("capture", { title: title.trim() }));
+      const ok = await run(async () => {
+        const saving = traceStart();
+        await invoke("capture", { title: title.trim() });
+        trace("capture.persist", saving);
+      });
       if (ok) {
         setTitle("");
         if (quick) await getCurrentWindow().hide();
+        trace("capture.submit-to-complete", started);
       }
     } catch (error) {
       setError(String(error));
@@ -634,10 +693,10 @@ function Application({
       captureSaving.current = false;
     }
   }
-  async function preferences(s: Settings) {
+  async function preferences(s: Partial<Settings>) {
     return run(() =>
-      invoke("save_settings", {
-        settings: { ...s, theme: data!.settings.theme },
+      invoke("save_preference_patch", {
+        patch: s,
       }),
     );
   }
@@ -749,31 +808,49 @@ function Application({
     setDeleting(task);
   }
   const capture = (
-    <form
-      className="capture"
-      aria-busy={busy}
-      onSubmit={(e) => {
-        e.preventDefault();
-        void add();
-      }}
-    >
-      <span aria-hidden="true">＋</span>
-      <input
-        ref={captureRef}
-        autoFocus={quick}
-        disabled={busy}
-        required
-        maxLength={500}
-        aria-label="Capture a task"
-        placeholder="What would you like to come back to?"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <button disabled={busy} className="primary">
-        {busy ? "Saving..." : quick ? "Save" : "Add to Inbox"}{" "}
-        <span aria-hidden="true">↵</span>
-      </button>
-    </form>
+    <>
+      <form
+        className="capture"
+        noValidate
+        aria-busy={busy}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!title.trim()) {
+            setCaptureError("Enter a task title.");
+            captureRef.current?.focus();
+            return;
+          }
+          setCaptureError("");
+          void add();
+        }}
+      >
+        <input
+          ref={captureRef}
+          autoFocus={quick}
+          disabled={busy}
+          required
+          maxLength={500}
+          aria-invalid={!!captureError}
+          aria-describedby={captureError ? "capture-error" : undefined}
+          aria-label="Capture a task"
+          placeholder="What would you like to come back to?"
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            setCaptureError("");
+          }}
+        />
+        <button disabled={busy} className="primary">
+          {busy ? "Saving..." : quick ? "Save" : "Add to Inbox"}{" "}
+          <span aria-hidden="true">↵</span>
+        </button>
+      </form>
+      {captureError && (
+        <p id="capture-error" className="capture-validation" role="alert">
+          {captureError}
+        </p>
+      )}
+    </>
   );
   if (quick)
     return (
@@ -975,9 +1052,7 @@ function Application({
     return (
       <div className="empty" data-status={taskCategory(view)}>
         <Icon name={view} />
-        <h3>
-          {query ? "No matching intentions." : "A little breathing room."}
-        </h3>
+        <h3>{query ? "No matching tasks." : "No tasks here yet."}</h3>
         <p>{query ? "Try another title, note, project, or tag." : text}</p>
       </div>
     );
@@ -1018,9 +1093,7 @@ function Application({
       />
     );
   const pageTitle =
-    view === "Home"
-      ? `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${settings.name ? ", " + settings.name : ""}.`
-      : label(view);
+    view === "Home" ? greeting(now, settings.name) : label(view);
   return (
     <div className="app" data-density={settings.density}>
       <Sidebar
@@ -1052,9 +1125,12 @@ function Application({
               <input
                 ref={searchRef}
                 aria-label="Search tasks"
-                placeholder="Search intentions…"
+                placeholder="Search tasks…"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  searchStarted.current = traceStart();
+                  setQuery(e.target.value);
+                }}
               />
               {query && (
                 <button
@@ -1076,8 +1152,14 @@ function Application({
         )}
         <>
           <div className="page-heading">
-            <h1>{pageTitle}</h1>
-            <p>{descriptions[view]}</p>
+            <h1>
+              {pageTitle}
+              {!["Home", "Settings", "Daily Review"].includes(view) && (
+                <span aria-hidden="true" className="count-badge">
+                  {visible.length}
+                </span>
+              )}
+            </h1>
           </div>
           {view === "Settings" ? (
             <Preferences
@@ -1135,7 +1217,6 @@ function Application({
                               {g.tasks.length}
                             </span>
                           </h2>
-                          <p>{g.description}</p>
                         </div>
                       </div>
                       {g.tasks.length ? (
@@ -1154,10 +1235,11 @@ function Application({
                 <>
                   <div
                     className="section-heading"
+                    hidden={view !== "Home"}
                     data-status={taskCategory(view)}
                   >
                     <h2>
-                      {view === "Home" ? "In focus" : label(view)}
+                      {view === "Home" ? "In focus" : null}
                       <span className="count-badge">
                         {
                           tasksForView(tasks, view, now).filter((t) =>
@@ -1166,11 +1248,6 @@ function Application({
                         }
                       </span>
                     </h2>
-                    {(view === "Settled" || view === "Snoozed") && (
-                      <span className="hint">
-                        Returned tasks move to Resurfaced
-                      </span>
-                    )}
                   </div>
                   {visible.length
                     ? visible
@@ -1182,9 +1259,9 @@ function Application({
                         .map(taskCard)
                     : empty(
                         view === "Settled"
-                          ? "Tasks you deliberately pause will wait here until their return time."
+                          ? "Settled tasks wait here until their return time."
                           : view === "Snoozed"
-                            ? "Snooze an intention from its actions menu to give it a later time."
+                            ? "Choose Snooze from a task’s actions menu to set a return time."
                             : undefined,
                       )}
                 </>

@@ -8,7 +8,7 @@ Reprise targets Windows 11 on x64 PCs. Download the `.exe` setup file from the [
 
 ## Make it yours
 
-Follow setup to choose a display name, an optional space name, appearance, and reminder preferences. You can skip setup and change preferences later. Settings opens from your profile at the bottom of the sidebar.
+In the 3.4.0 development candidate, setup offers a display name, avatar, appearance and reminder preferences. You can skip setup and change preferences later. Settings opens from your profile at the bottom of the sidebar. Earlier published builds may also show Space name.
 
 Stable and Nightly can have different setup screens. Consult the notes for the version you installed.
 
@@ -18,7 +18,9 @@ Type into Home's quick-add field and choose **Add to Inbox**. You can also press
 
 Inbox is a place to capture first and organize later. When you're ready, choose Start Now, schedule a start, or pause the task. [Task workflow](TASK-WORKFLOW.md) explains the choices.
 
-The command palette opens with **Ctrl+K** by default. Its alternative **Ctrl+Shift+P** can be selected in Settings. Quick Capture currently uses the fixed Ctrl+Shift+Space shortcut; another app using it can prevent registration.
+The command palette opens with **Ctrl+K** by default. The 3.4.0 candidate lets you record a custom combination in **Settings > Keyboard**; earlier builds offer Ctrl+K or Ctrl+Shift+P. Quick Capture uses the fixed Ctrl+Shift+Space shortcut; another app using it can prevent registration.
+
+In 3.4.0, Settings has Profile, Appearance, Reminders, Keyboard and About tabs. Save or discard drafted changes in each section. Appearance and avatar changes save immediately. Leaving Settings with unsaved drafts offers Save, Discard or Keep editing.
 
 ## Keep reminders running
 

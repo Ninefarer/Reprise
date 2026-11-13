@@ -5,7 +5,7 @@
 - [Getting started](GETTING-STARTED.md): installation, first capture, Settings, updates, and the tray.
 - [Task workflow](TASK-WORKFLOW.md): lifecycle states, scheduling, and returning tasks.
 - [Full changelog](../CHANGELOG.md): the complete Stable 3.3.0 change record.
-- [Stable and Nightly releases](https://github.com/Ninefarer/Reprise/releases): installers and release descriptions. Repository access is currently required.
+- [Stable and Nightly releases](https://github.com/Ninefarer/Reprise/releases): installers and release descriptions.
 
 ## Building Reprise
 
@@ -15,6 +15,9 @@
 - [Application icons](APP-ICONS.md): original artwork and native icon derivatives.
 
 ## Engineering records
+
+- [3.4.0 UI/UX implementation and acceptance status](qa/uiux-3.4.0.md)
+- [GitHub App development reports](CODEX-ISSUE-REPORTS.md)
 
 These documents record implementation passes and checks performed at that time. Their test counts, screenshots, feature boundaries, and installed versions are historical, not a current release matrix. Features in local development notes may not be in a published installer.
 

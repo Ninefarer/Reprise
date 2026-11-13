@@ -1,5 +1,36 @@
 # Reprise changelog
 
+## 3.4.0 - November 13, 2026
+
+Brings the 3.3.3 Nightly changes and the Issue #2 UI/UX overhaul to Stable. [Release notes and personal note](docs/releases/3.4.0.md).
+
+### Added
+
+- Shared themed dropdowns with keyboard navigation and type-ahead, plus custom date/time pickers with readable English date entry, minute precision, Apply/Cancel and optional clearing.
+- A command palette shortcut recorder with exact modifier matching, reserved-shortcut checks and reset-to-default.
+- Explanatory navigation tooltips and varied local-time greetings.
+
+### Changed
+
+- Hub, Ongoing and Archive replace the old navigation groups. Current replaces the Do Now display name; stored lifecycle states are unchanged. All Tasks is removed from navigation and commands.
+- Settings use Profile, Appearance, Reminders, Keyboard and About tabs, a moving accent underline, narrow-window scrolling and section Save/Discard controls. Appearance and avatar changes retain their immediate save behavior.
+- Task editing groups status, timing and organization, validates transitions and separates Save/Cancel from status actions. Destination-colored history loads only when expanded.
+- Hidden/minimized windows skip full task and notification reads while Rust scheduling continues. Focus/restore retrieves fresh data and recalculates countdowns immediately.
+- Quick Capture bootstraps settings without task/notification-list or avatar reads. It saves directly, refreshes the main view and fits its content without the decorative plus.
+- Compact spacing, headings, control alignment, greetings, alarm-clock Snooze iconography, accessible labels and setup popup colors are refined. Existing native Clear Glass and Acrylic remain in place.
+- Profile navigation is simplified. Redundant Space name fields, duplicate What's New controls and repeated explanatory copy are removed while stored profile data is retained.
+
+### Fixed
+
+- Notification category selections survive removal of their last matching record; nested dropdown/picker interaction no longer dismisses the notification panel prematurely.
+- Stable and Nightly release history are filtered symmetrically.
+- Quick Capture validation appears below its input; select chevrons and embedded clock buttons align correctly; dates display readable values and reject invalid entries.
+- Unsaved task/Settings drafts survive hide/restore, stale task revisions remain guarded, and atomic section patches preserve unrelated settings.
+- Retained the 3.3.3 Settings leave/update-install Save/Discard/Keep editing safeguard, including failed-save draft retention, with the new section-based layout.
+- Included the 3.3.3 Nightly Windows notification-test fix for absent permission records, without treating explicit blocks or other failures as success.
+
+The separately published [3.4.0 Nightly](https://github.com/Ninefarer/Reprise/releases/tag/v3.4.0-nightly.20261113.1) preceded Stable. [UI acceptance](docs/qa/uiux-3.4.0.md) and [refresh measurements](docs/qa/window-refresh-suspension-2026-11-13.md) distinguish tested behavior from remaining manual coverage.
+
 ## 3.3.3 - November 12, 2026 - Hotfix
 
 ### Fixed
@@ -8,7 +39,17 @@
 - Settings show a sticky save bar and distinguish immediately saved appearance and picture changes from profile and reminder drafts.
 - Saved tasks and persisted preferences were unaffected by the original issue. Updater signing, channels, task lifecycle and reminder schedules remain unchanged.
 
-## 3.3.2 ? November 12, 2026
+## 3.3.3-nightly.20261112.1 - November 12, 2026
+
+- Guard unsaved profile and reminder drafts before navigation, setup replay, profile-menu Quit and update installation; preserve failed saves and distinguish immediately saved appearance changes.
+- Include the task-editor data-loss hotfix and signed, channel-specific updater bootstrap.
+- Handle missing Windows notification permission records without treating them as an explicit block.
+- Keep diagnostic notification testing and technical history controls coherent on Nightly.
+- Improve current interface copy, task-dialog names and command-palette announcements.
+- Add bounded, explicitly enabled performance tracing for subsequent measurement, without claiming a speedup.
+
+
+## 3.3.2 - November 12, 2026
 
 ### Added
 

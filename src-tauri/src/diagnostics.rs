@@ -75,6 +75,7 @@ fn notification_setting(id: &str) -> String {
                     _ => "Unknown",
                 }
             ),
+            Err(e) if e.code().0 == 0x80070490u32 as i32 => "No stored permission record yet. Windows evaluates notification submission; this does not confirm display.".into(),
             Err(e) => format!(
                 "Windows notifier unavailable: {e}. Install Reprise to register its app identity."
             ),

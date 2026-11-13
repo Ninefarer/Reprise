@@ -11,7 +11,7 @@
   <a href="https://github.com/Ninefarer/Reprise/issues">Report an issue</a>
 </p>
 
-Reprise is a Windows task manager for the things you intend to come back to. Capture an intention, make room when you need to, and return without losing your place.
+Reprise is a Windows task manager for the things you want to come back to. Capture a task, pause it when you need to, and return without losing your place.
 
 ![Reprise Stable in its dark theme, showing Home, task navigation, the quick-add field, and the pinned Notifications panel.](assets/screenshots/stable-home.png)
 

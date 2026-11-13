@@ -3,6 +3,11 @@ mod actions;
 mod diagnostics;
 mod domain;
 mod notifications;
+#[cfg(test)]
+mod performance_baseline;
+#[cfg(feature = "performance-qa")]
+mod performance_probe;
+mod preferences;
 mod profile;
 mod releases;
 mod scheduler;
@@ -11,6 +16,7 @@ mod store;
 mod tests;
 mod toasts;
 mod updates;
+mod view_data;
 mod visuals;
 use domain::*;
 use std::sync::Mutex;
@@ -93,18 +99,69 @@ fn delete_task(
     app.emit("refresh", ()).map_err(|e| e.to_string())
 }
 #[tauri::command]
-fn snapshot(db: tauri::State<Db>, app: tauri::AppHandle) -> Result<serde_json::Value, String> {
+fn snapshot(
+    db: tauri::State<Db>,
+    app: tauri::AppHandle,
+    measure: Option<bool>,
+    window: tauri::WebviewWindow,
+    probe: Option<String>,
+    background: Option<bool>,
+) -> Result<Option<serde_json::Value>, String> {
+    // Presentation-only gate. The Rust worker and all write commands remain independent.
+    if background.unwrap_or(false)
+        && (!window.is_visible().map_err(|e| e.to_string())?
+            || window.is_minimized().map_err(|e| e.to_string())?)
+    {
+        #[cfg(feature = "performance-qa")]
+        if measure == Some(true) {
+            performance_probe::record_skipped(&app, &window, probe.as_deref());
+        }
+        return Ok(None);
+    }
+    let started = measure.unwrap_or(false).then(std::time::Instant::now);
+    let clock = || {
+        started
+            .map(|t| t.elapsed().as_secs_f64() * 1000.0)
+            .unwrap_or(0.0)
+    };
     let d = db.lock().map_err(|e| e.to_string())?;
-    Ok(
-        serde_json::json!({"tasks":d.tasks()?,"settings":d.settings()?,"notifications":d.notices()?,"avatar":profile::avatar(&app,&d.settings()?.profile_image),"system_visuals":visuals::system_visuals(),"release":{"version":app.package_info().version.to_string(),"acknowledged":d.settings()?.last_seen_release,"should_show":releases::should_show(&app.package_info().version.to_string(),d.settings()?.last_seen_release.as_deref())}}),
-    )
+    let locked = clock();
+    let capture = window.label() == "capture";
+    let view = view_data::read(&d, capture, started.is_some())?;
+    let data_done = clock();
+    let avatar = if capture {
+        None
+    } else {
+        profile::avatar(&app, &view.settings.profile_image)
+    };
+    let system_visuals = visuals::system_visuals();
+    let visuals_done = clock();
+    let settings = &view.settings;
+    let version = app.package_info().version.to_string();
+    let mut result = serde_json::json!({"tasks":view.tasks,"settings":settings,"notifications":view.notifications,"avatar":avatar,"system_visuals":system_visuals,"release":{"version":version,"acknowledged":settings.last_seen_release,"should_show":releases::should_show(&version,settings.last_seen_release.as_deref())}});
+    if started.is_some() {
+        result["performance"] = serde_json::json!({"mutex_wait_ms":locked,"tasks_ms":view.tasks_ms,"settings_ms":view.settings_ms,"notifications_ms":view.notifications_ms,"avatar_system_ms":visuals_done-data_done,"snapshot_total_ms":clock()});
+    }
+    #[cfg(feature = "performance-qa")]
+    {
+        drop(d);
+        if started.is_some() {
+            performance_probe::record(&app, &window, probe.as_deref(), &result);
+        }
+    }
+    #[cfg(not(feature = "performance-qa"))]
+    let _ = (window, probe);
+    Ok(Some(result))
 }
 #[tauri::command]
-fn capture(title: String, db: tauri::State<Db>) -> Result<Task, String> {
+fn capture(title: String, db: tauri::State<Db>, app: tauri::AppHandle) -> Result<Task, String> {
     let now = chrono::Utc::now().timestamp();
-    db.lock()
-        .unwrap()
-        .save(Task::new(title, now), "Created", now)
+    let task = db
+        .lock()
+        .map_err(|e| e.to_string())?
+        .save(Task::new(title, now), "Created", now)?;
+    let _ = app.emit("refresh", ());
+    Ok(task)
 }
 #[tauri::command]
 fn save_task(mut task: Task, action: String, db: tauri::State<Db>) -> Result<Task, String> {
@@ -139,9 +196,7 @@ fn save_settings(
     if !["system", "light", "dark"].contains(&settings.theme.as_str()) {
         return Err("Choose System, Light or Dark".into());
     }
-    if !["Ctrl+K", "Ctrl+Shift+P"].contains(&settings.command_shortcut.as_str()) {
-        return Err("Choose a supported command shortcut".into());
-    }
+    preferences::validate_command_shortcut(&settings.command_shortcut)?;
     let d = db.lock().map_err(|e| e.to_string())?;
     let current = d.settings()?;
     settings.profile_image = current.profile_image;
@@ -166,6 +221,18 @@ fn save_settings(
     d.set_settings(&settings)?;
     drop(d);
     app.emit("refresh", ()).map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn save_preference_patch(
+    patch: serde_json::Map<String, serde_json::Value>,
+    db: tauri::State<Db>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    db.lock()
+        .map_err(|e| e.to_string())?
+        .preference_patch(patch)?;
+    let _ = app.emit("refresh", ());
+    Ok(())
 }
 #[tauri::command]
 fn task_history(id: String, db: tauri::State<Db>) -> Result<Vec<serde_json::Value>, String> {
@@ -211,6 +278,7 @@ fn main() {
             capture,
             save_task,
             save_settings,
+            save_preference_patch,
             task_history,
             read_notice,
             delete_task,
@@ -254,7 +322,11 @@ fn main() {
                     .build()?;
             }
             use tauri_plugin_global_shortcut::GlobalShortcutExt;
-            if let Err(e) = app.global_shortcut().register("Ctrl+Shift+Space") {
+            #[cfg(feature = "performance-qa")]
+            let capture_shortcut = performance_probe::capture_shortcut(&app.config().identifier);
+            #[cfg(not(feature = "performance-qa"))]
+            let capture_shortcut = "Ctrl+Shift+Space";
+            if let Err(e) = app.global_shortcut().register(capture_shortcut) {
                 app.state::<diagnostics::RuntimeHealth>()
                     .lock()
                     .unwrap()

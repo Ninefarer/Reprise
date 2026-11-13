@@ -69,11 +69,11 @@ export function AvatarEditor({
       <div className="avatar-row">
         <Avatar src={avatar} name={name} />
         <button type="button" onClick={() => file.current?.click()}>
-          {avatar ? "Replace picture" : "Choose picture"}
+          {avatar ? "Replace avatar" : "Choose avatar"}
         </button>
         {avatar && (
           <button type="button" disabled={busy} onClick={() => void save(true)}>
-            Remove picture
+            Remove avatar
           </button>
         )}
         <input
@@ -121,12 +121,12 @@ export function AvatarEditor({
       </div>
       {source && (
         <fieldset>
-          <legend>Crop your picture</legend>
+          <legend>Crop your avatar</legend>
           <canvas
             ref={canvas}
             width={256}
             height={256}
-            aria-label="Profile picture crop preview"
+            aria-label="Profile avatar crop preview"
           />
           <label>
             Zoom
@@ -161,7 +161,7 @@ export function AvatarEditor({
           </label>
           <div className="dialog-actions">
             <button type="button" disabled={busy} onClick={() => void save()}>
-              Save picture
+              Save avatar
             </button>
             <button type="button" onClick={() => setSource(null)}>
               Cancel crop

@@ -4,12 +4,12 @@
 
 A task can be unfinished without being forgotten. Reprise keeps its lifecycle separate from its start date, deadline, and return timer.
 
-## Choose a place for an intention
+## Choose a place for a task
 
 | Place     | What it means                                                 |
 | --------- | ------------------------------------------------------------- |
 | Inbox     | Captured, with no organization required yet.                  |
-| Do Now    | Work you've explicitly chosen to do now.                      |
+| Current   | Work you've explicitly chosen to do now (Do Now in earlier builds). |
 | Scheduled | Work planned for a date, with an optional time.               |
 | Settled   | Incomplete work deliberately paused until its return time.    |
 | Snoozed   | Work temporarily put away for a chosen duration or time.      |
@@ -23,7 +23,7 @@ Finished tasks can be reopened; Dropped tasks can be restored. Permanent deletio
 
 **Snooze** for a short pause or a custom return time. **Settle** when you want to stop without losing your place. Settlement can return exactly 24 hours later or at your preferred local time on the following calendar day.
 
-Snoozing and settling preserve the task's original schedule and deadline. Moving to Do Now is an explicit decision, not an automatic response to a reminder.
+Snoozing and settling preserve the task's original schedule and deadline. Moving to Current is an explicit decision, not an automatic response to a reminder. The 3.4.0 display rename retains the existing stored DoNow state.
 
 **Waiting** can have a follow-up time and a reason. A follow-up reminds you to check; it does not mean the dependency has been resolved.
 

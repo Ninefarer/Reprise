@@ -43,7 +43,9 @@ export function PopupMenu({
   closeCallback.current = onClose;
   const [closing, setClosing] = useState(false);
   const [host] = useState(
-    () => document.activeElement?.closest("dialog[open]") ?? document.body,
+    () =>
+      document.activeElement?.closest("dialog[open], .setup-screen") ??
+      document.body,
   );
   const restore = () => {
     if (previous.current?.isConnected)

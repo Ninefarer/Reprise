@@ -70,11 +70,16 @@
   box-shadow: var(--glass-inner), var(--glass-shadow);
 }
 :root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
-  :is(input, select, textarea) {
+  :is(input, select, textarea, .select-trigger) {
   background-color: rgba(var(--surface-rgb), var(--glass-dense-alpha));
 }
 :root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
-  :is(.task-dialog, .context-menu, .profile-footer [role="menu"]) {
+  :is(
+    .task-dialog,
+    .context-menu,
+    .control-popup,
+    .profile-footer [role="menu"]
+  ) {
   border-color: var(--glass-edge);
   box-shadow: var(--glass-inner), var(--glass-shadow);
 }

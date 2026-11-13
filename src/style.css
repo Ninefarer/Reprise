@@ -674,14 +674,23 @@ label > textarea {
   padding: 8px 0;
 }
 .settings-save-bar {
-  position: sticky;
-  bottom: 12px;
-  z-index: 2;
+  position: static;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
   flex-wrap: wrap;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 .task-dialog {
   width: 610px;
@@ -764,9 +773,9 @@ legend {
   font-size: 12px;
 }
 .quick {
-  padding: 12px 16px 14px;
+  padding: 8px 12px 10px;
   background: var(--bg);
-  min-height: 100vh;
+  min-height: 0;
   border: 1px solid var(--control-border);
   border-radius: 12px;
 }
@@ -775,7 +784,7 @@ legend {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   user-select: none;
   cursor: move;
 }
@@ -809,15 +818,18 @@ legend {
   background: var(--hover);
 }
 .quick .capture {
-  margin-bottom: 10px;
+  margin-bottom: 0;
   padding: 6px 9px;
   box-shadow: none;
 }
 .quick .capture input {
-  padding: 10px;
+  padding: 8px 10px;
 }
 .quick .capture button {
   min-width: 64px;
+}
+.quick .capture-validation {
+  margin: 6px 0 0;
 }
 .quick-foot {
   display: flex;
@@ -1590,5 +1602,190 @@ legend {
 @media (forced-colors: active), (prefers-reduced-transparency: reduce) {
   .nightly-header::before {
     display: none;
+  }
+}
+
+.settings-tabs-scroll {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.settings-tabs {
+  position: relative;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 16px;
+  width: max-content;
+  min-width: 100%;
+}
+.settings-tabs::after {
+  content: "";
+  position: absolute;
+  inset: auto auto 0 0;
+  width: var(--tab-width, 0px);
+  border-bottom: 2px solid var(--accent);
+  transform: translateX(var(--tab-left, 0px));
+  transition:
+    transform var(--motion-menu) var(--motion-ease),
+    width var(--motion-menu) var(--motion-ease);
+  pointer-events: none;
+}
+.settings-tabs button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 9px 4px 11px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.settings-tabs button:hover {
+  background: transparent;
+  color: var(--text);
+}
+.settings-tabs [aria-selected="true"] {
+  color: var(--accent);
+  font-weight: 600;
+}
+.settings-tabs button:focus-visible {
+  outline-offset: -2px;
+}
+.settings-tabs button:active {
+  translate: none;
+}
+.setup-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.setup-row h2 {
+  margin: 0;
+}
+
+.editor-section {
+  border: 0;
+  border-top: 1px solid var(--border);
+  padding: 16px 0 0;
+  margin: 20px 0;
+  min-width: 0;
+}
+.editor-section legend {
+  padding-right: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.editor-primary-actions {
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.editor-transitions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+.task-history {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.task-history summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding-block: 6px;
+}
+.task-history ol {
+  list-style: none;
+  padding: 0;
+}
+.task-history li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.history-action[data-status] {
+  color: var(--task-accent);
+}
+.task-history time {
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* One page heading, complete glyph line boxes, and restrained control spacing. */
+[hidden] {
+  display: none !important;
+}
+body {
+  font-kerning: normal;
+}
+.page-heading h1 {
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.page-heading .count-badge {
+  vertical-align: middle;
+  margin-inline-start: 12px;
+}
+.sidebar-label {
+  line-height: 1.5;
+  padding-block: 1px;
+}
+.nav-group button svg {
+  flex-shrink: 0;
+}
+.sidebar .nav-group button > .sidebar-label {
+  flex: 1 1 auto;
+}
+.nav-count {
+  flex-shrink: 0;
+}
+.nav-group h2 {
+  letter-spacing: 0.07em;
+}
+.preferences .fields {
+  align-items: start;
+}
+.preferences .settings-section > label {
+  width: min(100%, 340px);
+}
+.shortcut-recorder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+}
+.shortcut-recorder label {
+  flex: 1;
+  min-width: 220px;
+}
+.shortcut-recorder p {
+  width: 100%;
+  margin: 0;
+  font-size: 12px;
+}
+.task-dialog .dialog-actions {
+  gap: 8px;
+}
+.task-dialog .dialog-actions button {
+  min-height: 34px;
+}
+.sidebar-tooltip {
+  max-width: min(240px, calc(100vw - 24px));
+}
+@media (max-width: 900px) {
+  .fields {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

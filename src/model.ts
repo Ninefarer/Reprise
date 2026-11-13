@@ -142,7 +142,7 @@ export interface Snapshot {
   notifications: Notice[];
 }
 export const label = (s: string) =>
-  s === "DoNow" ? "Do Now" : s === "Notification History" ? "Notifications" : s;
+  s === "DoNow" ? "Current" : s === "Notification History" ? "Notifications" : s;
 export const date = (n: number | null | undefined) =>
   n == null
     ? "Not set"

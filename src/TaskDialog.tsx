@@ -1,5 +1,7 @@
+import { TaskHistory } from "./TaskHistory";
+import { DateTimeField } from "./DateTimeField";
+import { Select } from "./Select";
 import { useEffect, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import {
   date,
   localInput,
@@ -8,7 +10,6 @@ import {
   label,
   type Task,
   type Status,
-  type History,
 } from "./model";
 export type TaskIntent =
   "edit" | "schedule" | "snooze" | "return" | "followup" | "history";
@@ -40,8 +41,7 @@ export function TaskDialog({
     wake_at:
       intent === "snooze" ? Math.floor(Date.now() / 1000) + 3600 : task.wake_at,
   }));
-  const [history, setHistory] = useState<History[]>([]),
-    [error, setError] = useState(""),
+  const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -49,20 +49,32 @@ export function TaskDialog({
     ref.current?.showModal();
     if (intent !== "history")
       ref.current?.querySelector<HTMLInputElement>("input")?.focus();
-    void invoke<History[]>("task_history", { id: task.id })
-      .then(setHistory)
-      .catch((e) => setError(String(e)));
     return () => {
       previous?.focus();
     };
   }, [task.id]);
   const set = <K extends keyof Task>(k: K, v: Task[K]) =>
     setDraft((d) => ({ ...d, [k]: v }));
-  async function transition(s: Status) {
+  async function submit(status?: Status) {
+    if (busy) return;
+    if (!draft.title.trim()) {
+      setError("Enter a task title.");
+      ref.current?.querySelector("input")?.focus();
+      return;
+    }
+    if (!ref.current?.querySelector("form")?.reportValidity()) return;
     setBusy(true);
-    // Status actions must retain edits made in this dialog, not resubmit its original snapshot.
-    if (await onTransition(draft, s)) onClose();
-    setBusy(false);
+    setError("");
+    try {
+      const ok = status
+        ? await onTransition(draft, status)
+        : await onSave(draft);
+      if (ok) onClose();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
   }
   if (intent === "history")
     return (
@@ -95,15 +107,7 @@ export function TaskDialog({
           {(error || externalError) && (
             <p role="alert">{error || externalError}</p>
           )}
-          <section className="history">
-            <h3>Task history</h3>
-            {history.map((h, i) => (
-              <div key={i}>
-                <span>{label(h.action)}</span>
-                <time>{date(h.at)}</time>
-              </div>
-            ))}
-          </section>
+          <TaskHistory taskId={task.id} initiallyOpen />
         </div>
       </dialog>
     );
@@ -111,20 +115,30 @@ export function TaskDialog({
     <dialog
       ref={ref}
       className="task-dialog material-floating"
+      aria-labelledby="task-editor-heading"
       onCancel={onClose}
     >
       <form
+        noValidate
         onSubmit={async (e) => {
           e.preventDefault();
-          setBusy(true);
-          if (await onSave(draft)) onClose();
-          setBusy(false);
+          await submit();
         }}
       >
         <div className="dialog-head">
           <div>
-            <p className="eyebrow">INTENTION DETAILS</p>
-            <h2>Make the next step clear.</h2>
+            <h2 id="task-editor-heading">
+              {
+                {
+                  edit: "Edit task",
+                  schedule: "Schedule task",
+                  snooze: "Snooze task",
+                  return: "Change return time",
+                  followup: "Change follow-up",
+                  history: "Task history",
+                }[intent]
+              }
+            </h2>
           </div>
           <button
             type="button"
@@ -167,180 +181,190 @@ export function TaskDialog({
             placeholder="Context for your future self…"
           />
         </label>
-        <div className="fields">
-          <label>
-            Status
-            <select
-              value={draft.status}
-              data-status={draft.status}
-              onChange={(e) => {
-                set("status", e.target.value as Status);
-                if (e.target.value === "Snoozed" && !draft.wake_at)
-                  set("wake_at", Math.floor(Date.now() / 1000) + 3600);
-              }}
-            >
-              {statuses.map((s) => (
-                <option value={s} key={s} data-status={s}>
-                  {label(s)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Priority
-            <select
-              value={draft.priority}
-              onChange={(e) => set("priority", Number(e.target.value))}
-            >
-              {["None", "Low", "Medium", "High"].map((v, i) => (
-                <option value={i} key={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Scheduled start
-            <input
-              type="datetime-local"
-              required={draft.status === "Scheduled"}
-              value={localInput(draft.scheduled_at)}
-              onChange={(e) => set("scheduled_at", parseInput(e.target.value))}
-            />
-          </label>
-          <label>
-            Deadline
-            <input
-              type="datetime-local"
-              value={localInput(draft.due_at)}
-              onChange={(e) => set("due_at", parseInput(e.target.value))}
-            />
-          </label>
-        </div>
-        {draft.status === "Snoozed" && (
-          <fieldset>
-            <legend>Snooze until</legend>
-            <div className="preset-row">
-              {[
-                ["15 min", 900],
-                ["1 hour", 3600],
-                ["24 hours", 86400],
-                ["1 week", 604800],
-              ].map(([name, sec]) => (
-                <button
-                  type="button"
-                  key={name}
-                  onClick={() =>
-                    set("wake_at", Math.floor(Date.now() / 1000) + Number(sec))
-                  }
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
+        <fieldset className="editor-section">
+          <legend>Status and timing</legend>
+          <div className="fields">
             <label>
-              Custom return time
-              <input
+              Status
+              <Select
+                value={draft.status}
+                data-status={draft.status}
+                onChange={(e) => {
+                  set("status", e.target.value as Status);
+                  if (e.target.value === "Snoozed" && !draft.wake_at)
+                    set("wake_at", Math.floor(Date.now() / 1000) + 3600);
+                }}
+              >
+                {statuses.map((s) => (
+                  <option value={s} key={s} data-status={s}>
+                    {label(s)}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            <label>
+              Priority
+              <Select
+                value={draft.priority}
+                onChange={(e) => set("priority", Number(e.target.value))}
+              >
+                {["None", "Low", "Medium", "High"].map((v, i) => (
+                  <option value={i} key={v}>
+                    {v}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            <label>
+              Scheduled start
+              <DateTimeField
+                aria-label="Scheduled start"
+                type="datetime-local"
+                required={draft.status === "Scheduled"}
+                value={localInput(draft.scheduled_at)}
+                onChange={(e) =>
+                  set("scheduled_at", parseInput(e.target.value))
+                }
+              />
+            </label>
+            <label>
+              Deadline
+              <DateTimeField
+                aria-label="Deadline"
+                type="datetime-local"
+                value={localInput(draft.due_at)}
+                onChange={(e) => set("due_at", parseInput(e.target.value))}
+              />
+            </label>
+          </div>
+          {draft.status === "Snoozed" && (
+            <fieldset>
+              <legend>Snooze until</legend>
+              <div className="preset-row">
+                {[
+                  ["15 min", 900],
+                  ["1 hour", 3600],
+                  ["24 hours", 86400],
+                  ["1 week", 604800],
+                ].map(([name, sec]) => (
+                  <button
+                    type="button"
+                    key={name}
+                    onClick={() =>
+                      set(
+                        "wake_at",
+                        Math.floor(Date.now() / 1000) + Number(sec),
+                      )
+                    }
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+              <label>
+                Custom return time
+                <DateTimeField
+                  aria-label="Custom return time"
+                  type="datetime-local"
+                  required
+                  min={localInput(Math.floor(Date.now() / 1000))}
+                  value={localInput(draft.wake_at)}
+                  onChange={(e) => set("wake_at", parseInput(e.target.value))}
+                />
+              </label>
+            </fieldset>
+          )}
+          {draft.status === "Settled" && (
+            <p className="hint">
+              Settling uses your saved attention preference. Existing return
+              times stay fixed when you edit notes. Use “Settle again” for a new
+              period.
+            </p>
+          )}
+          {draft.status === "Settled" && intent === "return" && (
+            <label>
+              Return time
+              <DateTimeField
+                aria-label="Return time"
                 type="datetime-local"
                 required
-                min={localInput(Math.floor(Date.now() / 1000))}
                 value={localInput(draft.wake_at)}
                 onChange={(e) => set("wake_at", parseInput(e.target.value))}
               />
             </label>
-          </fieldset>
-        )}
-        {draft.status === "Settled" && (
-          <p className="hint">
-            Settling uses your saved attention preference. Existing return times
-            stay fixed when you edit notes. Use “Settle again” for a new period.
-          </p>
-        )}
-        {draft.status === "Settled" && intent === "return" && (
-          <label>
-            Return time
-            <input
-              type="datetime-local"
-              required
-              value={localInput(draft.wake_at)}
-              onChange={(e) => set("wake_at", parseInput(e.target.value))}
-            />
-          </label>
-        )}
-        {draft.status === "Waiting" && (
-          <>
+          )}
+          {draft.status === "Waiting" && (
+            <>
+              <label>
+                Dependency or reason
+                <input
+                  value={draft.reason}
+                  onChange={(e) => set("reason", e.target.value)}
+                />
+              </label>
+              <label>
+                Follow-up time
+                <DateTimeField
+                  aria-label="Follow-up time"
+                  type="datetime-local"
+                  value={localInput(draft.wake_at)}
+                  onChange={(e) => set("wake_at", parseInput(e.target.value))}
+                />
+              </label>
+            </>
+          )}
+        </fieldset>
+        <fieldset className="editor-section">
+          <legend>Organization</legend>
+          <div className="fields">
             <label>
-              Dependency or reason
+              Project
               <input
-                value={draft.reason}
-                onChange={(e) => set("reason", e.target.value)}
+                value={draft.project}
+                onChange={(e) => set("project", e.target.value)}
               />
             </label>
             <label>
-              Follow-up time
+              Tags
               <input
-                type="datetime-local"
-                value={localInput(draft.wake_at)}
-                onChange={(e) => set("wake_at", parseInput(e.target.value))}
+                value={draft.tags}
+                onChange={(e) => set("tags", e.target.value)}
               />
             </label>
-          </>
-        )}
-        <div className="fields">
-          <label>
-            Project
-            <input
-              value={draft.project}
-              onChange={(e) => set("project", e.target.value)}
-            />
-          </label>
-          <label>
-            Tags
-            <input
-              value={draft.tags}
-              onChange={(e) => set("tags", e.target.value)}
-            />
-          </label>
-        </div>
-        <div className="dialog-actions">
+          </div>
+        </fieldset>
+        <div className="dialog-actions editor-primary-actions">
+          <button type="button" disabled={busy} onClick={onClose}>
+            Cancel
+          </button>
           <button className="primary" disabled={busy}>
-            Save changes
+            {busy ? "Saving…" : "Save changes"}
           </button>
+        </div>
+        <div className="editor-transitions" aria-label="Change task status">
           <button
             type="button"
             disabled={busy}
-            onClick={() => void transition("DoNow")}
+            onClick={() => void submit("DoNow")}
           >
-            Do now
+            Make current
           </button>
           <button
             type="button"
             disabled={busy}
-            onClick={() => void transition("Settled")}
+            onClick={() => void submit("Settled")}
           >
             {task.status === "Settled" ? "Settle again" : "Settle"}
           </button>
           <button
             type="button"
             disabled={busy}
-            onClick={() => void transition("Finished")}
+            onClick={() => void submit("Finished")}
           >
             Finish
           </button>
         </div>
-        <section className="history">
-          <h3>Task history</h3>
-          {history.length ? (
-            history.map((h, i) => (
-              <div key={i}>
-                <span>{label(h.action)}</span>
-                <time>{date(h.at)}</time>
-              </div>
-            ))
-          ) : (
-            <p>No transitions recorded.</p>
-          )}
-        </section>
+        <TaskHistory taskId={task.id} />
         <div className="delete-section">
           <button
             type="button"

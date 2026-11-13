@@ -32,8 +32,21 @@ const original: Task = {
   review_reason: null,
   parent_task_id: null,
 };
+it("announces an accessible name for task editing", () => {
+  render(
+    <TaskDialog
+      task={original}
+      intent="edit"
+      onTransition={vi.fn()}
+      onClose={vi.fn()}
+      onSave={vi.fn()}
+      onDelete={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("dialog", { name: "Edit task" })).toBeTruthy();
+});
 it.each([
-  ["Do now", "DoNow"],
+  ["Make current", "DoNow"],
   ["Settle", "Settled"],
   ["Finish", "Finished"],
 ] as const)(

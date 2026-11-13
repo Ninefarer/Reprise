@@ -30,7 +30,6 @@ export function DeleteTaskDialog({
       }}
     >
       <div className="delete-content">
-        <p className="eyebrow">PERMANENT DELETION</p>
         <h2 id="delete-title">Delete this task?</h2>
         <p className="delete-title">{task.title}</p>
         <p id="delete-description">
@@ -39,10 +38,6 @@ export function DeleteTaskDialog({
           keeps its record; deleting removes it.
         </p>
         <p className="hint">Any subtasks are kept as independent tasks.</p>
-        <p className="hint">
-          Previously submitted Windows notifications may remain in Notification
-          Center.
-        </p>
         {error && (
           <p role="alert" className="error">
             {error}

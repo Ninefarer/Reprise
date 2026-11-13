@@ -38,6 +38,8 @@ npm run tauri -- build --config src-tauri/tauri.nightly.conf.json
 
 NSIS installers are written under `src-tauri/target/release/bundle/nsis/`. Building does not install or publish them. Nightly overrides the product name, version, app identifier, and icon configuration. Its identifier, `com.reprise.nightly`, gives it separate local data from Stable.
 
+Official installers are signed by the approved GitHub Actions workflow. With updater artifacts enabled, a local installer build also needs the existing signing credentials in its environment; the public key in configuration cannot sign a build. Do not generate a replacement key or put credentials in a command, file inside the repository, or log. Contributors can use `tauri dev` and the checks below without the publisher's private key. See [signed update operations](UPDATES.md) for the artifact-only workflow and release gate.
+
 Both channels use Ctrl+Shift+Space for Quick Capture. Run one at a time when checking that shortcut.
 
 ## Checks
