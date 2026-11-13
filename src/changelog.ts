@@ -71,6 +71,26 @@ export interface Release {
 }
 export const releases: Release[] = [
   {
+    version: "3.3.3",
+    date: "2026-11-12",
+    title: "Settings drafts stay with you.",
+    subtitle: "Hotfix",
+    sections: [
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Choose Save, Discard, or Keep editing before leaving unsaved Settings, replaying setup, quitting from the profile menu, or installing an update.",
+          },
+          {
+            text: "A sticky save bar shows unsaved changes. Appearance and pictures continue saving immediately.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.3.3-nightly.20261112.1",
     date: "2026-11-12",
     title: "Keep your changes. Choose your updates.",
