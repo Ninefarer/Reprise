@@ -386,7 +386,7 @@ export function Preferences({
           >
             Discard changes
           </button>
-          <span role="status">{busy ? "Saving?" : "Unsaved changes"}</span>
+          <span role="status">{busy ? "Saving…" : "Unsaved changes"}</span>
         </div>
       )}
       {saved && <p role="status">Preferences saved.</p>}

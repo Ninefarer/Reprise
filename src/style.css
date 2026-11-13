@@ -1622,3 +1622,58 @@ legend {
 .setup-row h2 {
   margin: 0;
 }
+
+.editor-section {
+  border: 0;
+  border-top: 1px solid var(--border);
+  padding: 16px 0 0;
+  margin: 20px 0;
+  min-width: 0;
+}
+.editor-section legend {
+  padding-right: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.editor-primary-actions {
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.editor-transitions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+.task-history {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.task-history summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding-block: 6px;
+}
+.task-history ol {
+  list-style: none;
+  padding: 0;
+}
+.task-history li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.history-action[data-status] {
+  color: var(--task-accent);
+}
+.task-history time {
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11px;
+}
