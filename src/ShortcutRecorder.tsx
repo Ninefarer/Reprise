@@ -22,7 +22,9 @@ export function ShortcutRecorder({
           data-shortcut-recorder
           value={recording ? "Press a shortcut…" : value}
           aria-invalid={!!error}
-          aria-describedby="shortcut-feedback"
+          aria-describedby={
+            error || recording ? "shortcut-feedback" : undefined
+          }
           onFocus={() => setRecording(true)}
           onBlur={() => setRecording(false)}
           onKeyDown={(event) => {
@@ -68,12 +70,11 @@ export function ShortcutRecorder({
       >
         Reset shortcut
       </button>
-      <p id="shortcut-feedback" role={error ? "alert" : "status"}>
-        {error ||
-          (recording
-            ? "Press your preferred combination. Escape cancels."
-            : "Applies while Reprise is active.")}
-      </p>
+      {(error || recording) && (
+        <p id="shortcut-feedback" role={error ? "alert" : "status"}>
+          {error || "Press your preferred combination. Escape cancels."}
+        </p>
+      )}
     </div>
   );
 }

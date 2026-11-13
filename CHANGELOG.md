@@ -1,14 +1,35 @@
 # Reprise changelog
 
-## 3.4.0 / 3.4.0-nightly.20261113.1 - Development candidate, not published
+## 3.4.0 - November 13, 2026
 
-- Combine the existing hidden/minimized refresh suspension and lightweight Quick Capture work with the Issue #2 UI overhaul.
-- Rename navigation to Hub, Ongoing and Archive, and display Do Now as Current without migrating task states.
-- Add custom selection and date/time controls, inline capture validation and configurable command palette shortcuts.
-- Reorganize Settings into tabs with atomic section saves; simplify task editing and collapse destination-colored history.
-- Simplify notifications and repeated copy, remove Space name from the UI, standardize Avatar terminology, and refine Compact spacing, tooltips and greetings.
-- Keep release history within its installed channel.
-- Native Windows acceptance and signed installer evaluation remain pending. See [3.4.0 verification](docs/qa/uiux-3.4.0.md).
+Brings the 3.3.3 Nightly changes and the Issue #2 UI/UX overhaul to Stable. [Release notes and personal note](docs/releases/3.4.0.md).
+
+### Added
+
+- Shared themed dropdowns with keyboard navigation and type-ahead, plus custom date/time pickers with readable English date entry, minute precision, Apply/Cancel and optional clearing.
+- A command palette shortcut recorder with exact modifier matching, reserved-shortcut checks and reset-to-default.
+- Explanatory navigation tooltips and varied local-time greetings.
+
+### Changed
+
+- Hub, Ongoing and Archive replace the old navigation groups. Current replaces the Do Now display name; stored lifecycle states are unchanged. All Tasks is removed from navigation and commands.
+- Settings use Profile, Appearance, Reminders, Keyboard and About tabs, a moving accent underline, narrow-window scrolling and section Save/Discard controls. Appearance and avatar changes retain their immediate save behavior.
+- Task editing groups status, timing and organization, validates transitions and separates Save/Cancel from status actions. Destination-colored history loads only when expanded.
+- Hidden/minimized windows skip full task and notification reads while Rust scheduling continues. Focus/restore retrieves fresh data and recalculates countdowns immediately.
+- Quick Capture bootstraps settings without task/notification-list or avatar reads. It saves directly, refreshes the main view and fits its content without the decorative plus.
+- Compact spacing, headings, control alignment, greetings, alarm-clock Snooze iconography, accessible labels and setup popup colors are refined. Existing native Clear Glass and Acrylic remain in place.
+- Profile navigation is simplified. Redundant Space name fields, duplicate What's New controls and repeated explanatory copy are removed while stored profile data is retained.
+
+### Fixed
+
+- Notification category selections survive removal of their last matching record; nested dropdown/picker interaction no longer dismisses the notification panel prematurely.
+- Stable and Nightly release history are filtered symmetrically.
+- Quick Capture validation appears below its input; select chevrons and embedded clock buttons align correctly; dates display readable values and reject invalid entries.
+- Unsaved task/Settings drafts survive hide/restore, stale task revisions remain guarded, and atomic section patches preserve unrelated settings.
+- Retained the 3.3.3 Settings leave/update-install Save/Discard/Keep editing safeguard, including failed-save draft retention, with the new section-based layout.
+- Included the 3.3.3 Nightly Windows notification-test fix for absent permission records, without treating explicit blocks or other failures as success.
+
+The separately published [3.4.0 Nightly](https://github.com/Ninefarer/Reprise/releases/tag/v3.4.0-nightly.20261113.1) preceded Stable. [UI acceptance](docs/qa/uiux-3.4.0.md) and [refresh measurements](docs/qa/window-refresh-suspension-2026-11-13.md) distinguish tested behavior from remaining manual coverage.
 
 ## 3.3.3 - November 12, 2026 - Hotfix
 

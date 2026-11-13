@@ -90,7 +90,7 @@ const interface340: ReleaseSection[] = [
         text: "Hub, Ongoing and Archive organize the sidebar. Do Now is now called Current; your saved task states are preserved.",
       },
       {
-        text: "Settings use focused tabs and section Save/Discard controls. Avatar and appearance changes still save immediately.",
+        text: "Settings use an underline tab bar and section Save/Discard controls. Avatar and appearance changes still save immediately.",
       },
       {
         text: "Task editing groups status, timing and organization, with expandable history colored by its recorded destination.",
@@ -112,6 +112,12 @@ const interface340: ReleaseSection[] = [
       },
       {
         text: "Section saves preserve independent preferences. Task revision checks and unsaved drafts remain protected.",
+      },
+      {
+        text: "Quick Capture validation sits below its input, clock buttons and dropdown arrows align correctly, and dates support readable English entry.",
+      },
+      {
+        text: "Windows notification tests handle missing permission records without ignoring explicit blocks. Nested notification controls stay open while you use them.",
       },
     ],
   },

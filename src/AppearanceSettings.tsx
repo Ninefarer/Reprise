@@ -143,12 +143,6 @@ export function AppearanceSettings({
             )}
           </label>
         </div>
-        {fixed && (
-          <p className="hint">
-            This family has a fixed appearance. Your saved Classic preference (
-            {v.theme}) is retained and will return with Reprise Classic.
-          </p>
-        )}
         <div className="fields">
           <label>
             Accent color
@@ -187,11 +181,6 @@ export function AppearanceSettings({
             </Select>
           </label>
         </div>
-        <p className="hint">
-          Accents highlight controls; task colors keep their meaning. Windows
-          reduced-motion preferences take priority without changing your
-          selection.
-        </p>
         {system?.animations_enabled === false && (
           <p className="hint">
             Windows animations are off. Your saved animation preference is

@@ -2227,6 +2227,7 @@ describe("right notification panel", () => {
     await waitFor(() =>
       expect(data.settings.notification_panel_pinned).toBe(false),
     );
+    await screen.findByRole("button", { name: "Pin notifications" });
     await user.keyboard("{Escape}");
     expect(
       screen.queryByRole("complementary", { name: "Notifications" }),
