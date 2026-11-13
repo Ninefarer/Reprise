@@ -1,5 +1,15 @@
 # Reprise changelog
 
+## 3.4.0 / 3.4.0-nightly.20261113.1 - Development candidate, not published
+
+- Combine the existing hidden/minimized refresh suspension and lightweight Quick Capture work with the Issue #2 UI overhaul.
+- Rename navigation to Hub, Ongoing and Archive, and display Do Now as Current without migrating task states.
+- Add custom selection and date/time controls, inline capture validation and configurable command palette shortcuts.
+- Reorganize Settings into tabs with atomic section saves; simplify task editing and collapse destination-colored history.
+- Simplify notifications and repeated copy, remove Space name from the UI, standardize Avatar terminology, and refine Compact spacing, tooltips and greetings.
+- Keep release history within its installed channel.
+- Native Windows acceptance and signed installer evaluation remain pending. See [3.4.0 verification](docs/qa/uiux-3.4.0.md).
+
 ## 3.3.3 - November 12, 2026 - Hotfix
 
 ### Fixed

@@ -16,6 +16,9 @@
 
 ## Engineering records
 
+- [3.4.0 UI/UX implementation and acceptance status](qa/uiux-3.4.0.md)
+- [GitHub App development reports](CODEX-ISSUE-REPORTS.md)
+
 These documents record implementation passes and checks performed at that time. Their test counts, screenshots, feature boundaries, and installed versions are historical, not a current release matrix. Features in local development notes may not be in a published installer.
 
 ### Tasks and navigation

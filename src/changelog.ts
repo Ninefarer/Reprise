@@ -69,7 +69,78 @@ export interface Release {
   subtitle?: string;
   sections: ReleaseSection[];
 }
+const interface340: ReleaseSection[] = [
+  {
+    heading: "ADDITIONS",
+    accent: "new",
+    entries: [
+      {
+        text: "Custom date and time pickers, keyboard-friendly dropdowns, and a recorder for your command palette shortcut.",
+      },
+      {
+        text: "Explanatory navigation tooltips and greetings that vary throughout the day.",
+      },
+    ],
+  },
+  {
+    heading: "CHANGES",
+    accent: "little",
+    entries: [
+      {
+        text: "Hub, Ongoing and Archive organize the sidebar. Do Now is now called Current; your saved task states are preserved.",
+      },
+      {
+        text: "Settings use focused tabs and section Save/Discard controls. Avatar and appearance changes still save immediately.",
+      },
+      {
+        text: "Task editing groups status, timing and organization, with expandable history colored by its recorded destination.",
+      },
+      {
+        text: "Cleaner Quick Capture, task headings and notification controls, plus tighter Compact spacing.",
+      },
+      {
+        text: "Hidden and minimized windows skip full presentation snapshots. Returning to a window refreshes its data, and Quick Capture reads only the metadata it needs.",
+      },
+    ],
+  },
+  {
+    heading: "BUGFIXES",
+    accent: "fixes",
+    entries: [
+      {
+        text: "Release history stays within the installed channel, and notification filters retain their selected category.",
+      },
+      {
+        text: "Section saves preserve independent preferences. Task revision checks and unsaved drafts remain protected.",
+      },
+    ],
+  },
+];
 export const releases: Release[] = [
+  {
+    version: "3.4.0",
+    date: "2026-11-13",
+    title: "A clearer place to return.",
+    sections: interface340,
+  },
+  {
+    version: "3.4.0-nightly.20261113.1",
+    date: "2026-11-13",
+    title: "UI overhaul and window refresh improvements",
+    subtitle: "Nightly candidate",
+    sections: [
+      ...interface340,
+      {
+        heading: "DEVELOPMENT STATUS",
+        accent: "known",
+        entries: [
+          {
+            text: "Native Windows visual, display-scaling and physical window-state acceptance is still pending. This candidate has not been published.",
+          },
+        ],
+      },
+    ],
+  },
   {
     version: "3.3.3",
     date: "2026-11-12",
