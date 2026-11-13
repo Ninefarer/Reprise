@@ -1,3 +1,4 @@
+import { Select } from "./Select";
 import { useEffect, useRef, useState } from "react";
 import type { Settings, VisualPreferences } from "./model";
 import { AvatarEditor } from "./Profile";
@@ -149,7 +150,7 @@ export function Onboarding({
                     </label>
                     <label>
                       Theme
-                      <select
+                      <Select
                         value={settings.theme_family ?? "classic"}
                         onChange={(e) =>
                           void onVisual({
@@ -161,12 +162,12 @@ export function Onboarding({
                         <option value="classic">Reprise Classic</option>
                         <option value="pitch-black">Pitch Black</option>
                         <option value="ashen-white">Ashen White</option>
-                      </select>
+                      </Select>
                     </label>
                     {(settings.theme_family ?? "classic") === "classic" && (
                       <label>
                         Appearance mode
-                        <select
+                        <Select
                           value={settings.theme}
                           onChange={(e) =>
                             void onVisual({
@@ -179,7 +180,7 @@ export function Onboarding({
                           </option>
                           <option value="light">Light</option>
                           <option value="dark">Dark</option>
-                        </select>
+                        </Select>
                       </label>
                     )}
                   </div>
@@ -189,13 +190,13 @@ export function Onboarding({
                   <div className="fields">
                     <label>
                       Settled tasks return
-                      <select
+                      <Select
                         value={draft.settlement_mode}
                         onChange={(e) => set("settlement_mode", e.target.value)}
                       >
                         <option value="next_day">The following day</option>
                         <option value="24h">Exactly 24 hours later</option>
-                      </select>
+                      </Select>
                     </label>
                     {draft.settlement_mode === "next_day" && (
                       <label>

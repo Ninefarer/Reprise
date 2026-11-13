@@ -1,3 +1,4 @@
+import { Select } from "./Select";
 import type { Settings, Snapshot, VisualPreferences } from "./model";
 import { visualPreferences } from "./visuals";
 export function AppearanceSettings({
@@ -18,7 +19,7 @@ export function AppearanceSettings({
         <div className="fields">
           <label>
             Window appearance
-            <select
+            <Select
               value={v.desktop_glass ? "glass" : "default"}
               onChange={(e) =>
                 void onChange({ desktop_glass: e.target.value === "glass" })
@@ -26,12 +27,12 @@ export function AppearanceSettings({
             >
               <option value="default">Default (opaque)</option>
               <option value="glass">Glass (native Windows transparency)</option>
-            </select>
+            </Select>
           </label>
           {v.desktop_glass && (
             <label>
               Glass material
-              <select
+              <Select
                 value={v.desktop_material}
                 onChange={(e) =>
                   void onChange({
@@ -41,7 +42,7 @@ export function AppearanceSettings({
               >
                 <option value="clear">Clear</option>
                 <option value="acrylic">Acrylic</option>
-              </select>
+              </Select>
             </label>
           )}
         </div>
@@ -49,7 +50,7 @@ export function AppearanceSettings({
           <>
             <label>
               Glass intensity
-              <select
+              <Select
                 value={
                   v.desktop_tint === 82
                     ? "subtle"
@@ -77,7 +78,7 @@ export function AppearanceSettings({
                 <option value="custom" disabled>
                   Custom tint
                 </option>
-              </select>
+              </Select>
             </label>
             <label>
               Glass tint: {v.desktop_tint}%
@@ -101,7 +102,7 @@ export function AppearanceSettings({
         <div className="fields">
           <label>
             Theme
-            <select
+            <Select
               value={v.theme_family}
               onChange={(e) =>
                 void onChange({
@@ -113,7 +114,7 @@ export function AppearanceSettings({
               <option value="classic">Reprise Classic</option>
               <option value="pitch-black">Pitch Black</option>
               <option value="ashen-white">Ashen White</option>
-            </select>
+            </Select>
           </label>
           <label>
             Appearance mode
@@ -127,7 +128,7 @@ export function AppearanceSettings({
                 }
               />
             ) : (
-              <select
+              <Select
                 value={v.theme}
                 onChange={(e) =>
                   void onChange({
@@ -138,7 +139,7 @@ export function AppearanceSettings({
                 <option value="system">System — follow Windows</option>
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
-              </select>
+              </Select>
             )}
           </label>
         </div>
@@ -151,7 +152,7 @@ export function AppearanceSettings({
         <div className="fields">
           <label>
             Accent color
-            <select
+            <Select
               value={v.accent}
               onChange={(e) =>
                 void onChange({
@@ -168,11 +169,11 @@ export function AppearanceSettings({
               <option value="icy-blue">Icy Blue</option>
               <option value="rose">Rose</option>
               <option value="neutral">Neutral</option>
-            </select>
+            </Select>
           </label>
           <label>
             Animation
-            <select
+            <Select
               value={v.animation}
               onChange={(e) =>
                 void onChange({
@@ -183,7 +184,7 @@ export function AppearanceSettings({
               <option value="off">Off</option>
               <option value="subtle">Subtle</option>
               <option value="expressive">Expressive</option>
-            </select>
+            </Select>
           </label>
         </div>
         <p className="hint">
@@ -200,7 +201,7 @@ export function AppearanceSettings({
         <div className="fields">
           <label>
             Density
-            <select
+            <Select
               value={v.density}
               onChange={(e) =>
                 void onChange({
@@ -210,11 +211,11 @@ export function AppearanceSettings({
             >
               <option value="comfortable">Comfortable</option>
               <option value="compact">Compact</option>
-            </select>
+            </Select>
           </label>
           <label>
             Modal backdrop
-            <select
+            <Select
               value={v.modal_backdrop}
               onChange={(e) =>
                 void onChange({
@@ -226,11 +227,11 @@ export function AppearanceSettings({
               <option value="dim">Dim</option>
               <option value="blur">Dim and blur</option>
               <option value="none">None</option>
-            </select>
+            </Select>
           </label>
           <label>
             Scrollbars
-            <select
+            <Select
               value={v.scrollbars}
               onChange={(e) =>
                 void onChange({
@@ -240,7 +241,7 @@ export function AppearanceSettings({
             >
               <option value="system">Follow Windows</option>
               <option value="always">Always visible</option>
-            </select>
+            </Select>
           </label>
         </div>
         {system?.advanced_effects === false && (

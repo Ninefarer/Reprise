@@ -1,3 +1,4 @@
+import { Select } from "./Select";
 ﻿import { isNightly } from "./Nightly";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -104,7 +105,7 @@ export function ReleaseDialog({
         <strong>{mode === "new" ? "What’s New" : "Release history"}</strong>
         <label>
           Version
-          <select
+          <Select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
           >
@@ -118,7 +119,7 @@ export function ReleaseDialog({
                   v{r.version}
                 </option>
               ))}
-          </select>
+          </Select>
         </label>
       </div>
       <div className="release-scroll">

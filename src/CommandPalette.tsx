@@ -1,3 +1,4 @@
+import { Select } from "./Select";
 import { useEffect, useRef, useState } from "react";
 import { commandDestinations } from "./navigation";
 import { label, matches, type Task, type View } from "./model";
@@ -136,7 +137,7 @@ export function CommandPalette({
           />
           <label className="palette-filter">
             Task status
-            <select
+            <Select
               value={status}
               data-status={taskCategory(status)}
               onChange={(e) => {
@@ -159,7 +160,7 @@ export function CommandPalette({
                   {label(s)}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           {q && (
             <button

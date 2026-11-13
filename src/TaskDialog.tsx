@@ -1,3 +1,4 @@
+import { Select } from "./Select";
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -177,7 +178,7 @@ export function TaskDialog({
         <div className="fields">
           <label>
             Status
-            <select
+            <Select
               value={draft.status}
               data-status={draft.status}
               onChange={(e) => {
@@ -191,11 +192,11 @@ export function TaskDialog({
                   {label(s)}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label>
             Priority
-            <select
+            <Select
               value={draft.priority}
               onChange={(e) => set("priority", Number(e.target.value))}
             >
@@ -204,7 +205,7 @@ export function TaskDialog({
                   {v}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label>
             Scheduled start

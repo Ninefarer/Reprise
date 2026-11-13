@@ -67,6 +67,7 @@ function Application({
     [view, setView] = useState<View>("Home"),
     [query, setQuery] = useState(""),
     [title, setTitle] = useState(""),
+    [captureError, setCaptureError] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [palette, setPalette] = useState(false),
@@ -804,11 +805,15 @@ function Application({
     setDeleting(task);
   }
   const capture = (
+    <>
     <form
       className="capture"
+      noValidate
       aria-busy={busy}
       onSubmit={(e) => {
         e.preventDefault();
+        if (!title.trim()) { setCaptureError("Enter a task title."); captureRef.current?.focus(); return; }
+        setCaptureError("");
         void add();
       }}
     >
@@ -819,16 +824,20 @@ function Application({
         disabled={busy}
         required
         maxLength={500}
+        aria-invalid={!!captureError}
+        aria-describedby={captureError ? "capture-error" : undefined}
         aria-label="Capture a task"
         placeholder="What would you like to come back to?"
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={(e) => { setTitle(e.target.value); setCaptureError(""); }}
       />
       <button disabled={busy} className="primary">
         {busy ? "Saving..." : quick ? "Save" : "Add to Inbox"}{" "}
         <span aria-hidden="true">↵</span>
       </button>
     </form>
+    {captureError && <p id="capture-error" className="capture-validation" role="alert">{captureError}</p>}
+    </>
   );
   if (quick)
     return (

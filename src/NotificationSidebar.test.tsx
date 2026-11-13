@@ -83,12 +83,13 @@ describe("notification management", () => {
   it("formats stored identifiers without changing filter values", async () => {
     render(<Harness />);
     const user = userEvent.setup();
+    await user.click(screen.getByLabelText("Category"));
     expect(
       screen
         .getByRole("option", { name: "Daily Review" })
-        .getAttribute("value"),
+        .getAttribute("data-value"),
     ).toBe("DailyReview");
-    await user.selectOptions(screen.getByLabelText("Category"), "DailyReview");
+    await user.click(screen.getByRole("option", { name: "Daily Review" }));
     expect(screen.getByText("Reminder daily")).toBeTruthy();
     expect(screen.queryByText("Reminder other")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Open Daily Review" }));

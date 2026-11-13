@@ -1,3 +1,4 @@
+import { selectOption } from "./testControls";
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -444,7 +445,7 @@ describe("Settings draft protection", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await user.selectOptions(screen.getByLabelText("Theme"), "pitch-black");
+    await selectOption(user, screen.getByLabelText("Theme"), "pitch-black");
     await user.click(screen.getByRole("button", { name: "Home" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(data.settings.theme_family).toBe("pitch-black");
@@ -575,7 +576,7 @@ describe("Nightly channel", () => {
     await user.type(screen.getByLabelText("Display name"), "Dim");
     await user.clear(screen.getByLabelText("Space name"));
     await user.type(screen.getByLabelText("Space name"), "field");
-    await user.selectOptions(screen.getByLabelText("Theme"), "pitch-black");
+    await selectOption(user, screen.getByLabelText("Theme"), "pitch-black");
     await waitFor(() => expect(data.settings.theme_family).toBe("pitch-black"));
     await user.click(screen.getByRole("button", { name: /Continue/ }));
     await waitFor(() =>
@@ -585,7 +586,7 @@ describe("Nightly channel", () => {
       ).toBe(false),
     );
     await screen.findByRole("heading", { name: "Choose when tasks return." });
-    await user.selectOptions(
+    await selectOption(user, 
       screen.getByLabelText("Settled tasks return"),
       "next_day",
     );
@@ -810,23 +811,23 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await user.selectOptions(
+    await selectOption(user, 
       screen.getByLabelText("Window appearance"),
       "glass",
     );
-    await user.selectOptions(
+    await selectOption(user, 
       screen.getByLabelText("Glass material"),
       "acrylic",
     );
     await waitFor(() => expect(data.settings.desktop_material).toBe("acrylic"));
     expect(data.settings.desktop_glass).toBe(true);
     expect(data.settings.theme).toBe("system");
-    await user.selectOptions(
+    await selectOption(user, 
       screen.getByLabelText("Glass intensity"),
       "balanced",
     );
     await waitFor(() => expect(data.settings.desktop_tint).toBe(60));
-    await user.selectOptions(
+    await selectOption(user, 
       screen.getByLabelText("Window appearance"),
       "default",
     );
@@ -863,8 +864,8 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await user.selectOptions(screen.getByLabelText("Accent color"), "lavender");
-    await user.selectOptions(screen.getByLabelText("Animation"), "expressive");
+    await selectOption(user, screen.getByLabelText("Accent color"), "lavender");
+    await selectOption(user, screen.getByLabelText("Animation"), "expressive");
     await waitFor(() =>
       expect(document.documentElement.dataset.accent).toBe("lavender"),
     );
@@ -880,9 +881,9 @@ describe("workspace UI", () => {
       expect(document.documentElement.dataset.motion).toBe("off"),
     );
     expect(data.settings.animation).toBe("expressive");
-    await user.selectOptions(screen.getByLabelText("Theme"), "pitch-black");
+    await selectOption(user, screen.getByLabelText("Theme"), "pitch-black");
     expect(document.documentElement.dataset.accent).toBe("lavender");
-    await user.selectOptions(screen.getByLabelText("Accent color"), "theme");
+    await selectOption(user, screen.getByLabelText("Accent color"), "theme");
     await waitFor(() =>
       expect(document.documentElement.dataset.accent).toBe("neutral"),
     );
@@ -975,7 +976,7 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await user.selectOptions(screen.getByLabelText("Theme"), "pitch-black");
+    await selectOption(user, screen.getByLabelText("Theme"), "pitch-black");
     await waitFor(() =>
       expect(document.documentElement.dataset.theme).toBe("dark"),
     );
@@ -986,11 +987,11 @@ describe("workspace UI", () => {
     expect(screen.queryByLabelText("Material")).toBeNull();
     expect(screen.queryByLabelText("Glass coverage")).toBeNull();
     expect(screen.queryByText("Experimental Glass")).toBeNull();
-    await user.selectOptions(screen.getByLabelText("Theme"), "ashen-white");
+    await selectOption(user, screen.getByLabelText("Theme"), "ashen-white");
     await waitFor(() =>
       expect(document.documentElement.dataset.theme).toBe("light"),
     );
-    await user.selectOptions(screen.getByLabelText("Theme"), "classic");
+    await selectOption(user, screen.getByLabelText("Theme"), "classic");
     expect(
       ((await screen.findByLabelText("Appearance mode")) as HTMLSelectElement)
         .value,
@@ -1170,11 +1171,11 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await user.selectOptions(screen.getByLabelText("Density"), "compact");
+    await selectOption(user, screen.getByLabelText("Density"), "compact");
     await waitFor(() =>
       expect(document.documentElement.dataset.density).toBe("compact"),
     );
-    await user.selectOptions(screen.getByLabelText("Theme"), "ashen-white");
+    await selectOption(user, screen.getByLabelText("Theme"), "ashen-white");
     expect(data.settings.density).toBe("compact");
     await user.click(screen.getByRole("button", { name: "Home" }));
     await openSettings(user);
@@ -1248,9 +1249,8 @@ describe("workspace UI", () => {
     await user.click(
       screen.getByRole("button", { name: "Release Notes history" }),
     );
-    const versions = within(screen.getByLabelText("Version")).getAllByRole(
-      "option",
-    );
+    await user.click(screen.getByLabelText("Version"));
+    const versions = screen.getAllByRole("option");
     expect(versions.length).toBeGreaterThan(1);
     expect(
       versions.every((option) =>
@@ -1315,13 +1315,13 @@ describe("workspace UI", () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await user.selectOptions(screen.getByLabelText("Appearance mode"), "dark");
+    await selectOption(user, screen.getByLabelText("Appearance mode"), "dark");
     await waitFor(() =>
       expect(document.documentElement.dataset.theme).toBe("dark"),
     );
     expect(data.settings.theme).toBe("dark");
     expect(mocks.setTheme).toHaveBeenCalledWith("dark");
-    await user.selectOptions(
+    await selectOption(user, 
       screen.getByLabelText("Appearance mode"),
       "system",
     );
@@ -1473,7 +1473,7 @@ describe("closed tasks and deletion", () => {
     await user.click(
       screen.getByRole("button", { name: "Release Notes history" }),
     );
-    await user.selectOptions(screen.getByLabelText("Version"), "0.1.0");
+    await selectOption(user, screen.getByLabelText("Version"), "0.1.0");
     expect(screen.getByText("TASK CONTROL AND NAVIGATION")).toBeTruthy();
   });
 });
@@ -1659,6 +1659,14 @@ it.each([
 });
 
 describe("Quick Capture regression", () => {
+  it("shows inline validation for a blank title without invoking capture", async () => {
+    const user = userEvent.setup();
+    render(<App captureMode />);
+    await user.type(screen.getByRole("textbox", { name: "Capture a task" }), "   ");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByRole("alert").textContent).toBe("Enter a task title.");
+    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "capture")).toBe(false);
+  });
   it("supports the shared editing menu without losing its draft or closing capture on menu Escape", async () => {
     const user = userEvent.setup();
     render(<App captureMode />);

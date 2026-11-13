@@ -1,3 +1,4 @@
+import { Select } from "./Select";
 import {
   categoryLabel,
   filterNotices,
@@ -280,7 +281,7 @@ export function NotificationSidebar({
             <div>
               <label>
                 Category
-                <select
+                <Select
                   value={activeCategory}
                   onChange={(e) => setCategory(e.target.value)}
                 >
@@ -289,7 +290,7 @@ export function NotificationSidebar({
                       {categoryLabel(c)}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
               <label className="check">
                 <input

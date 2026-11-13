@@ -1,3 +1,4 @@
+import { Select } from "./Select";
 import { isNightly } from "./Nightly";
 import { categoryLabel, reminderCategories } from "./notifications";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -157,13 +158,13 @@ export function Preferences({
         <div className="fields">
           <label>
             Default settlement mode
-            <select
+            <Select
               value={draft.settlement_mode}
               onChange={(e) => set("settlement_mode", e.target.value)}
             >
               <option value="next_day">Next calendar day</option>
               <option value="24h">Exactly 24 hours later</option>
-            </select>
+            </Select>
           </label>
           <label>
             Preferred next-day time
@@ -260,13 +261,13 @@ export function Preferences({
         <h2>Keyboard</h2>
         <label>
           Command palette shortcut
-          <select
+          <Select
             value={draft.command_shortcut ?? "Ctrl+K"}
             onChange={(e) => set("command_shortcut", e.target.value)}
           >
             <option value="Ctrl+K">Ctrl+K</option>
             <option value="Ctrl+Shift+P">Ctrl+Shift+P</option>
-          </select>
+          </Select>
         </label>
         <p className="hint">
           Quick Capture remains Ctrl+Shift+Space. Resume restores the previous
