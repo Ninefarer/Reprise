@@ -1,5 +1,15 @@
 # Reprise changelog
 
+## 3.3.3-nightly.20261112.1 ? November 12, 2026
+
+- Guard unsaved profile and reminder drafts, preserve failed saves, and distinguish immediately saved appearance changes.
+- Include the task-editor data-loss hotfix and signed, channel-specific updater bootstrap.
+- Handle missing Windows notification permission records without treating them as an explicit block.
+- Keep diagnostic notification testing and technical history controls coherent on Nightly.
+- Improve current interface copy, task-dialog names and command-palette announcements.
+- Add bounded, explicitly enabled performance tracing for subsequent measurement, without claiming a speedup.
+
+
 ## 3.3.2 ? November 12, 2026
 
 ### Added

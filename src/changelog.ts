@@ -71,6 +71,52 @@ export interface Release {
 }
 export const releases: Release[] = [
   {
+    version: "3.3.3-nightly.20261112.1",
+    date: "2026-11-12",
+    title: "Keep your changes. Choose your updates.",
+    sections: [
+      {
+        heading: "BUGS, BEGONE",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Settings warns before leaving unsaved profile or reminder changes. Save, discard, or keep editing; a failed save keeps your draft.",
+          },
+          {
+            text: "Task-detail actions keep edited fields when changing status, including the Stable 3.3.1 hotfix.",
+          },
+          {
+            text: "Windows notification tests can proceed when Windows has no permission record yet, while explicit notification blocks and other errors remain visible.",
+          },
+        ],
+      },
+      {
+        heading: "THE LITTLE THINGS",
+        accent: "little",
+        entries: [
+          {
+            text: "Nightly release history shows Nightly entries only. The redundant What's New action is removed on Nightly, and test notifications live under Advanced / Diagnostics.",
+          },
+          {
+            text: "Shorter labels and clearer instructions across setup, task details, Settings, and search. Task dialogs have accessible names, and the command palette announces its results.",
+          },
+        ],
+      },
+      {
+        heading: "UNDER THE HOOD",
+        accent: "technical",
+        entries: [
+          {
+            text: "Signed GitHub update feeds are now configured separately for Stable and Nightly. Checks wait until setup finishes, and installation remains your choice.",
+          },
+          {
+            text: "An opt-in, bounded performance trace supports follow-up measurements. Ordinary launches do not collect it; this build makes no measured speedup claim.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.3.2",
     date: "2026-11-12",
     title: "Ready when you are.",

@@ -1,7 +1,7 @@
 {
   "productName": "Reprise Nightly",
   "identifier": "com.reprise.nightly",
-  "version": "3.2.1-nightly.20261112.5",
+  "version": "3.3.3-nightly.20261112.1",
   "bundle": {
     "icon": [
       "icons/nightly/32x32.png",
