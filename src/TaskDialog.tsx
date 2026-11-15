@@ -313,55 +313,57 @@ export function TaskDialog({
               </label>
             </>
           )}
-        </fieldset>
-        <fieldset className="editor-section">
-          <legend>Organization</legend>
-          <div className="fields">
-            <label>
-              Project
-              <input
-                value={draft.project}
-                onChange={(e) => set("project", e.target.value)}
-              />
-            </label>
-            <label>
-              Tags
-              <input
-                value={draft.tags}
-                onChange={(e) => set("tags", e.target.value)}
-              />
-            </label>
+          <p className="hint" id="task-transition-help">
+            These actions save your edits and change the task status. Start now
+            moves it to Current; Settle pauses it using your saved return
+            preference; Finish marks it complete.
+          </p>
+          <div
+            className="editor-transitions"
+            role="group"
+            aria-label="Save and change task status"
+            aria-describedby="task-transition-help"
+          >
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void submit("DoNow")}
+            >
+              Start now
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void submit("Settled")}
+            >
+              {task.status === "Settled" ? "Settle again" : "Settle"}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void submit("Finished")}
+            >
+              Finish
+            </button>
           </div>
         </fieldset>
+        <label>
+          Project
+          <input
+            value={draft.project}
+            onChange={(e) => set("project", e.target.value)}
+            aria-describedby="task-project-help"
+          />
+        </label>
+        <p className="hint" id="task-project-help">
+          Optional. Shown on the task card and included in search.
+        </p>
         <div className="dialog-actions editor-primary-actions">
           <button type="button" disabled={busy} onClick={onClose}>
             Cancel
           </button>
           <button className="primary" disabled={busy}>
             {busy ? "Saving…" : "Save changes"}
-          </button>
-        </div>
-        <div className="editor-transitions" aria-label="Change task status">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void submit("DoNow")}
-          >
-            Make current
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void submit("Settled")}
-          >
-            {task.status === "Settled" ? "Settle again" : "Settle"}
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void submit("Finished")}
-          >
-            Finish
           </button>
         </div>
         <TaskHistory taskId={task.id} />

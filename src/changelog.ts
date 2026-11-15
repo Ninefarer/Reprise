@@ -130,7 +130,33 @@ const avatarCropHotfix: ReleaseSection[] = [
     ],
   },
 ];
+const taskEditorCleanup: ReleaseSection[] = [
+  {
+    heading: "CHANGES",
+    accent: "little",
+    entries: [
+      {
+        text: "Status actions now sit in Status and timing. Start now replaces Make current, with guidance explaining each action and that edits are saved.",
+      },
+      {
+        text: "Removed Tags and the Organization heading. Project explains its task-card display and search behavior. Existing tag data is preserved.",
+      },
+    ],
+  },
+];
 export const releases: Release[] = [
+  {
+    version: "3.4.3",
+    date: "2026-11-15",
+    title: "Clearer task details",
+    sections: taskEditorCleanup,
+  },
+  {
+    version: "3.4.3-nightly.20261115.1",
+    date: "2026-11-15",
+    title: "Clearer task details",
+    sections: taskEditorCleanup,
+  },
   {
     version: "3.4.2",
     date: "2026-11-15",

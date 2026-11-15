@@ -25,7 +25,7 @@ const original: Task = {
   wake_at: null,
   completed_at: null,
   project: "",
-  tags: "",
+  tags: "existing, personal",
   recurrence: "",
   reason: "",
   review_at: null,
@@ -46,7 +46,7 @@ it("announces an accessible name for task editing", () => {
   expect(screen.getByRole("dialog", { name: "Edit task" })).toBeTruthy();
 });
 it.each([
-  ["Make current", "DoNow"],
+  ["Start now", "DoNow"],
   ["Settle", "Settled"],
   ["Finish", "Finished"],
 ] as const)(
@@ -76,6 +76,7 @@ it.each([
         title: "Edited title",
         description: "Keep these notes",
         project: "Personal",
+        tags: "existing, personal",
         updated_at: 200,
       }),
       status,
@@ -105,4 +106,25 @@ it("keeps edited values available when a transition is rejected", async () => {
     "Original notes Keep this edit",
   );
   expect(screen.getByRole("alert").textContent).toContain("changed elsewhere");
+});
+
+it("removes tag editing while preserving existing tags when saving", async () => {
+  const user = userEvent.setup();
+  const onSave = vi.fn(async () => true);
+  render(
+    <TaskDialog
+      task={original}
+      intent="edit"
+      onTransition={vi.fn()}
+      onClose={vi.fn()}
+      onSave={onSave}
+      onDelete={vi.fn()}
+    />,
+  );
+  expect(screen.queryByLabelText("Tags")).toBeNull();
+  await user.type(screen.getByLabelText("Project"), "Personal");
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  expect(onSave).toHaveBeenCalledWith(
+    expect.objectContaining({ project: "Personal", tags: original.tags }),
+  );
 });

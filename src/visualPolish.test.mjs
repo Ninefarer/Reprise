@@ -50,21 +50,21 @@ describe("theme polish contrast", () => {
       ).toBeGreaterThanOrEqual(3);
     }
   });
-  it("packages v3.4.2 consistently with locally bundled release notes", () => {
-    expect(JSON.parse(read("../package.json")).version).toBe("3.4.2");
+  it("packages v3.4.3 consistently with locally bundled release notes", () => {
+    expect(JSON.parse(read("../package.json")).version).toBe("3.4.3");
     expect(JSON.parse(read("../package-lock.json")).packages[""].version).toBe(
-      "3.4.2",
+      "3.4.3",
     );
     expect(JSON.parse(read("../src-tauri/tauri.conf.json")).version).toBe(
-      "3.4.2",
+      "3.4.3",
     );
     expect(
       read("../src-tauri/Cargo.toml").match(/version = "([^"]+)"/)[1],
-    ).toBe("3.4.2");
+    ).toBe("3.4.3");
     expect(read("../src-tauri/Cargo.lock")).toMatch(
-      /name = "reprise"\r?\nversion = "3\.4\.2"/,
+      /name = "reprise"\r?\nversion = "3\.4\.3"/,
     );
-    expect(releaseFor("3.4.2")?.sections.length).toBeGreaterThan(0);
+    expect(releaseFor("3.4.3")?.sections.length).toBeGreaterThan(0);
     expect(releaseFor("3.2.0")).toBeTruthy();
     expect(releaseFor("0.2.0")).toBeTruthy();
   });
