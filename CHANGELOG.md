@@ -1,5 +1,11 @@
 # Reprise changelog
 
+## 3.4.1 - November 15, 2026
+
+- Add Peach with Light, Dark and System appearances and a warm default accent.
+- Match the Nightly header sky to Peach while retaining the original blue sky for other themes.
+- Clarify appearance settings and keyboard shortcut guidance.
+
 ## 3.4.0 / 3.4.0-nightly.20261113.1 - Development candidate, not published
 
 - Combine the existing hidden/minimized refresh suspension and lightweight Quick Capture work with the Issue #2 UI overhaul.

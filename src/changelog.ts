@@ -118,6 +118,31 @@ const interface340: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "3.4.1",
+    date: "2026-11-15",
+    title: "Peach theme",
+    sections: [
+      {
+        heading: "ADDITIONS",
+        accent: "new",
+        entries: [
+          {
+            text: "Peach brings warm Light, Dark and System appearances with a peach default accent.",
+          },
+        ],
+      },
+      {
+        heading: "CHANGES",
+        accent: "little",
+        entries: [
+          {
+            text: "Clearer appearance settings and keyboard shortcut guidance.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.4.0",
     date: "2026-11-13",
     title: "A clearer place to return.",

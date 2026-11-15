@@ -1,10 +1,11 @@
 {
   "name": "reprise",
-  "version": "3.4.0",
+  "version": "3.4.1",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
+    "dev:nightly": "tauri dev --config src-tauri/tauri.nightly.conf.json",
     "build": "tsc && vite build",
     "tauri": "tauri",
     "test": "vitest run"

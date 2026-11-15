@@ -53,7 +53,10 @@ impl VisualPatch {
             ["theme", "lavender", "sage", "icy-blue", "rose", "neutral"]
         );
         value!(animation, ["off", "subtle", "expressive"]);
-        value!(theme_family, ["classic", "pitch-black", "ashen-white"]);
+        value!(
+            theme_family,
+            ["classic", "pitch-black", "ashen-white", "peach"]
+        );
         value!(density, ["comfortable", "compact"]);
         value!(material, ["flat", "frosted", "glass"]);
         value!(glass_coverage, ["menus", "all", "off"]);
@@ -84,6 +87,10 @@ pub fn native_background(s: &Settings) -> tauri::utils::config::Color {
     match s.theme_family.as_str() {
         "pitch-black" => Color(5, 5, 5, 255),
         "ashen-white" => Color(250, 250, 250, 255),
+        "peach" => match effective_theme(s) {
+            Some(tauri::Theme::Light) => Color(255, 244, 237, 255),
+            _ => Color(56, 44, 39, 255),
+        },
         _ => match effective_theme(s) {
             Some(tauri::Theme::Light) => Color(245, 246, 242, 255),
             _ => Color(32, 37, 33, 255),

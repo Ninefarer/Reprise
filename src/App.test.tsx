@@ -833,6 +833,32 @@ describe("Nightly channel", () => {
   });
 });
 describe("workspace UI", () => {
+  it("saves Peach with both appearances and retains it after remounting", async () => {
+    const user = userEvent.setup();
+    const view = render(<App />);
+    await openSettings(user);
+    await selectOption(user, screen.getByLabelText("Theme"), "peach");
+    for (const mode of ["light", "dark", "system"]) {
+      await selectOption(user, screen.getByLabelText("Appearance mode"), mode);
+      await waitFor(() => expect(data.settings.theme).toBe(mode));
+      expect(data.settings.theme_family).toBe("peach");
+      expect(document.documentElement.dataset.accent).toBe("peach");
+      if (mode !== "system")
+        await waitFor(() =>
+          expect(document.documentElement.dataset.theme).toBe(mode),
+        );
+    }
+    view.unmount();
+    render(<App />);
+    await openSettings(user);
+    expect(data.settings.theme_family).toBe("peach");
+    expect(document.documentElement.dataset.family).toBe("peach");
+    await selectOption(user, screen.getByLabelText("Accent color"), "lavender");
+    await waitFor(() =>
+      expect(document.documentElement.dataset.accent).toBe("lavender"),
+    );
+  });
+
   it("saves native Glass options and intensity without changing palette preferences", async () => {
     const user = userEvent.setup();
     render(<App />);

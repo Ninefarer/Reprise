@@ -5,7 +5,7 @@ const read = (name) => readFileSync(new URL(name, import.meta.url), "utf8");
 const accents = read("./accents.css"),
   families = read("./visual-system.css"),
   tasks = read("./task-colors.css");
-const names = ["sage", "lavender", "icy-blue", "rose", "neutral"];
+const names = ["sage", "lavender", "icy-blue", "rose", "neutral", "peach"];
 function block(css, selector) {
   const start = css.indexOf(selector);
   if (start < 0) throw Error(selector);
@@ -32,21 +32,39 @@ function contrast(a, b) {
   return (Math.max(l(a), l(b)) + 0.05) / (Math.min(l(a), l(b)) + 0.05);
 }
 describe("theme polish contrast", () => {
-  it("packages v3.4.0 consistently with locally bundled release notes", () => {
-    expect(JSON.parse(read("../package.json")).version).toBe("3.4.0");
+  it("keeps Peach text and control edges readable in both modes", () => {
+    for (const dark of [false, true]) {
+      const b = block(
+        families,
+        dark
+          ? ':root[data-family="peach"][data-theme="dark"]'
+          : ':root[data-family="peach"]',
+      );
+      for (const surface of ["bg", "sidebar", "surface", "raised"])
+        for (const text of ["text", "muted", "subtle"])
+          expect(
+            contrast(token(b, text), token(b, surface)),
+          ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrast(token(b, "control-border"), token(b, "surface")),
+      ).toBeGreaterThanOrEqual(3);
+    }
+  });
+  it("packages v3.4.1 consistently with locally bundled release notes", () => {
+    expect(JSON.parse(read("../package.json")).version).toBe("3.4.1");
     expect(JSON.parse(read("../package-lock.json")).packages[""].version).toBe(
-      "3.4.0",
+      "3.4.1",
     );
     expect(JSON.parse(read("../src-tauri/tauri.conf.json")).version).toBe(
-      "3.4.0",
+      "3.4.1",
     );
     expect(
       read("../src-tauri/Cargo.toml").match(/version = "([^"]+)"/)[1],
-    ).toBe("3.4.0");
+    ).toBe("3.4.1");
     expect(read("../src-tauri/Cargo.lock")).toMatch(
-      /name = "reprise"\r?\nversion = "3\.4\.0"/,
+      /name = "reprise"\r?\nversion = "3\.4\.1"/,
     );
-    expect(releaseFor("3.4.0")?.sections.length).toBeGreaterThan(0);
+    expect(releaseFor("3.4.1")?.sections.length).toBeGreaterThan(0);
     expect(releaseFor("3.2.0")).toBeTruthy();
     expect(releaseFor("0.2.0")).toBeTruthy();
   });

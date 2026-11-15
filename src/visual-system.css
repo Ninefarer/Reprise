@@ -37,6 +37,41 @@
   --scrollbar-idle: rgba(80, 80, 90, 0.16);
   --surface-rgb: 255, 255, 255;
 }
+/* Peach follows the saved Light, Dark or System appearance. */
+:root[data-family="peach"] {
+  --bg: #fff4ed;
+  --sidebar: #f8e5d9;
+  --surface: #fffaf6;
+  --raised: #fcece2;
+  --text: #493127;
+  --muted: #795647;
+  --subtle: #825d4d;
+  --border: #e7c9b7;
+  --control-border: #a47660;
+  --attention: #8b501c;
+  --danger: #993e35;
+  --shadow: #673b241a;
+  --backdrop: #3b251977;
+  --surface-rgb: 255, 250, 246;
+  --scrollbar-idle: rgba(121, 86, 71, 0.2);
+}
+:root[data-family="peach"][data-theme="dark"] {
+  --bg: #382c27;
+  --sidebar: #302520;
+  --surface: #42332c;
+  --raised: #4b3930;
+  --text: #f9e5d8;
+  --muted: #d6b5a2;
+  --subtle: #d0ac96;
+  --border: #76594a;
+  --control-border: #bd937a;
+  --attention: #edbb82;
+  --danger: #ffb3a5;
+  --shadow: #160c0866;
+  --backdrop: #170e0bb3;
+  --surface-rgb: 66, 51, 44;
+  --scrollbar-idle: rgba(214, 181, 162, 0.2);
+}
 /* Solid is the baseline and fallback. Only supported, eligible surfaces opt in. */
 @supports (backdrop-filter: blur(1px)) {
   :root[data-modal-backdrop="blur"] .task-dialog::backdrop {

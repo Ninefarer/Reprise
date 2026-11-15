@@ -1593,6 +1593,11 @@ legend {
   --night-purple: #967bb8;
   --night-star: #59708e;
 }
+:root[data-family="peach"] .nightly-header {
+  --night-sky: var(--raised);
+  --night-purple: var(--accent);
+  --night-star: var(--text);
+}
 .nightly-header .nightly-badge {
   position: relative;
 }

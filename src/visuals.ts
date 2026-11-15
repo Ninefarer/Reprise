@@ -20,7 +20,9 @@ export function effectiveAccent(
   return accent === "theme"
     ? family === "classic"
       ? "sage"
-      : "neutral"
+      : family === "peach"
+        ? "peach"
+        : "neutral"
     : accent;
 }
 export function effectiveAppearance(
@@ -41,7 +43,11 @@ export function nativeBackground(
     ? "#050505"
     : family === "ashen-white"
       ? "#fafafa"
-      : appearance === "dark"
-        ? "#202521"
-        : "#f5f6f2";
+      : family === "peach"
+        ? appearance === "dark"
+          ? "#382c27"
+          : "#fff4ed"
+        : appearance === "dark"
+          ? "#202521"
+          : "#f5f6f2";
 }

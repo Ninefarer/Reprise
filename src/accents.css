@@ -88,3 +88,20 @@
 :root .task-card[data-status] .status {
   background: var(--surface);
 }
+
+/* The Peach family default; explicit accent choices still take precedence. */
+:root[data-accent="peach"] {
+  --interactive-accent: #994b2b;
+  --interactive-text: #ffffff;
+  --interactive-selection: #f3d6c2;
+  --interactive-hover: #fae5d7;
+}
+:root[data-theme="dark"][data-accent="peach"] {
+  --interactive-accent: #f4b38c;
+  --interactive-text: #352116;
+  --interactive-selection: #52382b;
+  --interactive-hover: #463027;
+}
+:root[data-family="peach"] :is(input, select, textarea) {
+  border-color: var(--control-border);
+}
