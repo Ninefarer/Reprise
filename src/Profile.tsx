@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { clamp, panCrop } from "./avatarCrop";
 export function Avatar({ src, name }: { src?: string | null; name: string }) {
   return (
     <span className="avatar">
@@ -27,9 +28,37 @@ export function AvatarEditor({
     [x, setX] = useState(50),
     [y, setY] = useState(50),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [dragging, setDragging] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null),
-    file = useRef<HTMLInputElement>(null);
+    file = useRef<HTMLInputElement>(null),
+    drag = useRef<{ id: number; x: number; y: number } | null>(null);
+  function pan(dx: number, dy: number) {
+    if (!source || !canvas.current || busy) return;
+    const side = Math.min(source.naturalWidth, source.naturalHeight) / zoom;
+    const bounds = canvas.current.getBoundingClientRect();
+    setX((value) =>
+      panCrop(value, dx, source.naturalWidth, side, bounds.width),
+    );
+    setY((value) =>
+      panCrop(value, dy, source.naturalHeight, side, bounds.height),
+    );
+  }
+  function endDrag() {
+    drag.current = null;
+    setDragging(false);
+  }
+  useEffect(() => {
+    const preview = canvas.current;
+    if (!source || !preview) return;
+    const wheel = (event: WheelEvent) => {
+      if (busy || drag.current || event.deltaY === 0) return;
+      event.preventDefault();
+      setZoom((value) => clamp(value + (event.deltaY < 0 ? 0.1 : -0.1), 1, 4));
+    };
+    preview.addEventListener("wheel", wheel, { passive: false });
+    return () => preview.removeEventListener("wheel", wheel);
+  }, [source, busy]);
   useEffect(() => {
     if (!source || !canvas.current) return;
     const ctx = canvas.current.getContext("2d")!;
@@ -120,45 +149,98 @@ export function AvatarEditor({
         />
       </div>
       {source && (
-        <fieldset>
+        <fieldset disabled={busy}>
           <legend>Crop your avatar</legend>
           <canvas
             ref={canvas}
             width={256}
             height={256}
             aria-label="Profile avatar crop preview"
+            role="application"
+            aria-roledescription="image crop editor"
+            aria-describedby="avatar-crop-help"
+            tabIndex={busy ? -1 : 0}
+            data-dragging={dragging}
+            onPointerDown={(e) => {
+              if (busy || !e.isPrimary || e.button !== 0) return;
+              e.preventDefault();
+              e.currentTarget.focus();
+              e.currentTarget.setPointerCapture(e.pointerId);
+              drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
+              setDragging(true);
+            }}
+            onPointerMove={(e) => {
+              const previous = drag.current;
+              if (!previous || previous.id !== e.pointerId) return;
+              pan(e.clientX - previous.x, e.clientY - previous.y);
+              drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
+            }}
+            onPointerUp={(e) => {
+              if (drag.current?.id !== e.pointerId) return;
+              endDrag();
+              if (e.currentTarget.hasPointerCapture(e.pointerId))
+                e.currentTarget.releasePointerCapture(e.pointerId);
+            }}
+            onPointerCancel={endDrag}
+            onLostPointerCapture={endDrag}
+            onKeyDown={(e) => {
+              if (busy) return;
+              const step = e.shiftKey ? 30 : 10;
+              const movement: Record<string, [number, number]> = {
+                ArrowLeft: [-step, 0],
+                ArrowRight: [step, 0],
+                ArrowUp: [0, -step],
+                ArrowDown: [0, step],
+              };
+              if (movement[e.key]) {
+                e.preventDefault();
+                pan(...movement[e.key]);
+              } else if (["+", "=", "-"].includes(e.key)) {
+                e.preventDefault();
+                setZoom((value) =>
+                  clamp(value + (e.key === "-" ? -0.1 : 0.1), 1, 4),
+                );
+              }
+            }}
           />
-          <label>
-            Zoom
-            <input
-              type="range"
-              min="1"
-              max="4"
-              step="0.05"
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Horizontal position
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={x}
-              onChange={(e) => setX(Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Vertical position
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={y}
-              onChange={(e) => setY(Number(e.target.value))}
-            />
-          </label>
+          <p className="hint" id="avatar-crop-help">
+            Drag the image to position it. Scroll to zoom, or use the buttons
+            below. Arrow keys move the image; + and − zoom.
+          </p>
+          <div
+            className="avatar-crop-tools"
+            role="group"
+            aria-label="Crop zoom"
+          >
+            <button
+              type="button"
+              aria-label="Zoom out"
+              disabled={zoom <= 1}
+              onClick={() => setZoom((value) => clamp(value - 0.1, 1, 4))}
+            >
+              −
+            </button>
+            <output aria-label="Zoom level">{Math.round(zoom * 100)}%</output>
+            <button
+              type="button"
+              aria-label="Zoom in"
+              disabled={zoom >= 4}
+              onClick={() => setZoom((value) => clamp(value + 0.1, 1, 4))}
+            >
+              +
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                endDrag();
+                setZoom(1);
+                setX(50);
+                setY(50);
+              }}
+            >
+              Reset crop
+            </button>
+          </div>
           <div className="dialog-actions">
             <button type="button" disabled={busy} onClick={() => void save()}>
               Save avatar
