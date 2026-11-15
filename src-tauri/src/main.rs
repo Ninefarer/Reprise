@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod actions;
+mod deletion;
 mod diagnostics;
 mod domain;
 mod notifications;
@@ -92,11 +93,32 @@ fn delete_task(
     expected_updated_at: i64,
     db: tauri::State<Db>,
     app: tauri::AppHandle,
-) -> Result<(), String> {
+) -> Result<String, String> {
+    let token = uuid::Uuid::new_v4().to_string();
+    db.lock().map_err(|e| e.to_string())?.delete_with_receipt(
+        &id,
+        expected_updated_at,
+        Some(&token),
+    )?;
+    let _ = app.emit("refresh", ());
+    Ok(token)
+}
+#[tauri::command]
+fn undo_deletion(token: String, db: tauri::State<Db>, app: tauri::AppHandle) -> Result<(), String> {
     db.lock()
         .map_err(|e| e.to_string())?
-        .delete_task(&id, expected_updated_at)?;
-    app.emit("refresh", ()).map_err(|e| e.to_string())
+        .restore_deletion(&token)?;
+    let _ = app.emit("refresh", ());
+    Ok(())
+}
+#[tauri::command]
+fn finalize_deletion(token: String, db: tauri::State<Db>) -> Result<(), String> {
+    db.lock()
+        .map_err(|e| e.to_string())?
+        .conn
+        .execute("DELETE FROM deletion_undo WHERE token=?1", [token])
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
 #[tauri::command]
 fn snapshot(
@@ -282,6 +304,8 @@ fn main() {
             task_history,
             read_notice,
             delete_task,
+            undo_deletion,
+            finalize_deletion,
             task_action,
             undo_task,
             quit_app,

@@ -1,3 +1,4 @@
+import { UndoToast, type UndoNotice } from "./UndoToast";
 import { greeting } from "./greeting";
 import { matchesShortcut } from "./shortcuts";
 import { TextContextMenus } from "./TextContextMenu";
@@ -81,11 +82,7 @@ function Application({
       x: number;
       y: number;
     } | null>(null),
-    [undo, setUndo] = useState<{
-      id: string;
-      revision: number;
-      title: string;
-    } | null>(null),
+    [undoNotices, setUndoNotices] = useState<UndoNotice[]>([]),
     [deleting, setDeleting] = useState<Task | null>(null),
     [editor, setEditor] = useState<{ task: Task; intent: TaskIntent } | null>(
       null,
@@ -201,7 +198,7 @@ function Application({
       deleting ||
       palette ||
       context ||
-      undo ||
+      undoNotices.length > 0 ||
       busy ||
       error ||
       releaseDialog ||
@@ -234,7 +231,7 @@ function Application({
     deleting,
     palette,
     context,
-    undo,
+    undoNotices,
     busy,
     error,
     releaseDialog,
@@ -603,11 +600,12 @@ function Application({
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [data?.settings.command_shortcut, setupActive]);
-  useEffect(() => {
-    if (!undo) return;
-    const timer = setTimeout(() => setUndo(null), 30000);
-    return () => clearTimeout(timer);
-  }, [undo]);
+  function setUndo(notice: Omit<UndoNotice, "key">) {
+    setUndoNotices((current) => [
+      ...current,
+      { ...notice, key: crypto.randomUUID() },
+    ]);
+  }
   async function run(f: () => Promise<unknown>) {
     setBusy(true);
     try {
@@ -1398,46 +1396,56 @@ function Application({
           }}
         />
       )}
-      {undo && (
-        <div
-          className="undo-toast"
-          role="status"
-          key={`${undo.id}/${undo.revision}`}
-        >
-          <span>Updated “{undo.title}”</span>
-          <button
-            onClick={() =>
-              void run(async () => {
-                await invoke("undo_task", {
-                  id: undo.id,
-                  revision: undo.revision,
-                });
-                setUndo(null);
+      <div className="undo-toasts" aria-label="Task action notifications">
+        {undoNotices.map((notice) => (
+          <UndoToast
+            key={notice.key}
+            notice={notice}
+            onDone={() =>
+              setUndoNotices((current) =>
+                current.filter((n) => n.key !== notice.key),
+              )
+            }
+            onExpire={() => {
+              if (notice.deletionToken)
+                void invoke("finalize_deletion", {
+                  token: notice.deletionToken,
+                }).catch((e) => setError(String(e)));
+            }}
+            onUndo={() =>
+              run(async () => {
+                if (notice.deletionToken)
+                  await invoke("undo_deletion", {
+                    token: notice.deletionToken,
+                  });
+                else
+                  await invoke("undo_task", {
+                    id: notice.id,
+                    revision: notice.revision,
+                  });
                 setCompletionFeedback([]);
               })
             }
-          >
-            Undo
-          </button>
-          <button aria-label="Dismiss undo" onClick={() => setUndo(null)}>
-            ×
-          </button>
-          <small>
-            Notifications already submitted to Windows are not recalled.
-          </small>
-        </div>
-      )}
+          />
+        ))}
+      </div>
       {deleting && (
         <DeleteTaskDialog
           task={deleting}
           onCancel={() => setDeleting(null)}
           onConfirm={async () => {
-            const ok = await run(() =>
-              invoke("delete_task", {
+            const ok = await run(async () => {
+              const token = await invoke<string>("delete_task", {
                 id: deleting.id,
                 expectedUpdatedAt: deleting.updated_at,
-              }),
-            );
+              });
+              setUndo({
+                id: deleting.id,
+                revision: deleting.updated_at,
+                title: deleting.title,
+                deletionToken: token,
+              });
+            });
             if (ok) {
               setDeleting(null);
               setEditor(null);

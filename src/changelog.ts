@@ -146,6 +146,28 @@ const taskEditorCleanup: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "3.4.4-nightly.20261115.1",
+    date: "2026-11-15",
+    title: "Undo deletion and sliding notices",
+    sections: [
+      {
+        heading: "CHANGES",
+        accent: "little",
+        entries: [
+          {
+            text: "Task action notices slide in and out. Update notices remain until dismissed or undone.",
+          },
+          {
+            text: "Deleting a task offers Undo with a 30-second drain bar. Hover or keyboard focus pauses the timer; leaving resumes the remaining time.",
+          },
+          {
+            text: "Undo restores deleted notes, task history and reminders. A notice stops accepting input as soon as it starts sliding away.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.4.3",
     date: "2026-11-15",
     title: "Clearer task details",

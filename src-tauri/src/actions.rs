@@ -93,10 +93,7 @@ impl Store {
             return Err("This task changed again; undo is no longer available.".into());
         }
         let (at,action,before):(i64,String,Option<String>)=self.conn.query_row("SELECT at,action,before_data FROM history WHERE task_id=?1 ORDER BY id DESC LIMIT 1",[id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?))).map_err(|e|e.to_string())?;
-        if now < at
-            || now - at > 30
-            || ["Edited", "Created", "Undone", "Resurfaced"].contains(&action.as_str())
-        {
+        if now < at || ["Edited", "Created", "Undone", "Resurfaced"].contains(&action.as_str()) {
             return Err("Undo is no longer available.".into());
         }
         let mut old: Task = serde_json::from_str(&before.ok_or("No previous task state")?)

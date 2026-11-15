@@ -1299,11 +1299,24 @@ legend {
   border: 0;
   background: transparent;
 }
-.undo-toast {
+.undo-toasts {
   position: fixed;
   bottom: 20px;
   right: 25px;
   z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  overflow-x: clip;
+}
+.undo-toast {
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  animation: undo-slide-in 220ms ease-out both;
   max-width: min(480px, calc(100vw - 40px));
   display: flex;
   align-items: center;
@@ -1811,5 +1824,54 @@ body {
 @media (max-width: 900px) {
   .fields {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.undo-toast[data-leaving="true"] {
+  pointer-events: none;
+  animation: undo-slide-out 220ms ease-in both;
+}
+.undo-drain {
+  flex-basis: 100%;
+  height: 3px;
+  background: var(--border);
+}
+.undo-drain > div {
+  height: 100%;
+  background: var(--text);
+  transform-origin: left;
+  animation: undo-drain 30s linear forwards;
+}
+@keyframes undo-drain {
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes undo-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 30px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes undo-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(calc(100% + 30px));
+  }
+}
+:root[data-motion="off"] .undo-toast {
+  animation-duration: 1ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .undo-toast {
+    animation-duration: 1ms;
   }
 }

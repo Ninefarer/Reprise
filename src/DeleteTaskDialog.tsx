@@ -34,8 +34,9 @@ export function DeleteTaskDialog({
         <p className="delete-title">{task.title}</p>
         <p id="delete-description">
           This permanently removes the task, its notes, task history, reminders,
-          and in-app notification records. It cannot be undone. Dropping a task
-          keeps its record; deleting removes it.
+          and in-app notification records. You can undo this while the deletion
+          notification is visible. Dropping a task keeps its record; deleting
+          removes it.
         </p>
         <p className="hint">Any subtasks are kept as independent tasks.</p>
         {error && (

@@ -220,7 +220,7 @@ fn undo_is_persisted_and_guarded() {
     let mut t = t;
     t.status = Status::Dropped;
     let t = d.save(t, "Dropped", 220).unwrap();
-    assert!(d.undo(&t.id, t.updated_at, 251).is_err());
+    assert!(d.undo(&t.id, t.updated_at, 219).is_err());
     let changed = d.save(t.clone(), "Edited", 221).unwrap();
     assert!(d.undo(&t.id, t.updated_at, 222).is_err());
     assert!(d.undo(&changed.id, changed.updated_at, 222).is_err());
@@ -681,4 +681,124 @@ fn peach_preferences_persist_and_follow_the_selected_appearance() {
         };
         assert_eq!((color.0, color.1, color.2, color.3), expected);
     }
+}
+
+#[test]
+fn update_undo_has_no_timer_but_still_guards_revisions() {
+    let mut d = db();
+    let t = d
+        .save(Task::new("Long undo".into(), 100), "Created", 100)
+        .unwrap();
+    let mut t = t;
+    t.status = Status::Finished;
+    let t = d.save(t, "Finished", 200).unwrap();
+    assert_eq!(
+        d.undo(&t.id, t.updated_at, 10000).unwrap().status,
+        Status::Inbox
+    );
+}
+#[test]
+fn deletion_undo_restores_owned_records_and_untouched_children() {
+    let mut d = db();
+    let mut t = Task::new("Restore everything".into(), 100);
+    t.status = Status::Snoozed;
+    t.wake_at = Some(200);
+    t.description = "Keep notes".into();
+    let t = d.save(t, "Created", 100).unwrap();
+    d.reconcile(300).unwrap();
+    let t = d.task(&t.id).unwrap();
+    let notices = d.notices().unwrap();
+    let history = d.history(&t.id).unwrap();
+    let mut child = Task::new("Untouched child".into(), 100);
+    child.parent_task_id = Some(t.id.clone());
+    let child = d.save(child, "Created", 100).unwrap();
+    let mut edited = Task::new("Edited child".into(), 100);
+    edited.parent_task_id = Some(t.id.clone());
+    let edited = d.save(edited, "Created", 100).unwrap();
+    d.delete_with_receipt(&t.id, t.updated_at, Some("receipt"))
+        .unwrap();
+    assert!(d.task(&t.id).is_err());
+    assert!(d.notices().unwrap().is_empty());
+    let mut edit = d.task(&edited.id).unwrap();
+    edit.title = "Changed while detached".into();
+    d.save(edit, "Edited", 310).unwrap();
+    // New history may reuse the removed history's integer ids.
+    d.save(Task::new("Other task".into(), 320), "Created", 320)
+        .unwrap();
+    d.restore_deletion("receipt").unwrap();
+    let restored = d.task(&t.id).unwrap();
+    assert_eq!(restored.title, t.title);
+    assert_eq!(restored.description, t.description);
+    assert_eq!(restored.wake_at, t.wake_at);
+    assert_eq!(restored.review_at, t.review_at);
+    assert!(restored.updated_at > t.updated_at);
+    assert_eq!(d.notices().unwrap().len(), notices.len());
+    assert_eq!(d.history(&t.id).unwrap().len(), history.len());
+    assert_eq!(d.task(&child.id).unwrap().parent_task_id, Some(t.id));
+    assert_eq!(d.task(&edited.id).unwrap().parent_task_id, None);
+    assert_eq!(d.task(&edited.id).unwrap().title, "Changed while detached");
+    assert!(d.restore_deletion("receipt").is_err());
+}
+#[test]
+fn deletion_receipts_are_atomic_guarded_and_expire_on_restart() {
+    let mut d = db();
+    let t = d
+        .save(Task::new("Guarded".into(), 100), "Created", 100)
+        .unwrap();
+    assert!(d
+        .delete_with_receipt(&t.id, t.updated_at + 1, Some("stale"))
+        .is_err());
+    assert!(d.task(&t.id).is_ok());
+    assert!(d.restore_deletion("stale").is_err());
+    d.delete_with_receipt(&t.id, t.updated_at, Some("valid"))
+        .unwrap();
+    let mut d = Store::init(d.conn).unwrap();
+    assert!(d.restore_deletion("valid").is_err());
+    assert!(d.task(&t.id).is_err());
+}
+
+#[test]
+fn deletion_undo_restores_due_events_once_and_finalization_prevents_restore() {
+    let mut d = db();
+    let mut t = Task::new("Future reminder".into(), 100);
+    t.status = Status::Snoozed;
+    t.wake_at = Some(500);
+    let t = d.save(t, "Created", 100).unwrap();
+    d.delete_with_receipt(&t.id, t.updated_at, Some("future"))
+        .unwrap();
+    d.reconcile(600).unwrap();
+    assert!(d.notices().unwrap().is_empty());
+    d.restore_deletion("future").unwrap();
+    d.reconcile(600).unwrap();
+    let count = d.notices().unwrap().len();
+    assert!(count > 0);
+    d.reconcile(601).unwrap();
+    assert_eq!(d.notices().unwrap().len(), count);
+    let t = d.task(&t.id).unwrap();
+    d.delete_with_receipt(&t.id, t.updated_at, Some("final"))
+        .unwrap();
+    d.conn
+        .execute("DELETE FROM deletion_undo WHERE token=?1", ["final"])
+        .unwrap();
+    assert!(d.restore_deletion("final").is_err());
+    assert!(d.task(&t.id).is_err());
+}
+#[test]
+fn receipt_collision_rolls_back_entire_deletion() {
+    let mut d = db();
+    let a = d
+        .save(Task::new("First".into(), 100), "Created", 100)
+        .unwrap();
+    let b = d
+        .save(Task::new("Keep on failure".into(), 100), "Created", 100)
+        .unwrap();
+    d.delete_with_receipt(&a.id, a.updated_at, Some("same"))
+        .unwrap();
+    assert!(d
+        .delete_with_receipt(&b.id, b.updated_at, Some("same"))
+        .is_err());
+    assert!(d.task(&b.id).is_ok());
+    assert_eq!(d.history(&b.id).unwrap().len(), 1);
+    d.restore_deletion("same").unwrap();
+    assert!(d.task(&a.id).is_ok());
 }

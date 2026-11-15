@@ -136,7 +136,7 @@ beforeEach(() => {
     }
     if (cmd === "delete_task") {
       data.tasks = data.tasks.filter((t) => t.id !== args.id);
-      return;
+      return "deletion-receipt";
     }
     return [];
   });
@@ -2423,4 +2423,35 @@ describe("semantic task presentation", () => {
     );
     expect(data.tasks[0].status).toBe("Settled");
   });
+});
+
+it("offers deletion Undo and restores the deleted task through its backend receipt", async () => {
+  const task = closedTask("Dropped");
+  data.tasks = [task];
+  const fallback = mocks.invoke.getMockImplementation()!;
+  mocks.invoke.mockImplementation(async (cmd, args) => {
+    if (cmd === "undo_deletion") {
+      data.tasks = [task];
+      return;
+    }
+    return fallback(cmd, args);
+  });
+  const user = userEvent.setup();
+  render(<App />);
+  await user.click(
+    await screen.findByRole("button", { name: /^Dropped\s*1 items$/ }),
+  );
+  await user.click(screen.getByRole("button", { name: /^More actions for/ }));
+  await user.click(
+    screen.getByRole("menuitem", { name: "Delete Permanently" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Delete permanently" }));
+  await screen.findByText("Click undo to revert the deletion.");
+  expect(data.tasks).toHaveLength(0);
+  await user.click(screen.getByRole("button", { name: "Undo" }));
+  expect(mocks.invoke).toHaveBeenCalledWith("undo_deletion", {
+    token: "deletion-receipt",
+  });
+  await screen.findByText("Dropped intention");
+  expect(data.tasks).toHaveLength(1);
 });
