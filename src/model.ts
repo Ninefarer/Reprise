@@ -27,7 +27,7 @@ export type View =
   | "Settings";
 export type Density = "comfortable" | "compact";
 export type Theme = "system" | "light" | "dark";
-export type ThemeFamily = "classic" | "pitch-black" | "ashen-white";
+export type ThemeFamily = "classic" | "pitch-black" | "ashen-white" | "peach";
 export type Material = "flat" | "frosted" | "glass";
 export type Accent =
   "theme" | "lavender" | "sage" | "icy-blue" | "rose" | "neutral";

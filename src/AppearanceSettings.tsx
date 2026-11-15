@@ -11,7 +11,8 @@ export function AppearanceSettings({
   onChange: (patch: Partial<VisualPreferences>) => Promise<void>;
 }) {
   const v = visualPreferences(settings),
-    fixed = v.theme_family !== "classic";
+    fixed =
+      v.theme_family === "pitch-black" || v.theme_family === "ashen-white";
   return (
     <>
       <section className="settings-section" id="appearance-section">
@@ -112,6 +113,7 @@ export function AppearanceSettings({
               }
             >
               <option value="classic">Reprise Classic</option>
+              <option value="peach">Peach</option>
               <option value="pitch-black">Pitch Black</option>
               <option value="ashen-white">Ashen White</option>
             </Select>
@@ -143,6 +145,12 @@ export function AppearanceSettings({
             )}
           </label>
         </div>
+        {fixed && (
+          <p className="hint">
+            This family has a fixed appearance. Your saved Classic preference (
+            {v.theme}) is retained and will return with Reprise Classic.
+          </p>
+        )}
         <div className="fields">
           <label>
             Accent color
@@ -156,7 +164,12 @@ export function AppearanceSettings({
             >
               <option value="theme">
                 Theme default (
-                {v.theme_family === "classic" ? "Sage" : "Neutral"})
+                {v.theme_family === "classic"
+                  ? "Sage"
+                  : v.theme_family === "peach"
+                    ? "Peach"
+                    : "Neutral"}
+                )
               </option>
               <option value="lavender">Lavender</option>
               <option value="sage">Sage</option>
@@ -181,6 +194,11 @@ export function AppearanceSettings({
             </Select>
           </label>
         </div>
+        <p className="hint">
+          Accents highlight controls; task colors keep their meaning. Windows
+          reduced-motion preferences take priority without changing your
+          selection.
+        </p>
         {system?.animations_enabled === false && (
           <p className="hint">
             Windows animations are off. Your saved animation preference is

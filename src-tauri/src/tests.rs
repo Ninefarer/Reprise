@@ -651,3 +651,34 @@ fn undo_restores_only_its_cancelled_queued_reminders() {
     );
     assert!(d.notices().unwrap().iter().all(|n| n.id != dismissed));
 }
+
+#[test]
+fn peach_preferences_persist_and_follow_the_selected_appearance() {
+    use crate::visuals::{effective_theme, native_background, VisualPatch};
+    let d = db();
+    for (mode, expected) in [
+        ("light", Some(tauri::Theme::Light)),
+        ("dark", Some(tauri::Theme::Dark)),
+        ("system", None),
+    ] {
+        let mut settings = d.settings().unwrap();
+        VisualPatch {
+            theme_family: Some("peach".into()),
+            theme: Some(mode.into()),
+            ..Default::default()
+        }
+        .apply(&mut settings)
+        .unwrap();
+        d.set_settings(&settings).unwrap();
+        let saved = d.settings().unwrap();
+        assert_eq!(saved.theme_family, "peach");
+        assert_eq!(effective_theme(&saved), expected);
+        let color = native_background(&saved);
+        let expected = if mode == "light" {
+            (255, 244, 237, 255)
+        } else {
+            (56, 44, 39, 255)
+        };
+        assert_eq!((color.0, color.1, color.2, color.3), expected);
+    }
+}

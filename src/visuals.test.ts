@@ -20,9 +20,13 @@ describe("visual preferences", () => {
     expect(effectiveAppearance("pitch-black", v.theme)).toBe("dark");
     expect(effectiveAppearance("ashen-white", v.theme)).toBe("light");
     expect(effectiveAppearance("classic", v.theme)).toBe("system");
+    for (const mode of ["system", "light", "dark"] as const)
+      expect(effectiveAppearance("peach", mode)).toBe(mode);
   });
   it("uses family defaults without overriding an explicit accent", () => {
     expect(effectiveAccent("classic", "theme")).toBe("sage");
+    expect(effectiveAccent("peach", "theme")).toBe("peach");
+    expect(effectiveAccent("peach", "rose")).toBe("rose");
     expect(effectiveAccent("pitch-black", "theme")).toBe("neutral");
     expect(effectiveAccent("ashen-white", "theme")).toBe("neutral");
     expect(effectiveAccent("pitch-black", "lavender")).toBe("lavender");
@@ -32,6 +36,8 @@ describe("visual preferences", () => {
     expect(nativeBackground("ashen-white", "dark")).toBe("#fafafa");
     expect(nativeBackground("classic", "dark")).toBe("#202521");
     expect(nativeBackground("classic", "light")).toBe("#f5f6f2");
+    expect(nativeBackground("peach", "light")).toBe("#fff4ed");
+    expect(nativeBackground("peach", "dark")).toBe("#382c27");
   });
   it("retains local historical releases with structured nested entries", () => {
     expect(new Set(releases.map((r) => r.version)).size).toBe(releases.length);
