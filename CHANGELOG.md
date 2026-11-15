@@ -1,5 +1,10 @@
 # Reprise changelog
 
+## 3.4.2 / 3.4.2-nightly.20261115.1 - November 15, 2026
+
+- Replace avatar crop sliders with dragging, wheel/button zoom, keyboard panning and reset.
+- Enlarge the circular crop preview while preserving explicit Save/Cancel behavior.
+
 ## 3.4.1 - November 15, 2026
 
 - Add Peach with Light, Dark and System appearances and a warm default accent.

@@ -116,7 +116,33 @@ const interface340: ReleaseSection[] = [
     ],
   },
 ];
+const avatarCropHotfix: ReleaseSection[] = [
+  {
+    heading: "BUGFIXES",
+    accent: "fixes",
+    entries: [
+      {
+        text: "Drag your avatar image to position the crop. Use the mouse wheel or zoom buttons instead of sliders.",
+      },
+      {
+        text: "A larger preview, arrow-key panning and Reset crop make positioning easier.",
+      },
+    ],
+  },
+];
 export const releases: Release[] = [
+  {
+    version: "3.4.2",
+    date: "2026-11-15",
+    title: "Avatar cropping hotfix",
+    sections: avatarCropHotfix,
+  },
+  {
+    version: "3.4.2-nightly.20261115.1",
+    date: "2026-11-15",
+    title: "Avatar cropping hotfix",
+    sections: avatarCropHotfix,
+  },
   {
     version: "3.4.1",
     date: "2026-11-15",
