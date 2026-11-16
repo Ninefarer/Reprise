@@ -149,6 +149,19 @@ async function openSettings(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByLabelText(/Profile menu for/));
   await user.click(await screen.findByRole("menuitem", { name: "Settings" }));
 }
+async function openNotifications(user: ReturnType<typeof userEvent.setup>) {
+  await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
+  // The shortcut focuses the panel on the next animation frame. Escape is
+  // handled by the panel, so it has to land after that frame.
+  await act(async () => {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+  const panel = screen.getByRole("complementary", { name: "Notifications" });
+  expect(panel.contains(document.activeElement)).toBe(true);
+  return panel;
+}
 describe("native-window snapshot suspension", () => {
   function suspendSnapshots() {
     let suspended = false;
@@ -2165,13 +2178,13 @@ describe("right notification panel", () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("navigation");
-    await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
+    await openNotifications(user);
     await user.keyboard("{Escape}");
     const exiting = document.querySelector(".notification-dock")!;
     expect(exiting.getAttribute("data-exiting")).toBe("true");
     expect(exiting.hasAttribute("inert")).toBe(true);
     expect(document.activeElement?.tagName).toBe("MAIN");
-    await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
+    await openNotifications(user);
     expect(
       screen
         .getByRole("complementary", { name: "Notifications" })
@@ -2192,7 +2205,7 @@ describe("right notification panel", () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("navigation");
-    await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
+    await openNotifications(user);
     await user.keyboard("{Escape}");
     expect(document.querySelector(".notification-dock")).toBeNull();
   });
