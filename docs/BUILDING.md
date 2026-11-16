@@ -53,7 +53,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-The frontend build includes TypeScript checks. Rust tests cover domain, persistence, scheduling, and notification logic. Development branches may also contain an explicitly ignored real Windows toast probe; it is not part of the selected 3.3.0 Stable source. See [the local notification cleanup record](SETTINGS-NOTIFICATION-CLEANUP.md) for that separate work. A passing submission test is not proof of visible display.
+The frontend build includes TypeScript checks. Rust tests cover domain, persistence, scheduling, and notification logic. `installed_native_toast_probe` stays ignored unless `REPRISE_TOAST_TEST_ID` names an installed app identity. A passing Show means Windows accepted the payload. See [Architecture](ARCHITECTURE.md) for the Windows submission path.
 
 Test runtime behavior separately on Windows, especially notification clicks, tray operation, native transparency, sleep/wake, and saved settings. Preserve real user tasks and clean up only test-owned data.
 
