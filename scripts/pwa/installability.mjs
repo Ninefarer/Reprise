@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 
 const root = new URL("../../dist-web/", import.meta.url);
 const fail = (message) => {
@@ -84,5 +84,44 @@ else {
   }
 }
 
+const cssFiles = readdirSync(new URL("assets/", root)).filter((name) =>
+  name.endsWith(".css"),
+);
+const builtCss = cssFiles
+  .map((name) => readFileSync(new URL(`assets/${name}`, root), "utf8"))
+  .join("\n");
+const compactCss = builtCss.replace(/\s+/g, "");
+for (const needle of [
+  "safe-area-inset-top",
+  "safe-area-inset-right",
+  "safe-area-inset-bottom",
+  "safe-area-inset-left",
+  "100dvh",
+  "100vh",
+  "font-size:16px",
+  "phone-tabbar",
+  "max-width:430px",
+]) {
+  const haystack = needle.includes(":") ? compactCss : builtCss;
+  if (!haystack.includes(needle)) fail(`web CSS missing ${needle}`);
+}
+const desktopAssets = new URL("../../dist/assets/", import.meta.url);
+if (existsSync(desktopAssets)) {
+  const desktopCss = readdirSync(desktopAssets)
+    .filter((name) => name.endsWith(".css"))
+    .map((name) => readFileSync(new URL(name, desktopAssets), "utf8"))
+    .join("\n");
+  if (desktopCss.includes("safe-area-inset") || desktopCss.includes("phone-tabbar")) {
+    fail("desktop CSS picked up the phone stylesheet");
+  }
+}
+
 if (process.exitCode) process.exit(process.exitCode);
 console.log("PWA installability checks passed.");
+const { spawnSync } = await import("node:child_process");
+const phone = spawnSync(
+  process.execPath,
+  [new URL("./phone-layout.mjs", import.meta.url).pathname],
+  { stdio: "inherit" },
+);
+if (phone.status !== 0) process.exit(phone.status ?? 1);

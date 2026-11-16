@@ -1,5 +1,6 @@
 import { SlideSlot, NOTICE_MOTION_MS } from "./SlideSlot";
 import { useEffect, useRef, useState } from "react";
+import { platform } from "reprise:platform";
 export interface UndoNotice {
   key: string;
   id: string;
@@ -108,7 +109,9 @@ export function UndoToast({
         <small>
           {deletion
             ? "Click undo to revert the deletion."
-            : "Notifications already submitted to Windows are not recalled."}
+            : platform.kind === "web"
+              ? "A browser alert already shown is not recalled."
+              : "Notifications already submitted to Windows are not recalled."}
         </small>
         {deletion && (
           <div className="undo-drain" aria-hidden="true">

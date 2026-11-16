@@ -60,8 +60,9 @@ export function NightlyDisclosure({
         regressions may occur.
       </p>
       <p>
-        Nightly installs separately from stable and uses its own local data.
-        Quit stable before testing the shared Quick Capture shortcut.
+        {platform.kind === "web"
+          ? "This Home Screen app keeps its own tasks, separate from a Safari tab and from the Windows app. A global Quick Capture shortcut is not available here."
+          : "Nightly installs separately from stable and uses its own local data. Quit stable before testing the shared Quick Capture shortcut."}
       </p>
       <p>
         If you find a problem, report it on GitHub with the steps to reproduce

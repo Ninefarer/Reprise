@@ -1,3 +1,4 @@
+import { platform } from "reprise:platform";
 import { DateTimeField } from "./DateTimeField";
 import { Select } from "./Select";
 import { useEffect, useRef, useState } from "react";
@@ -167,7 +168,9 @@ export function Onboarding({
                           }
                         >
                           <option value="system">
-                            System — follow Windows
+                            {platform.kind === "web"
+                              ? "System — follow device"
+                              : "System — follow Windows"}
                           </option>
                           <option value="light">Light</option>
                           <option value="dark">Dark</option>
@@ -208,7 +211,9 @@ export function Onboarding({
                       checked={draft.notifications}
                       onChange={(e) => set("notifications", e.target.checked)}
                     />
-                    Windows notifications
+                    {platform.kind === "web"
+                      ? "Alerts while Reprise is open"
+                      : "Windows notifications"}
                   </label>
                   <label className="check">
                     <input

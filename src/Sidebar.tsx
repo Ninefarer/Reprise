@@ -49,6 +49,27 @@ export function Sidebar({
   } | null>(null);
   const draggingRef = useRef(false);
   const collapsed = settings.sidebar_collapsed ?? false;
+  const [phoneLayout, setPhoneLayout] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  useEffect(() => {
+    if (platform.kind !== "web" || typeof matchMedia !== "function") return;
+    const query = matchMedia("(max-width: 430px)");
+    const sync = () => {
+      setPhoneLayout(query.matches);
+      setDrawerOpen(document.documentElement.dataset.drawer === "open");
+    };
+    sync();
+    query.addEventListener("change", sync);
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-drawer"],
+    });
+    return () => {
+      query.removeEventListener("change", sync);
+      observer.disconnect();
+    };
+  }, []);
   useEffect(() => setTooltip(null), [collapsed]);
   useEffect(() => {
     if (!dragging) setWidth(settings.sidebar_width ?? 224);
@@ -135,8 +156,10 @@ export function Sidebar({
     : [];
   return (
     <aside
+      id="phone-more"
       className={collapsed ? "sidebar collapsed" : "sidebar"}
       style={{ width: collapsed ? 64 : width }}
+      inert={phoneLayout && !drawerOpen ? true : undefined}
       data-resizing={dragging}
       onContextMenu={(e) => {
         if ((e.target as HTMLElement).closest(".profile-footer")) return;

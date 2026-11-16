@@ -1,3 +1,4 @@
+import { platform } from "reprise:platform";
 import { Select } from "./Select";
 import type { Settings, Snapshot, VisualPreferences } from "./model";
 import { visualPreferences } from "./visuals";
@@ -17,6 +18,8 @@ export function AppearanceSettings({
     <>
       <section className="settings-section" id="appearance-section">
         <h2>Appearance</h2>
+        {platform.kind !== "web" && (
+        <>
         <div className="fields">
           <label>
             Window appearance
@@ -99,6 +102,8 @@ export function AppearanceSettings({
             </p>
           </>
         )}
+        </>
+        )}
 
         <div className="fields">
           <label>
@@ -138,7 +143,11 @@ export function AppearanceSettings({
                   })
                 }
               >
-                <option value="system">System — follow Windows</option>
+                <option value="system">
+                  {platform.kind === "web"
+                    ? "System — follow device"
+                    : "System — follow Windows"}
+                </option>
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
               </Select>
@@ -195,14 +204,15 @@ export function AppearanceSettings({
           </label>
         </div>
         <p className="hint">
-          Accents highlight controls; task colors keep their meaning. Windows
-          reduced-motion preferences take priority without changing your
-          selection.
+          {platform.kind === "web"
+            ? "Accents highlight controls; task colors keep their meaning. The device reduced-motion setting takes priority without changing your selection."
+            : "Accents highlight controls; task colors keep their meaning. Windows reduced-motion preferences take priority without changing your selection."}
         </p>
         {system?.animations_enabled === false && (
           <p className="hint">
-            Windows animations are off. Your saved animation preference is
-            retained.
+            {platform.kind === "web"
+              ? "Reduced motion is on. Your saved animation preference is retained."
+              : "Windows animations are off. Your saved animation preference is retained."}
           </p>
         )}
         <div className="fields">
@@ -246,15 +256,18 @@ export function AppearanceSettings({
                 })
               }
             >
-              <option value="system">Follow Windows</option>
+              <option value="system">
+                {platform.kind === "web" ? "Follow device" : "Follow Windows"}
+              </option>
               <option value="always">Always visible</option>
             </Select>
           </label>
         </div>
         {system?.advanced_effects === false && (
           <p className="hint">
-            Windows has disabled advanced effects. Solid surfaces are active;
-            your appearance preference is retained.
+            {platform.kind === "web"
+              ? "Advanced effects are not available here. Solid surfaces stay on; your appearance preference is retained."
+              : "Windows has disabled advanced effects. Solid surfaces are active; your appearance preference is retained."}
           </p>
         )}
       </section>

@@ -1,3 +1,4 @@
+import "../pwa-phone.css";
 import { createPushStub, syncReminderTimes } from "./push";
 import { registerServiceWorker } from "./registerServiceWorker";
 import {
@@ -14,6 +15,9 @@ import { createWebSession } from "./webStore";
  * This file does not publish a release.
  */
 export const WEB_RELEASE_VERSION = "3.4.4-nightly.20261116.1";
+if (typeof document !== "undefined") {
+  document.documentElement.dataset.platform = "web";
+}
 const issueUrl = "https://github.com/Ninefarer/Reprise/issues/new";
 
 type Handler = (event: { payload: unknown }) => void;

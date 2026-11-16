@@ -381,14 +381,16 @@ export function Preferences({
               </label>
             ))}
           </fieldset>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={draft.close_to_tray}
-              onChange={(e) => set("close_to_tray", e.target.checked)}
-            />
-            Keep running in the tray when I close the window
-          </label>
+          {platform.kind !== "web" && (
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={draft.close_to_tray}
+                onChange={(e) => set("close_to_tray", e.target.checked)}
+              />
+              Keep running in the tray when I close the window
+            </label>
+          )}
         </section>
       </div>
       <div
@@ -400,6 +402,12 @@ export function Preferences({
       >
         <section className="settings-section">
           <h2>Keyboard</h2>
+          {platform.kind === "web" && (
+            <p className="hint">
+              The command shortcut needs a hardware keyboard. The iPhone touch
+              keyboard cannot record it.
+            </p>
+          )}
           <ShortcutRecorder
             value={draft.command_shortcut ?? "Ctrl+K"}
             onChange={(value) => set("command_shortcut", value)}
@@ -457,8 +465,9 @@ export function Preferences({
           <h2 id="updates-heading">About / Updates</h2>
           <p>Reprise v{version}</p>
           <p className="hint">
-            Checks for updates after setup and every six hours while Reprise is
-            running. You choose when to download and install.
+            {platform.kind === "web"
+              ? "This Nightly site updates when a new build is published. There is no installer to run on this device."
+              : "Checks for updates after setup and every six hours while Reprise is running. You choose when to download and install."}
           </p>
           {updateCheckMessage && <p role="status">{updateCheckMessage}</p>}
           <div className="dialog-actions">
