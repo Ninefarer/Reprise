@@ -1,6 +1,5 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { LogicalSize } from "@tauri-apps/api/dpi";
+import { platform } from "reprise:platform";
 export function QuickCapture({
   children,
   error,
@@ -26,8 +25,8 @@ export function QuickCapture({
       );
       if (height === lastHeight) return;
       lastHeight = height;
-      void getCurrentWindow()
-        .setSize(new LogicalSize(window.innerWidth, height))
+      void platform.window
+        .setSize({ width: window.innerWidth, height })
         .catch((error) => onError(String(error)));
     };
     const observer = new ResizeObserver(resize);
@@ -37,7 +36,7 @@ export function QuickCapture({
   }, [onError]);
   async function close() {
     try {
-      await getCurrentWindow().hide();
+      await platform.window.hide();
     } catch (error) {
       onError(String(error));
     }
@@ -57,7 +56,7 @@ export function QuickCapture({
             (event.target as HTMLElement).closest("button")
           )
             return;
-          void getCurrentWindow()
+          void platform.window
             .startDragging()
             .catch((error) => onError(String(error)));
         }}

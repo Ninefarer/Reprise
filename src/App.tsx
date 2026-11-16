@@ -14,9 +14,7 @@ import {
   useState,
 } from "react";
 
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { platform } from "reprise:platform";
 import {
   date,
   isOpen,
@@ -25,7 +23,6 @@ import {
   remaining,
   reviewGroups,
   tasksForView,
-  type History,
   type Settings,
   type Snapshot,
   type Status,
@@ -159,7 +156,7 @@ function Application({
   useEffect(() => {
     if (!windowShown.current && ((data && themeReady) || error)) {
       windowShown.current = true;
-      void invoke("window_ready").catch(() => {
+      void platform.windowReady().catch(() => {
         windowShown.current = false;
       });
     }
@@ -289,9 +286,9 @@ function Application({
           ? {}
           : { measure: true, probe: `${reason}:${document.visibilityState}` }),
       };
-      const next = await (Object.keys(args).length
-        ? invoke<Snapshot | null>("snapshot", args)
-        : invoke<Snapshot | null>("snapshot"));
+      const next = await platform.snapshot(
+        Object.keys(args).length ? args : undefined,
+      );
       if (!mounted.current) return;
       if (!next) {
         suspended.current = true;
@@ -304,7 +301,7 @@ function Application({
           .filter((t) => t.status === "Settled" && !t.settled_at)
           .map(async (t) => {
             if (!legacy.current.has(t.id)) {
-              const h = await invoke<History[]>("task_history", { id: t.id });
+              const h = await platform.taskHistory(t.id);
               const entry = h.find((e) => e.action === "Settled");
               if (entry) legacy.current.set(t.id, entry.at);
             }
@@ -356,7 +353,7 @@ function Application({
     }, 15000);
     let off: (() => void) | undefined, offResize: (() => void) | undefined;
     let dead = false;
-    void listen("refresh", () => {
+    void platform.listen("refresh", () => {
       if (!dead) void load("event");
     })
       .then((f) => {
@@ -371,7 +368,7 @@ function Application({
         if (!dead && quick) captureRef.current?.focus();
       });
     };
-    void getCurrentWindow()
+    void platform.window
       .onResized(() => {
         if (!dead && suspended.current) void load("resume");
       })
@@ -399,10 +396,7 @@ function Application({
       if (updateOperation.current) return;
       updateOperation.current = true;
       try {
-        const result = await invoke<{
-          notice_id: string | null;
-          message?: string;
-        }>("check_updates", { automatic: true });
+        const result = await platform.checkUpdates(true);
         if (!disposed) {
           if (result?.message) setUpdateCheckMessage(result.message);
           if (result?.notice_id) await load("event");
@@ -442,7 +436,7 @@ function Application({
     if (quick) return;
     let off: (() => void) | undefined,
       disposed = false;
-    void listen<UpdateActivity>("update-progress", (event) =>
+    void platform.listen<UpdateActivity>("update-progress", (event) =>
       setUpdateActivity(event.payload),
     )
       .then((unlisten) => {
@@ -461,7 +455,7 @@ function Application({
     if (quick) return;
     let disposed = false,
       off: (() => void) | undefined;
-    void listen<{ review: boolean; task_id: string | null }>(
+    void platform.listen<{ review: boolean; task_id: string | null }>(
       "notification-route",
       (event) => {
         if (event.payload.review) {
@@ -505,10 +499,14 @@ function Application({
     )
       return;
     let cancelled = false;
-    void invoke<Snapshot>("snapshot")
+    void platform.snapshot()
       .then((snapshot) => {
         if (cancelled) return;
         setNativeTaskId(null);
+        if (!snapshot) {
+          setNotificationsOpen(true);
+          return;
+        }
         const task = snapshot.tasks.find((task) => task.id === nativeTaskId);
         if (task) {
           setNotificationsOpen(false);
@@ -539,10 +537,7 @@ function Application({
     setCheckingUpdates(true);
     setUpdateActivity(null);
     try {
-      const result = await invoke<{
-        notice_id: string | null;
-        message?: string;
-      }>("check_updates");
+      const result = await platform.checkUpdates();
       setUpdateCheckMessage(result?.message ?? "");
       await load();
       if (result?.notice_id) setNotificationsOpen(true);
@@ -563,7 +558,7 @@ function Application({
       total: null,
     });
     try {
-      await invoke("install_update", { noticeId });
+      await platform.installUpdate(noticeId);
     } catch (error) {
       setUpdateActivity({
         notice_id: noticeId,
@@ -593,7 +588,7 @@ function Application({
         setPalette((p) => !p);
       }
       if (quick && e.key === "Escape" && !captureSaving.current)
-        void getCurrentWindow()
+        void platform.window
           .hide()
           .catch((error) => setError(String(error)));
     };
@@ -622,7 +617,7 @@ function Application({
   }
   async function save(t: Task, action: string) {
     return run(async () => {
-      const saved = await invoke<Task>("save_task", { task: t, action });
+      const saved = await platform.saveTask(t, action);
       const previous = data?.tasks.find((task) => task.id === t.id);
       if (
         saved?.status === "Finished" &&
@@ -677,12 +672,12 @@ function Application({
     try {
       const ok = await run(async () => {
         const saving = traceStart();
-        await invoke("capture", { title: title.trim() });
+        await platform.capture(title.trim());
         trace("capture.persist", saving);
       });
       if (ok) {
         setTitle("");
-        if (quick) await getCurrentWindow().hide();
+        if (quick) await platform.window.hide();
         trace("capture.submit-to-complete", started);
       }
     } catch (error) {
@@ -693,13 +688,11 @@ function Application({
   }
   async function preferences(s: Partial<Settings>) {
     return run(() =>
-      invoke("save_preference_patch", {
-        patch: s,
-      }),
+      platform.savePreferencePatch(s),
     );
   }
   async function visual(patch: Partial<VisualPreferences>) {
-    await run(() => invoke("visual_preferences", { patch }));
+    await run(() => platform.visualPreferences(patch));
   }
   function afterSettings(action: () => void) {
     if (
@@ -732,11 +725,7 @@ function Application({
   }
   async function special(t: Task, action: string) {
     return run(async () => {
-      const saved = await invoke<Task>("task_action", {
-        id: t.id,
-        revision: t.updated_at,
-        action,
-      });
+      const saved = await platform.taskAction(t.id, t.updated_at, action);
       if (saved?.id)
         setUndo({
           id: saved.id,
@@ -1075,11 +1064,13 @@ function Application({
         onFinish={async (patch, firstTitle) => {
           const ok = await run(async () => {
             if (firstTitle && !setupCaptured.current) {
-              await invoke("capture", { title: firstTitle });
+              await platform.capture(firstTitle);
               setupCaptured.current = true;
             }
-            await invoke("save_settings", {
-              settings: { ...settings, ...patch, onboarded: true },
+            await platform.saveSettings({
+              ...settings,
+              ...patch,
+              onboarded: true,
             });
           });
           if (ok) {
@@ -1103,12 +1094,12 @@ function Application({
         onNavigate={navigate}
         onQuit={() =>
           afterSettings(() => {
-            void run(() => invoke("quit_app"));
+            void run(() => platform.quit());
           })
         }
         onPatch={async (p) => {
           await run(() =>
-            invoke("sidebar_preferences", {
+            platform.sidebarPreferences({
               width: p.sidebar_width ?? null,
               collapsed: p.sidebar_collapsed ?? null,
               groups: p.sidebar_groups ?? null,
@@ -1315,9 +1306,7 @@ function Application({
             onClose={() => setReleaseDialog(null)}
             onAcknowledge={() =>
               run(() =>
-                invoke("acknowledge_release", {
-                  version: data.release!.version,
-                }),
+                platform.acknowledgeRelease(data.release!.version),
               )
             }
           />
@@ -1332,16 +1321,16 @@ function Application({
           busy={busy}
           onOpenChange={setNotificationsOpen}
           onPin={(pinned) =>
-            run(() => invoke("notification_panel_preferences", { pinned }))
+            run(() => platform.notificationPanelPreferences(pinned))
           }
-          onRead={(id) => void run(() => invoke("read_notice", { id }))}
+          onRead={(id) => void run(() => platform.readNotice(id))}
           onTask={(task) => open(task)}
           onReview={() => {
             setNotificationsOpen(false);
             navigate("Daily Review");
           }}
           onManage={(action, ids) =>
-            run(() => invoke("manage_notifications", { action, ids }))
+            run(() => platform.manageNotifications(action, ids))
           }
           onUpdate={async (id) => afterSettings(() => void installUpdate(id))}
           updateActivity={updateActivity}
@@ -1392,7 +1381,7 @@ function Application({
           onTask={(t) => open(t)}
           onAction={act}
           onCreate={async (title) => {
-            await run(() => invoke("capture", { title }));
+            await run(() => platform.capture(title));
           }}
         />
       )}
@@ -1405,19 +1394,16 @@ function Application({
         }
         onExpire={(notice) => {
           if (notice.deletionToken)
-            void invoke("finalize_deletion", {
-              token: notice.deletionToken,
-            }).catch((e) => setError(String(e)));
+            void platform
+              .finalizeDeletion(notice.deletionToken)
+              .catch((e) => setError(String(e)));
         }}
         onUndo={(notice) =>
           run(async () => {
             if (notice.deletionToken)
-              await invoke("undo_deletion", { token: notice.deletionToken });
+              await platform.undoDeletion(notice.deletionToken);
             else
-              await invoke("undo_task", {
-                id: notice.id,
-                revision: notice.revision,
-              });
+              await platform.undoTask(notice.id, notice.revision);
             setCompletionFeedback([]);
           })
         }
@@ -1428,10 +1414,10 @@ function Application({
           onCancel={() => setDeleting(null)}
           onConfirm={async () => {
             const ok = await run(async () => {
-              const token = await invoke<string>("delete_task", {
-                id: deleting.id,
-                expectedUpdatedAt: deleting.updated_at,
-              });
+              const token = await platform.deleteTask(
+                deleting.id,
+                deleting.updated_at,
+              );
               setUndo({
                 id: deleting.id,
                 revision: deleting.updated_at,

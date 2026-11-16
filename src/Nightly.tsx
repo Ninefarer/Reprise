@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { platform } from "reprise:platform";
 export const issueUrl = "https://github.com/Ninefarer/Reprise/issues/new";
 export function isNightly(version?: string) {
   return !!version && /^\d+\.\d+\.\d+-nightly(?:[.+]|$)/.test(version);
@@ -71,7 +71,7 @@ export function NightlyDisclosure({
         href={issueUrl}
         onClick={(e) => {
           e.preventDefault();
-          void invoke("open_issue_report").catch((error) =>
+          void platform.openIssueReport().catch((error) =>
             setError(String(error)),
           );
         }}

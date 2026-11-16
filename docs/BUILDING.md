@@ -57,6 +57,18 @@ The frontend build includes TypeScript checks. Rust tests cover domain, persiste
 
 Test runtime behavior separately on Windows, especially notification clicks, tray operation, native transparency, sleep/wake, and saved settings. Preserve real user tasks and clean up only test-owned data.
 
+## Nightly web build
+
+The Nightly PWA is a separate Vite build. It does not change `npm run build` or the Windows installer. `src/platform/types.ts` is the seam. `src/platform/tauri.ts` keeps the desktop commands. `src/platform/web.ts` is the browser implementation. Persistence goes through `src/platform/storage.ts`, which currently uses a localStorage placeholder.
+
+```powershell
+npm run dev:web
+npm run build:web
+npm run check:pwa
+```
+
+`dev:web` serves the app at `http://127.0.0.1:5173/Reprise/` so asset URLs match GitHub project Pages. The web build writes `dist-web/` and leaves `dist/` for Tauri. See [Nightly PWA](PWA.md) for what is implemented, what is intentionally left for other branches, and the Pages setup.
+
 ## Working and releasing
 
 Development work belongs on `develop`. Do not merge, push, tag, publish, or replace installer assets without authorization. Follow [GitHub release conventions](RELEASING.md) for separate Stable and Nightly descriptions. Local changes and engineering notes are not evidence that a feature has shipped.

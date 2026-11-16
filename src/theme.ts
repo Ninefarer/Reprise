@@ -1,6 +1,5 @@
 ﻿import { useLayoutEffect, useState } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { invoke } from "@tauri-apps/api/core";
+import { platform } from "reprise:platform";
 import type { Settings, Snapshot } from "./model";
 import {
   effectiveAppearance,
@@ -48,7 +47,7 @@ export function useTheme(
     root.style.setProperty("--desktop-tint", String(visual.desktop_tint / 100));
   }, [visualKey]);
   useLayoutEffect(() => {
-    const w = getCurrentWindow();
+    const w = platform.window;
     let disposed = false;
     let unlisten: (() => void) | undefined;
     const media = matchMedia("(prefers-color-scheme: dark)");
@@ -59,14 +58,10 @@ export function useTheme(
       const resolved = mode === "system" ? theme : mode;
       root.dataset.theme = resolved;
       try {
-        const result = await invoke<{ mode: string; error: string | null }>(
-          "native_glass",
-          {
-            dark: resolved === "dark",
-            allow:
-              !matchMedia("(forced-colors: active)").matches &&
-              !matchMedia("(prefers-reduced-transparency: reduce)").matches,
-          },
+        const result = await platform.nativeGlass(
+          resolved === "dark",
+          !matchMedia("(forced-colors: active)").matches &&
+            !matchMedia("(prefers-reduced-transparency: reduce)").matches,
         );
         if (!disposed) {
           root.dataset.desktopGlass = result?.mode ?? "off";

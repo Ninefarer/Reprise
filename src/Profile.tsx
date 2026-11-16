@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { platform } from "reprise:platform";
 import { clamp, panCrop } from "./avatarCrop";
 export function Avatar({ src, name }: { src?: string | null; name: string }) {
   return (
@@ -79,11 +79,9 @@ export function AvatarEditor({
   async function save(remove = false) {
     setBusy(true);
     try {
-      await invoke("save_avatar", {
-        pngBase64: remove
-          ? null
-          : canvas.current!.toDataURL("image/png").split(",")[1],
-      });
+      await platform.saveAvatar(
+        remove ? null : canvas.current!.toDataURL("image/png").split(",")[1],
+      );
       setSource(null);
       setError("");
       await onSaved();

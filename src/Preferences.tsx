@@ -8,6 +8,8 @@ import type { Settings, Snapshot, VisualPreferences } from "./model";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { AvatarEditor } from "./Profile";
 import { Diagnostics, TestNotification } from "./Diagnostics";
+import { WebNotifications } from "./WebNotifications";
+import { platform } from "reprise:platform";
 export interface SettingsEditor {
   dirty: boolean;
   busy: boolean;
@@ -354,8 +356,11 @@ export function Preferences({
               checked={draft.notifications}
               onChange={(e) => set("notifications", e.target.checked)}
             />
-            Native Windows notifications
+            {platform.kind === "web"
+              ? "Alerts while Reprise is open"
+              : "Native Windows notifications"}
           </label>
+          <WebNotifications />
           <fieldset className="notification-preferences">
             <legend>Reminder categories</legend>
             {reminderCategories.map((category) => (

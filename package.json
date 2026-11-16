@@ -7,6 +7,9 @@
     "dev": "vite --host 127.0.0.1",
     "dev:nightly": "tauri dev --config src-tauri/tauri.nightly.conf.json",
     "build": "tsc && vite build",
+    "build:web": "tsc && vite build --mode web",
+    "check:pwa": "node scripts/pwa/installability.mjs",
+    "dev:web": "vite --mode web --host 127.0.0.1",
     "tauri": "tauri",
     "test": "vitest run"
   },

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { platform } from "reprise:platform";
 import { PopupMenu, type MenuAction } from "./PopupMenu";
 type Field = HTMLInputElement | HTMLTextAreaElement;
 interface Selection {
@@ -95,7 +95,9 @@ export function TextContextMenus() {
     writing.current = true;
     try {
       if (command === "copy" || command === "cut") {
-        await writeText(selection.value.slice(selection.start, selection.end));
+        await platform.clipboard.writeText(
+          selection.value.slice(selection.start, selection.end),
+        );
         if (
           command === "cut" &&
           generation.current === current &&
@@ -103,7 +105,7 @@ export function TextContextMenus() {
         )
           editField(selection, "delete");
       } else if (command === "paste") {
-        const text = await readText();
+        const text = await platform.clipboard.readText();
         if (
           generation.current === current &&
           text &&

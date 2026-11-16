@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { platform } from "reprise:platform";
 import { date } from "./model";
 interface Diagnostic {
   health: {
@@ -19,7 +19,7 @@ export function Diagnostics() {
   async function load() {
     setError("");
     try {
-      setData(await invoke("diagnostics"));
+      setData(await platform.diagnostics());
     } catch (e) {
       setError(String(e));
     }
@@ -33,14 +33,19 @@ export function Diagnostics() {
     <section className="settings-section" aria-labelledby="diagnostic-heading">
       <h2 id="diagnostic-heading">Notification diagnostics</h2>
       <p>
-        Windows decides whether a submitted notification is displayed. Reprise
-        has no display or read receipt.
+        {platform.kind === "web"
+          ? "Browser alerts can appear while this page is open. Leaving the app cannot schedule a local reminder."
+          : "Windows decides whether a submitted notification is displayed. Reprise has no display or read receipt."}
       </p>
       {data && (
         <dl className="diagnostics">
           <dt>Application identity</dt>
           <dd>{data.application_id}</dd>
-          <dt>Windows registration</dt>
+          <dt>
+            {platform.kind === "web"
+              ? "Notification permission"
+              : "Windows registration"}
+          </dt>
           <dd>{data.registration}</dd>
           <dt>Scheduler</dt>
           <dd>
@@ -97,9 +102,11 @@ export function TestNotification() {
             setMessage("");
             setError("");
             try {
-              await invoke("test_notification");
+              await platform.testNotification();
               setMessage(
-                "Submitted to Windows. This does not confirm display.",
+                platform.kind === "web"
+                  ? "Shown while Reprise is open. This does not schedule a later alert."
+                  : "Submitted to Windows. This does not confirm display.",
               );
             } catch (e) {
               setError(String(e));
@@ -107,7 +114,9 @@ export function TestNotification() {
             setBusy(false);
           }}
         >
-          Test Windows notification
+          {platform.kind === "web"
+            ? "Test notification"
+            : "Test Windows notification"}
         </button>
       </div>
       {error && <p role="alert">{error}</p>}

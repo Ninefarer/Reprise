@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { platform } from "reprise:platform";
 import { date, label, type History } from "./model";
 import { taskCategory } from "./taskColors";
 
@@ -35,7 +35,7 @@ export function TaskHistory({
     if (!open || history) return;
     let alive = true;
     setError("");
-    void invoke<History[]>("task_history", { id: taskId })
+    void platform.taskHistory(taskId)
       .then((value) => {
         if (alive) setHistory(value);
       })

@@ -1,6 +1,6 @@
 import { isNightly, NightlyBadge } from "./Nightly";
 import { useEffect, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { platform } from "reprise:platform";
 import type { Settings, View } from "./model";
 import { label } from "./model";
 import {
@@ -362,7 +362,7 @@ export function Sidebar({
             </button>
             <button
               role="menuitem"
-              onClick={() => (onQuit ? onQuit() : void invoke("quit_app"))}
+              onClick={() => (onQuit ? onQuit() : void platform.quit())}
             >
               Quit Reprise
             </button>
