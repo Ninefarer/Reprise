@@ -50,23 +50,48 @@ describe("theme polish contrast", () => {
       ).toBeGreaterThanOrEqual(3);
     }
   });
-  it("packages v3.4.3 consistently with locally bundled release notes", () => {
-    expect(JSON.parse(read("../package.json")).version).toBe("3.4.3");
+  it("packages v3.4.4 consistently with locally bundled release notes", () => {
+    expect(JSON.parse(read("../package.json")).version).toBe("3.4.4");
     expect(JSON.parse(read("../package-lock.json")).packages[""].version).toBe(
-      "3.4.3",
+      "3.4.4",
     );
-    expect(JSON.parse(read("../src-tauri/tauri.conf.json")).version).toBe(
-      "3.4.3",
-    );
+    const tauri = JSON.parse(read("../src-tauri/tauri.conf.json"));
+    const nightly = JSON.parse(read("../src-tauri/tauri.nightly.conf.json"));
+    expect(tauri.version).toBe("3.4.4");
+    expect(nightly.version).toBe("3.4.4-nightly.20261116.1");
     expect(
       read("../src-tauri/Cargo.toml").match(/version = "([^"]+)"/)[1],
-    ).toBe("3.4.3");
+    ).toBe("3.4.4");
     expect(read("../src-tauri/Cargo.lock")).toMatch(
-      /name = "reprise"\r?\nversion = "3\.4\.3"/,
+      /name = "reprise"\r?\nversion = "3\.4\.4"/,
     );
+    expect(releaseFor("3.4.4")?.sections.length).toBeGreaterThan(0);
+    expect(
+      releaseFor("3.4.4-nightly.20261116.1")?.sections.length,
+    ).toBeGreaterThan(0);
     expect(releaseFor("3.4.3")?.sections.length).toBeGreaterThan(0);
     expect(releaseFor("3.2.0")).toBeTruthy();
     expect(releaseFor("0.2.0")).toBeTruthy();
+    for (const config of [tauri, nightly]) {
+      expect(config.bundle.windows.nsis.installMode).toBe("perMachine");
+      expect(config.bundle.windows.nsis.installerHooks).toBe(
+        "./windows/hooks.nsh",
+      );
+    }
+    expect(tauri.plugins.updater.windows.installMode).toBe("passive");
+    const hooks = read("../src-tauri/windows/hooks.nsh");
+    expect(hooks).toMatch(/HKCU/);
+    expect(hooks).not.toMatch(/RmDir\s+\/r/i);
+    expect(hooks).not.toMatch(/\$APPDATA|\$LOCALAPPDATA/);
+    const notes = read("../docs/releases/3.4.4.md");
+    expect(notes).toMatch(/^- ✦ /m);
+    expect(notes).toMatch(/^- → /m);
+    expect(notes).toMatch(/^- ▲ /m);
+    expect(notes).not.toMatch(/—/);
+    expect(notes).not.toMatch(/additions\.png/);
+    expect(notes).not.toMatch(
+      /^##?\s+(Implementation|Validation|Known limitations)/im,
+    );
   });
   it("gives only Quick Capture a borderless utility window and scoped dragging", () => {
     const windows = JSON.parse(read("../src-tauri/tauri.conf.json")).app

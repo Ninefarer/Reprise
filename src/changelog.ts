@@ -130,6 +130,52 @@ const avatarCropHotfix: ReleaseSection[] = [
     ],
   },
 ];
+const deletionUndo: ReleaseSection[] = [
+  {
+    heading: "ADDITIONS",
+    accent: "new",
+    entries: [
+      {
+        text: "Deleting a task offers Undo for 30 seconds. Undo restores the task, its notes, history and reminders. Hover or keyboard focus pauses the countdown.",
+      },
+    ],
+  },
+  {
+    heading: "CHANGES",
+    accent: "little",
+    entries: [
+      {
+        text: "Task action notices slide in a stack of three. Further notices wait, and their timers start when they appear.",
+      },
+      {
+        text: "Update notices close after eight seconds. Deletion notices keep the pauseable countdown.",
+      },
+      {
+        text: "Notification history cards slide as entries are added or removed.",
+      },
+    ],
+  },
+  {
+    heading: "BUGFIXES",
+    accent: "fixes",
+    entries: [
+      {
+        text: "Windows setup asks for administrator approval and installs for all users of the computer. Tasks stay in your personal application data.",
+      },
+    ],
+  },
+];
+const perMachineInstall: ReleaseSection[] = [
+  {
+    heading: "CHANGES",
+    accent: "little",
+    entries: [
+      {
+        text: "Windows setup asks for administrator approval and installs for everyone on the computer. Tasks stay in this account's personal data.",
+      },
+    ],
+  },
+];
 const taskEditorCleanup: ReleaseSection[] = [
   {
     heading: "CHANGES",
@@ -145,6 +191,18 @@ const taskEditorCleanup: ReleaseSection[] = [
   },
 ];
 export const releases: Release[] = [
+  {
+    version: "3.4.4-nightly.20261116.1",
+    date: "2026-11-16",
+    title: "All-users installation",
+    sections: perMachineInstall,
+  },
+  {
+    version: "3.4.4",
+    date: "2026-11-16",
+    title: "Undo deletion and all-users installation",
+    sections: deletionUndo,
+  },
   {
     version: "3.4.4-nightly.20261115.2",
     date: "2026-11-15",
