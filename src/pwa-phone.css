@@ -279,6 +279,22 @@ html[data-platform="web"] .select-options {
     min-height: 44px !important;
     box-sizing: border-box;
   }
+  /* Standalone actions only. Links inside paragraphs stay inline. */
+  html[data-platform="web"] :is(
+    dialog,
+    .task-dialog,
+    .release-dialog,
+    .delete-dialog,
+    .palette,
+    .control-popup,
+    .context-menu,
+    .dialog-actions
+  ) > a {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: 44px;
+  }
   html[data-platform="web"] .check {
     min-height: 44px;
   }

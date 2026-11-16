@@ -124,6 +124,24 @@ try {
   if (!welcomeInset || welcomeInset.left < 16 || welcomeInset.right < 16) {
     failures.push(`welcome dialog text inset ${JSON.stringify(welcomeInset)}`);
   }
+  const welcomeLinks = await page.evaluate(() =>
+    [...document.querySelectorAll("dialog[open] a")]
+      .filter((el) => !el.closest("p, li"))
+      .map((el) => {
+        const rect = el.getBoundingClientRect();
+        return {
+          name: (el.textContent || el.getAttribute("href") || "link").trim().slice(0, 40),
+          height: Math.round(rect.height),
+        };
+      }),
+  );
+  console.log("welcome links", JSON.stringify(welcomeLinks));
+  if (!welcomeLinks.length) failures.push("welcome sheet has no standalone links");
+  for (const link of welcomeLinks) {
+    if (link.height < 44) {
+      failures.push(`welcome link under 44px: ${link.name} ${link.height}`);
+    }
+  }
   await page.getByRole("button", { name: "Continue to Nightly" }).click();
   await page.getByRole("navigation", { name: "Sections" }).waitFor();
   await measure("main view");
