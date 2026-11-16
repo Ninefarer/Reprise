@@ -260,7 +260,14 @@ html {
 }
 
 /* Keep transition feedback clear of the notification reading/action area. */
-.app:has(.notification-dock) .undo-toast {
+.app:has(.notification-dock) .undo-toasts {
   right: 366px;
-  max-width: min(480px, calc(100vw - 390px));
+  width: min(480px, calc(100vw - 390px));
+}
+
+.notification-scroll .notice-space {
+  padding: 4px 0;
+}
+.notification-dock .notice-slot .notice {
+  margin: 0;
 }

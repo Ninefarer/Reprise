@@ -119,7 +119,9 @@ describe("notification management", () => {
     await userEvent
       .setup()
       .click(screen.getByRole("button", { name: "Dismiss Reminder other" }));
-    expect(screen.queryByText("Reminder other")).toBeNull();
+    await waitFor(() =>
+      expect(screen.queryByText("Reminder other")).toBeNull(),
+    );
     expect(manage).toHaveBeenCalledWith("dismiss", ["other"]);
   });
   it("confirms clearing read and preserves unread", async () => {

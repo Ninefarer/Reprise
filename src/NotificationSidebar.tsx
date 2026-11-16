@@ -1,3 +1,4 @@
+import { SlideSlot, useNoticePresence } from "./SlideSlot";
 import { Select } from "./Select";
 import {
   categoryLabel,
@@ -186,6 +187,10 @@ export function NotificationSidebar({
   ];
   const activeCategory = category;
   const filtered = filterNotices(notices, activeCategory, unread, query);
+  const visibleEntries = useNoticePresence(
+    present ? filtered : [],
+    `${present}/${category}/${unread}/${query}`,
+  );
   return (
     <>
       {!shown && (
@@ -344,90 +349,92 @@ export function NotificationSidebar({
             tabIndex={0}
             aria-label="Notification history"
           >
-            {filtered.map((n) => (
-              <article
-                className={`notice ${n.read ? "" : "unread"}`}
-                key={n.id}
-              >
-                <div className="task-meta">
-                  <span
-                    className="notice-category"
-                    data-status={taskCategory(n.category)}
-                  >
-                    {categoryLabel(n.category)}
-                  </span>
-                  <time>{date(n.created_at)}</time>
-                  {n.state === "Failed" && (
-                    <span className="notice-failed">
-                      Could not send to Windows
+            {visibleEntries.map(({ item: n, leaving }) => (
+              <SlideSlot key={n.id} leaving={leaving}>
+                <article
+                  className={`notice slide-card ${n.read ? "" : "unread"}`}
+                  data-leaving={leaving}
+                >
+                  <div className="task-meta">
+                    <span
+                      className="notice-category"
+                      data-status={taskCategory(n.category)}
+                    >
+                      {categoryLabel(n.category)}
                     </span>
-                  )}
-                  {n.state === "Pending" && <span>Waiting to send</span>}
-                </div>
-                <h3>
-                  {offeredVersion(n) ? (
-                    <button
-                      className="notice-update-title"
-                      disabled={
-                        busy ||
-                        (!!updateActivity && updateActivity.stage !== "error")
-                      }
-                      onClick={() => void onUpdate(n.id)}
-                      aria-label={`Update Reprise to v${offeredVersion(n)}`}
+                    <time>{date(n.created_at)}</time>
+                    {n.state === "Failed" && (
+                      <span className="notice-failed">
+                        Could not send to Windows
+                      </span>
+                    )}
+                    {n.state === "Pending" && <span>Waiting to send</span>}
+                  </div>
+                  <h3>
+                    {offeredVersion(n) ? (
+                      <button
+                        className="notice-update-title"
+                        disabled={
+                          busy ||
+                          (!!updateActivity && updateActivity.stage !== "error")
+                        }
+                        onClick={() => void onUpdate(n.id)}
+                        aria-label={`Update Reprise to v${offeredVersion(n)}`}
+                      >
+                        {n.title}
+                      </button>
+                    ) : (
+                      n.title
+                    )}
+                  </h3>
+                  <p>{n.message}</p>
+                  {updateActivity?.notice_id === n.id && (
+                    <p
+                      className="update-progress"
+                      role="status"
+                      aria-label="Update progress"
                     >
-                      {n.title}
-                    </button>
-                  ) : (
-                    n.title
+                      {updateMessage(updateActivity)}
+                    </p>
                   )}
-                </h3>
-                <p>{n.message}</p>
-                {updateActivity?.notice_id === n.id && (
-                  <p
-                    className="update-progress"
-                    role="status"
-                    aria-label="Update progress"
-                  >
-                    {updateMessage(updateActivity)}
-                  </p>
-                )}
-                <div className="task-actions">
-                  {n.category === "DailyReview" && (
+                  <div className="task-actions">
+                    {n.category === "DailyReview" && (
+                      <button
+                        onClick={() => {
+                          onReview();
+                          onRead(n.id);
+                        }}
+                      >
+                        Open Daily Review
+                      </button>
+                    )}
                     <button
-                      onClick={() => {
-                        onReview();
-                        onRead(n.id);
-                      }}
+                      disabled={busy}
+                      aria-label={`Dismiss ${n.title}`}
+                      onClick={() => void manage("dismiss", [n.id])}
                     >
-                      Open Daily Review
+                      Dismiss
                     </button>
-                  )}
-                  <button
-                    disabled={busy}
-                    aria-label={`Dismiss ${n.title}`}
-                    onClick={() => void manage("dismiss", [n.id])}
-                  >
-                    Dismiss
-                  </button>
-                  {n.task_id && (
+                    {n.task_id && (
+                      <button
+                        disabled={!tasks.some((t) => t.id === n.task_id)}
+                        onClick={() => {
+                          const task = tasks.find((t) => t.id === n.task_id);
+                          if (task) onTask(task);
+                        }}
+                      >
+                        Open task
+                      </button>
+                    )}
                     <button
-                      disabled={!tasks.some((t) => t.id === n.task_id)}
-                      onClick={() => {
-                        const task = tasks.find((t) => t.id === n.task_id);
-                        if (task) onTask(task);
-                      }}
+                      disabled={n.read || busy}
+                      onClick={() => onRead(n.id)}
                     >
-                      Open task
+                      {n.read ? "Read" : "Mark read"}
                     </button>
-                  )}
-                  <button
-                    disabled={n.read || busy}
-                    onClick={() => onRead(n.id)}
-                  >
-                    {n.read ? "Read" : "Mark read"}
-                  </button>
-                </div>
-              </article>
+                  </div>
+                </article>
+              </SlideSlot>
             ))}
             {!filtered.length && (
               <div className="notification-empty">

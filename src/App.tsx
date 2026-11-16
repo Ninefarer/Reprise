@@ -1,4 +1,4 @@
-import { UndoToast, type UndoNotice } from "./UndoToast";
+import { UndoToastStack, type UndoNotice } from "./UndoToast";
 import { greeting } from "./greeting";
 import { matchesShortcut } from "./shortcuts";
 import { TextContextMenus } from "./TextContextMenu";
@@ -1396,39 +1396,32 @@ function Application({
           }}
         />
       )}
-      <div className="undo-toasts" aria-label="Task action notifications">
-        {undoNotices.map((notice) => (
-          <UndoToast
-            key={notice.key}
-            notice={notice}
-            onDone={() =>
-              setUndoNotices((current) =>
-                current.filter((n) => n.key !== notice.key),
-              )
-            }
-            onExpire={() => {
-              if (notice.deletionToken)
-                void invoke("finalize_deletion", {
-                  token: notice.deletionToken,
-                }).catch((e) => setError(String(e)));
-            }}
-            onUndo={() =>
-              run(async () => {
-                if (notice.deletionToken)
-                  await invoke("undo_deletion", {
-                    token: notice.deletionToken,
-                  });
-                else
-                  await invoke("undo_task", {
-                    id: notice.id,
-                    revision: notice.revision,
-                  });
-                setCompletionFeedback([]);
-              })
-            }
-          />
-        ))}
-      </div>
+      <UndoToastStack
+        notices={undoNotices}
+        onDone={(notice) =>
+          setUndoNotices((current) =>
+            current.filter((n) => n.key !== notice.key),
+          )
+        }
+        onExpire={(notice) => {
+          if (notice.deletionToken)
+            void invoke("finalize_deletion", {
+              token: notice.deletionToken,
+            }).catch((e) => setError(String(e)));
+        }}
+        onUndo={(notice) =>
+          run(async () => {
+            if (notice.deletionToken)
+              await invoke("undo_deletion", { token: notice.deletionToken });
+            else
+              await invoke("undo_task", {
+                id: notice.id,
+                revision: notice.revision,
+              });
+            setCompletionFeedback([]);
+          })
+        }
+      />
       {deleting && (
         <DeleteTaskDialog
           task={deleting}

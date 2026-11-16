@@ -146,6 +146,28 @@ const taskEditorCleanup: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "3.4.4-nightly.20261115.2",
+    date: "2026-11-15",
+    title: "Smoother notification stacks",
+    sections: [
+      {
+        heading: "CHANGES",
+        accent: "little",
+        entries: [
+          {
+            text: "Action notices slide into a stack of at most three. Additional notices wait their turn, with their timers starting only when shown.",
+          },
+          {
+            text: "Update notices dismiss after eight seconds without a drain bar. Deletion notices retain their 30-second pauseable countdown and Undo.",
+          },
+          {
+            text: "Notification history entries now slide in and out while surrounding cards move smoothly into place.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.4.4-nightly.20261115.1",
     date: "2026-11-15",
     title: "Undo deletion and sliding notices",

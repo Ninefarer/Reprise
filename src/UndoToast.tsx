@@ -1,3 +1,4 @@
+import { SlideSlot, NOTICE_MOTION_MS } from "./SlideSlot";
 import { useEffect, useRef, useState } from "react";
 export interface UndoNotice {
   key: string;
@@ -7,7 +8,8 @@ export interface UndoNotice {
   deletionToken?: string;
 }
 export const DELETE_UNDO_MS = 30000;
-const EXIT_MS = 220;
+export const UPDATE_UNDO_MS = 8000;
+export const MAX_VISIBLE_NOTICES = 3;
 export function UndoToast({
   notice,
   onUndo,
@@ -25,8 +27,8 @@ export function UndoToast({
   const [focused, setFocused] = useState(false);
   const locked = useRef(false);
   const processing = useRef(false);
-  const remaining = useRef(DELETE_UNDO_MS);
   const deletion = !!notice.deletionToken;
+  const remaining = useRef(deletion ? DELETE_UNDO_MS : UPDATE_UNDO_MS);
   const paused = hovered || focused || pending;
   const callbacks = useRef({ onDone, onExpire });
   callbacks.current = { onDone, onExpire };
@@ -37,7 +39,7 @@ export function UndoToast({
     if (finalize) callbacks.current.onExpire();
   }
   useEffect(() => {
-    if (!deletion || paused || leaving) return;
+    if (paused || leaving) return;
     const start = performance.now();
     const timer = setTimeout(() => leave(true), remaining.current);
     return () => {
@@ -47,72 +49,103 @@ export function UndoToast({
         remaining.current - (performance.now() - start),
       );
     };
-  }, [deletion, paused, leaving]);
+  }, [paused, leaving]);
   useEffect(() => {
     if (!leaving) return;
-    const timer = setTimeout(() => callbacks.current.onDone(), EXIT_MS);
+    const timer = setTimeout(
+      () => callbacks.current.onDone(),
+      NOTICE_MOTION_MS,
+    );
     return () => clearTimeout(timer);
   }, [leaving]);
   return (
-    <div
-      className="undo-toast"
-      data-leaving={leaving}
-      role="status"
-      inert={leaving}
-      onMouseEnter={() => {
-        if (!locked.current) setHovered(true);
-      }}
-      onMouseLeave={() => {
-        if (!locked.current) setHovered(false);
-      }}
-      onFocus={() => {
-        if (!locked.current) setFocused(true);
-      }}
-      onBlur={(e) => {
-        if (!locked.current && !e.currentTarget.contains(e.relatedTarget))
-          setFocused(false);
-      }}
-    >
-      <span>
-        {deletion ? "Deleted" : "Updated"} &ldquo;{notice.title}&rdquo;
-      </span>
-      <button
-        disabled={leaving || pending}
-        onClick={async () => {
-          if (locked.current || processing.current) return;
-          processing.current = true;
-          setPending(true);
-          try {
-            if (await onUndo()) leave(false);
-          } finally {
-            processing.current = false;
-            setPending(false);
-          }
+    <SlideSlot leaving={leaving}>
+      <div
+        className="undo-toast slide-card"
+        data-leaving={leaving}
+        role="status"
+        inert={leaving}
+        onMouseEnter={() => {
+          if (!locked.current) setHovered(true);
+        }}
+        onMouseLeave={() => {
+          if (!locked.current) setHovered(false);
+        }}
+        onFocus={() => {
+          if (!locked.current) setFocused(true);
+        }}
+        onBlur={(e) => {
+          if (!locked.current && !e.currentTarget.contains(e.relatedTarget))
+            setFocused(false);
         }}
       >
-        Undo
-      </button>
-      <button
-        aria-label="Dismiss undo"
-        disabled={leaving || pending}
-        onClick={() => leave(true)}
-      >
-        &times;
-      </button>
-      <small>
-        {deletion
-          ? "Click undo to revert the deletion."
-          : "Notifications already submitted to Windows are not recalled."}
-      </small>
-      {deletion && (
-        <div className="undo-drain" aria-hidden="true">
-          <div
-            style={{
-              animationPlayState: paused || leaving ? "paused" : "running",
-            }}
-          />
-        </div>
-      )}
+        <span>
+          {deletion ? "Deleted" : "Updated"} &ldquo;{notice.title}&rdquo;
+        </span>
+        <button
+          disabled={leaving || pending}
+          onClick={async () => {
+            if (locked.current || processing.current) return;
+            processing.current = true;
+            setPending(true);
+            try {
+              if (await onUndo()) leave(false);
+            } finally {
+              processing.current = false;
+              setPending(false);
+            }
+          }}
+        >
+          Undo
+        </button>
+        <button
+          aria-label="Dismiss undo"
+          disabled={leaving || pending}
+          onClick={() => leave(true)}
+        >
+          &times;
+        </button>
+        <small>
+          {deletion
+            ? "Click undo to revert the deletion."
+            : "Notifications already submitted to Windows are not recalled."}
+        </small>
+        {deletion && (
+          <div className="undo-drain" aria-hidden="true">
+            <div
+              style={{
+                animationPlayState: paused || leaving ? "paused" : "running",
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </SlideSlot>
+  );
+}
+
+export function UndoToastStack({
+  notices,
+  onDone,
+  onExpire,
+  onUndo,
+}: {
+  notices: UndoNotice[];
+  onDone: (notice: UndoNotice) => void;
+  onExpire: (notice: UndoNotice) => void;
+  onUndo: (notice: UndoNotice) => Promise<boolean>;
+}) {
+  return (
+    <div className="undo-toasts" aria-label="Task action notifications">
+      {notices.slice(0, MAX_VISIBLE_NOTICES).map((notice) => (
+        <UndoToast
+          key={notice.key}
+          notice={notice}
+          onDone={() => onDone(notice)}
+          onExpire={() => onExpire(notice)}
+          onUndo={() => onUndo(notice)}
+        />
+      ))}
     </div>
   );
 }
