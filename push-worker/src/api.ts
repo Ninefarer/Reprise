@@ -1,15 +1,22 @@
 import { testPayload } from "./payload";
+import { allowRate } from "./ratelimit";
 import { sendNotification, topicFor, ttlFor } from "./send";
 import {
   appendPushLog,
+  createDeviceToken,
   deleteReminders,
   deleteSubscription,
+  deleteToken,
+  deviceTokenMatches,
   forgetDevice,
+  listDevices,
   readPushLog,
   readReminders,
   readSubscription,
+  readTokenHash,
   writeReminders,
   writeSubscription,
+  writeTokenHash,
 } from "./store";
 import type { Env, PushLogEntry } from "./types";
 import { LIMITS } from "./types";
@@ -39,7 +46,10 @@ function corsHeaders(request: Request, allowedOrigin: string): Headers {
   if (origin && allowedOrigin && origin === allowedOrigin) {
     headers.set("access-control-allow-origin", allowedOrigin);
     headers.set("access-control-allow-methods", "GET, POST, PUT, DELETE, OPTIONS");
-    headers.set("access-control-allow-headers", "Content-Type, X-Reprise-Push-Secret, X-Device-Id");
+    headers.set(
+      "access-control-allow-headers",
+      "Content-Type, X-Reprise-Push-Secret, X-Reprise-Device-Token, X-Device-Id",
+    );
     headers.set("access-control-max-age", "86400");
   }
   return headers;
@@ -84,13 +94,34 @@ async function readBody(request: Request): Promise<Record<string, unknown>> {
   }
 }
 
-function authorize(request: Request, env: Env, cors: Headers): Response | null {
+function authorizeShared(request: Request, env: Env, cors: Headers): Response | null {
   if (!env.PUSH_SHARED_SECRET) return json({ error: "push secret is not configured" }, 503, cors);
   const provided = request.headers.get("X-Reprise-Push-Secret") ?? "";
   if (!provided || provided.length > 256 || !secretsMatch(provided, env.PUSH_SHARED_SECRET)) {
     return json({ error: "unauthorized" }, 401, cors);
   }
   return null;
+}
+
+function authorizeAdmin(request: Request, env: Env, cors: Headers): Response | null {
+  if (!env.PUSH_ADMIN_SECRET) return json({ error: "admin secret is not configured" }, 503, cors);
+  const provided = request.headers.get("X-Reprise-Admin-Secret") ?? "";
+  if (!provided || provided.length > 256 || !secretsMatch(provided, env.PUSH_ADMIN_SECRET)) {
+    return json({ error: "unauthorized" }, 401, cors);
+  }
+  return null;
+}
+
+async function requireDeviceToken(request: Request, env: Env, deviceId: string, cors: Headers): Promise<Response | null> {
+  const token = request.headers.get("X-Reprise-Device-Token") ?? "";
+  if (!(await deviceTokenMatches(env, deviceId, token))) {
+    return json({ error: "device token required" }, 401, cors);
+  }
+  return null;
+}
+
+function tooMany(cors: Headers): Response {
+  return json({ error: "too many requests" }, 429, cors);
 }
 
 function logEntry(input: {
@@ -141,23 +172,31 @@ export async function handleRequest(request: Request, env: Env, deps: RequestDep
       (request.method === "GET" && path === "/push-log");
     if (!protectedRoute) return json({ error: "not found" }, 404, cors);
 
-    const denied = authorize(request, env, cors);
-    if (denied) return denied;
-
     if (request.method === "GET" && path === "/push-log") {
+      const denied = authorizeAdmin(request, env, cors);
+      if (denied) return denied;
       return json({ entries: await readPushLog(env) }, 200, cors);
     }
 
+    const denied = authorizeShared(request, env, cors);
+    if (denied) return denied;
+
     if (request.method === "DELETE" && path === "/subscribe") {
       const deviceId = deviceIdFrom(request);
+      const tokenDenied = await requireDeviceToken(request, env, deviceId, cors);
+      if (tokenDenied) return tokenDenied;
       await deleteSubscription(env, deviceId);
       await deleteReminders(env, deviceId);
+      await deleteToken(env, deviceId);
       await forgetDevice(env, deviceId);
       return json({ ok: true }, 200, cors);
     }
 
     if (request.method === "DELETE" && path.startsWith("/reminders/")) {
       const deviceId = deviceIdFrom(request);
+      const tokenDenied = await requireDeviceToken(request, env, deviceId, cors);
+      if (tokenDenied) return tokenDenied;
+      if (!(await allowRate(env, `reminders:${deviceId}`, LIMITS.reminderWritesPerDevicePerHour, nowMs))) return tooMany(cors);
       const id = decodeURIComponent(path.slice("/reminders/".length));
       const reminders = await readReminders(env, deviceId);
       await writeReminders(env, deviceId, reminders.filter((reminder) => reminder.id !== id));
@@ -168,12 +207,29 @@ export async function handleRequest(request: Request, env: Env, deps: RequestDep
     if (request.method === "POST" && path === "/subscribe") {
       const deviceId = deviceIdFrom(request, body);
       const subscription = parseSubscription(body.subscription ?? body);
+      const existing = await readTokenHash(env, deviceId);
+      if (existing) {
+        const tokenDenied = await requireDeviceToken(request, env, deviceId, cors);
+        if (tokenDenied) return tokenDenied;
+      } else {
+        const devices = await listDevices(env);
+        if (!devices.includes(deviceId) && devices.length >= LIMITS.maxDevices) {
+          return json({ error: "device limit reached" }, 429, cors);
+        }
+        if (!(await allowRate(env, "subscribe", LIMITS.subscribePerHour, nowMs))) return tooMany(cors);
+      }
       await writeSubscription(env, deviceId, subscription);
-      return json({ ok: true }, 200, cors);
+      if (existing) return json({ ok: true }, 200, cors);
+      const deviceToken = createDeviceToken();
+      await writeTokenHash(env, deviceId, deviceToken);
+      return json({ ok: true, deviceToken }, 200, cors);
     }
 
     if (request.method === "PUT" && path === "/reminders") {
       const deviceId = deviceIdFrom(request, body);
+      const tokenDenied = await requireDeviceToken(request, env, deviceId, cors);
+      if (tokenDenied) return tokenDenied;
+      if (!(await allowRate(env, `reminders:${deviceId}`, LIMITS.reminderWritesPerDevicePerHour, nowMs))) return tooMany(cors);
       const reminders = parseReminders(body.reminders, nowMs);
       await writeReminders(env, deviceId, reminders);
       return json({ ok: true, count: reminders.length }, 200, cors);
@@ -181,6 +237,10 @@ export async function handleRequest(request: Request, env: Env, deps: RequestDep
 
     if (request.method === "POST" && path === "/test-push") {
       const deviceId = deviceIdFrom(request, body);
+      const tokenDenied = await requireDeviceToken(request, env, deviceId, cors);
+      if (tokenDenied) return tokenDenied;
+      if (!(await allowRate(env, `test:${deviceId}`, LIMITS.testPushPerDevicePerHour, nowMs))) return tooMany(cors);
+      if (!(await allowRate(env, "test:all", LIMITS.testPushGlobalPerHour, nowMs))) return tooMany(cors);
       const subscription = await readSubscription(env, deviceId);
       if (!subscription) return json({ error: "no subscription" }, 404, cors);
       const payload = testPayload({

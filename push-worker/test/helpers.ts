@@ -25,6 +25,7 @@ export function testEnv(kv: MemoryKv, overrides: Partial<Env> = {}): Env {
     VAPID_PUBLIC_KEY: "B".padEnd(87, "A"),
     VAPID_PRIVATE_KEY: "A".repeat(43),
     PUSH_SHARED_SECRET: "test-secret",
+    PUSH_ADMIN_SECRET: "admin-secret",
     ...overrides,
   };
 }
@@ -62,11 +63,19 @@ export function call(
   handler: (request: Request, env: Env) => Promise<Response>,
   env: Env,
   path: string,
-  init: RequestInit & { origin?: string; secret?: string | null; deviceId?: string } = {},
+  init: RequestInit & {
+    origin?: string;
+    secret?: string | null;
+    deviceId?: string;
+    deviceToken?: string;
+    admin?: string;
+  } = {},
 ): Promise<Response> {
   const headers = new Headers(init.headers);
   if (init.origin) headers.set("origin", init.origin);
   if (init.secret) headers.set("x-reprise-push-secret", init.secret);
+  if (init.deviceToken) headers.set("x-reprise-device-token", init.deviceToken);
+  if (init.admin) headers.set("x-reprise-admin-secret", init.admin);
   if (init.deviceId) headers.set("x-device-id", init.deviceId);
   if (init.body && !headers.has("content-type")) headers.set("content-type", "application/json");
   return handler(new Request(`https://push.example${path}`, { ...init, headers }), env);

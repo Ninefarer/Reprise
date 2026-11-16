@@ -33,10 +33,12 @@ export interface PushClient {
 }
 
 const DEVICE_KEY = "reprise.nightly.push-device";
+const TOKEN_KEY = "reprise.nightly.push-device-token";
 const unconfiguredReason =
   "Closed-app reminders are not connected. The Nightly push service is not deployed from this branch.";
 
 let memoryDeviceId: string | null = null;
+let memoryDeviceToken: string | null = null;
 
 /** Drop every field except the three the push service is allowed to see. */
 export function reminderTimes(input: readonly ReminderTime[]): ReminderTime[] {
@@ -100,6 +102,27 @@ function deviceId(): string {
   return memoryDeviceId;
 }
 
+function readDeviceToken(): string | null {
+  try {
+    if (globalThis.localStorage) {
+      const stored = globalThis.localStorage.getItem(TOKEN_KEY);
+      return stored && stored.length >= 20 ? stored : null;
+    }
+  } catch {
+    /* Fall through to the in-memory token for this page. */
+  }
+  return memoryDeviceToken;
+}
+
+function rememberToken(token: string): void {
+  memoryDeviceToken = token;
+  try {
+    globalThis.localStorage?.setItem(TOKEN_KEY, token);
+  } catch {
+    /* The in-memory token still lets this page sync. */
+  }
+}
+
 function decodePublicKey(value: string): ArrayBuffer {
   const pad = (4 - (value.length % 4)) % 4;
   const binary = atob(value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat(pad));
@@ -142,11 +165,13 @@ export async function subscribeToReminders(): Promise<PushSubscriptionState> {
       userVisibleOnly: true,
       applicationServerKey: decodePublicKey(keyBody.publicKey),
     });
+    const existingToken = readDeviceToken();
     const saved = await fetch(`${config.url}/subscribe`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         "x-reprise-push-secret": config.secret,
+        ...(existingToken ? { "x-reprise-device-token": existingToken } : {}),
       },
       body: JSON.stringify({
         deviceId: deviceId(),
@@ -155,6 +180,11 @@ export async function subscribeToReminders(): Promise<PushSubscriptionState> {
     });
     if (!saved.ok) {
       return { status: "unconfigured", reason: "The push service did not accept this device." };
+    }
+    const savedBody = (await saved.json()) as { deviceToken?: unknown };
+    if (typeof savedBody.deviceToken === "string") rememberToken(savedBody.deviceToken);
+    else if (!existingToken) {
+      return { status: "unconfigured", reason: "The push service did not issue a device token." };
     }
     return { status: "subscribed", endpoint: subscription.endpoint };
   } catch (error) {
@@ -170,12 +200,15 @@ export async function syncReminderTimes(
   const config = workerConfig();
   if (!config) return { status: "unconfigured", count: prepared.length };
   if (!pushAvailable()) return { status: "unsupported", count: prepared.length };
+  const token = readDeviceToken();
+  if (!token) return { status: "unconfigured", count: prepared.length };
   try {
     const response = await fetch(`${config.url}/reminders`, {
       method: "PUT",
       headers: {
         "content-type": "application/json",
         "x-reprise-push-secret": config.secret,
+        "x-reprise-device-token": token,
       },
       body: JSON.stringify({ deviceId: deviceId(), reminders: prepared }),
     });

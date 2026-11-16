@@ -1,6 +1,6 @@
 export interface KvStore {
   get(key: string): Promise<string | null>;
-  put(key: string, value: string): Promise<void>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
   delete(key: string): Promise<void>;
 }
 
@@ -11,6 +11,7 @@ export interface Env {
   VAPID_PUBLIC_KEY: string;
   VAPID_PRIVATE_KEY: string;
   PUSH_SHARED_SECRET: string;
+  PUSH_ADMIN_SECRET: string;
 }
 
 export interface SubscriptionRecord {
@@ -55,8 +56,14 @@ export interface SendResult {
 }
 
 export const LIMITS = {
-  maxReminders: 500,
+  maxReminders: 200,
+  maxDevices: 8,
   maxTitleCodePoints: 120,
+  maxPayloadBytes: 1024,
+  testPushPerDevicePerHour: 6,
+  testPushGlobalPerHour: 12,
+  reminderWritesPerDevicePerHour: 30,
+  subscribePerHour: 20,
   maxAttempts: 5,
   logLimit: 50,
   maxFutureMs: 366 * 24 * 60 * 60 * 1000,

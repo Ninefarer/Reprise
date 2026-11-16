@@ -69,6 +69,8 @@ function startFixture(port) {
 async function workerJson(port, path, init = {}) {
   const headers = new Headers(init.headers);
   if (init.secret) headers.set("x-reprise-push-secret", init.secret);
+  if (init.deviceToken) headers.set("x-reprise-device-token", init.deviceToken);
+  if (init.admin) headers.set("x-reprise-admin-secret", init.admin);
   if (init.body) headers.set("content-type", "application/json");
   const response = await fetch(`http://127.0.0.1:${port}${path}`, { ...init, headers });
   const text = await response.text();
@@ -111,6 +113,7 @@ try {
     })),
   );
   const secret = crypto.randomUUID();
+  const adminSecret = crypto.randomUUID();
   const fixturePort = await freePort();
   const workerPort = await freePort();
   const inspectorPort = await freePort();
@@ -123,6 +126,7 @@ try {
       `VAPID_PUBLIC_KEY=${keys.publicKey}`,
       `VAPID_PRIVATE_KEY=${keys.privateKey}`,
       `PUSH_SHARED_SECRET=${secret}`,
+      `PUSH_ADMIN_SECRET=${adminSecret}`,
       "",
     ].join("\n"),
     { mode: 0o600 },
@@ -177,14 +181,8 @@ try {
   if (!ready) throw new Error(`worker did not serve the VAPID key\n${workerLog.slice(-4000)}`);
   report.vapidPublicKeyServed = true;
 
-  browser = await chromium.launch({
-    // Headless Chrome grants notification permission and still refuses push
-    // registration. A real window, including one on Xvfb, can register.
-    headless: !process.env.DISPLAY,
-    channel: "chrome",
-    args: ["--enable-features=PushMessaging"],
-  });
-  const context = await browser.newContext({ permissions: ["notifications"] });
+  browser = await chromium.launch({ channel: "chrome" });
+  const context = await browser.newContext();
   await context.grantPermissions(["notifications"], { origin });
   const page = await context.newPage();
   const pageErrors = [];
@@ -219,11 +217,15 @@ try {
     secret,
     body: JSON.stringify({ deviceId: "e2e-phone", subscription }),
   });
-  if (subscribed.status !== 200) throw new Error(`subscribe failed: ${subscribed.status} ${subscribed.text}`);
+  if (subscribed.status !== 200 || typeof subscribed.body?.deviceToken !== "string") {
+    throw new Error(`subscribe failed: ${subscribed.status} ${subscribed.text}`);
+  }
+  const deviceToken = subscribed.body.deviceToken;
 
   const tested = await workerJson(workerPort, "/test-push", {
     method: "POST",
     secret,
+    deviceToken,
     body: JSON.stringify({ deviceId: "e2e-phone", title: "Reprise", body: "Test notification", url: "/" }),
   });
   report.testPush = { http: tested.status, body: tested.body };
@@ -235,6 +237,7 @@ try {
   const saved = await workerJson(workerPort, "/reminders", {
     method: "PUT",
     secret,
+    deviceToken,
     body: JSON.stringify({
       deviceId: "e2e-phone",
       reminders: [
@@ -273,7 +276,7 @@ try {
   }
   if (pushes.some((entry) => entry.payload.tag === "later")) throw new Error("a future reminder was delivered");
 
-  const log = await workerJson(workerPort, "/push-log", { secret });
+  const log = await workerJson(workerPort, "/push-log", { admin: adminSecret });
   const entries = log.body?.entries ?? [];
   report.logHosts = [...new Set(entries.map((entry) => entry.endpointHost))];
   const loggedReminder = entries.find((entry) => entry.reminderId === "in-one-minute");

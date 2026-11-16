@@ -1,3 +1,4 @@
+import { base64url } from "./bytes";
 import { LIMITS, type Env, type PushLogEntry, type ReminderRecord, type SubscriptionRecord } from "./types";
 
 const DEVICES_KEY = "devices";
@@ -56,6 +57,46 @@ export async function writeSubscription(env: Env, deviceId: string, subscription
 
 export async function deleteSubscription(env: Env, deviceId: string): Promise<void> {
   await env.PUSH_KV.delete(subKey(deviceId));
+}
+
+function tokenKey(deviceId: string): string {
+  return `tok:${deviceId}`;
+}
+
+export async function hashDeviceToken(token: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export function createDeviceToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return base64url(bytes);
+}
+
+export async function readTokenHash(env: Env, deviceId: string): Promise<string | null> {
+  return env.PUSH_KV.get(tokenKey(deviceId));
+}
+
+export async function writeTokenHash(env: Env, deviceId: string, token: string): Promise<void> {
+  await env.PUSH_KV.put(tokenKey(deviceId), await hashDeviceToken(token));
+}
+
+export async function deleteToken(env: Env, deviceId: string): Promise<void> {
+  await env.PUSH_KV.delete(tokenKey(deviceId));
+}
+
+export async function deviceTokenMatches(env: Env, deviceId: string, token: string): Promise<boolean> {
+  if (!token || token.length > 128) return false;
+  const stored = await readTokenHash(env, deviceId);
+  if (!stored) return false;
+  const actual = await hashDeviceToken(token);
+  let diff = stored.length ^ actual.length;
+  const length = Math.max(stored.length, actual.length);
+  for (let index = 0; index < length; index += 1) {
+    diff |= (stored.charCodeAt(index) || 0) ^ (actual.charCodeAt(index) || 0);
+  }
+  return diff === 0;
 }
 
 export function storedReminder(reminder: ReminderRecord): ReminderRecord {

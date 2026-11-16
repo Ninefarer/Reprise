@@ -6,7 +6,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "test": "vitest run",
-    "test:e2e": "sh -c 'if command -v xvfb-run >/dev/null && [ -z \"$DISPLAY\" ]; then exec xvfb-run -a node e2e/run.mjs; else exec node e2e/run.mjs; fi'",
+    "test:e2e": "node e2e/run.mjs",
     "vapid": "node scripts/generate-vapid-keys.mjs",
     "typecheck": "tsc --noEmit"
   },

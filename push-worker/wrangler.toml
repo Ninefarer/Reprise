@@ -4,6 +4,8 @@
 # Secrets are not stored in this file:
 #   npx wrangler secret put VAPID_PRIVATE_KEY
 #   npx wrangler secret put PUSH_SHARED_SECRET
+#   npx wrangler secret put PUSH_ADMIN_SECRET
+# PUSH_ADMIN_SECRET is only for GET /push-log. Do not put it in the PWA.
 
 name = "reprise-pwa-push"
 main = "src/index.ts"

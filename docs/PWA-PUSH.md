@@ -57,9 +57,20 @@ The browser origin must match `ALLOWED_ORIGIN` exactly, for example `https://nin
 { "error": "origin is not allowed" }
 ```
 
-Write routes and `GET /push-log` require the header `X-Reprise-Push-Secret`. The value is a Wrangler secret, `PUSH_SHARED_SECRET`. It is a single-user gate, not an account system. `GET /vapid-public-key` is public, because the browser needs it to subscribe.
+`GET /vapid-public-key` is public, because the browser needs it to subscribe. Browser requests from any other origin than `ALLOWED_ORIGIN` are rejected. The Worker never answers with `Access-Control-Allow-Origin: *`. CORS is only a browser rule: a program that can set its own `Origin` header is not stopped by it.
 
-Do not put the secret in the GitHub Pages bundle. The repository is public. Set `VITE_PUSH_SHARED_SECRET` only in a local or private build environment. Anyone who can read the secret can store a subscription and send a test push.
+`VITE_PUSH_SHARED_SECRET` is compiled into the GitHub Pages JavaScript. The site is public, so that value is not a secret. Treat it as a speed bump that keeps random scanners off the Worker. It must not be the only control.
+
+What a person who reads the bundle can do is limited:
+
+- They can create a device, up to 8 devices and 20 new subscriptions an hour.
+- `POST /subscribe` returns a random device token. Later changes to that device require `X-Reprise-Device-Token`. The token is stored in the browser, not in the bundle. One device's token cannot edit another device.
+- `PUT /reminders` and `DELETE /reminders/:id` are limited to 30 writes an hour for that device.
+- `POST /test-push` is limited to 6 an hour for that device and 12 an hour for the whole Worker.
+- Request bodies are capped at 32 KB. A device can store 200 reminders. The notification JSON sent to the push service is capped at 1 KB.
+- `GET /push-log` ignores the shared secret. It requires `X-Reprise-Admin-Secret`, which is the Wrangler secret `PUSH_ADMIN_SECRET`. Do not add that value to Vite, the Pages build, or this repository.
+
+The shared secret is still sent as `X-Reprise-Push-Secret` so the PWA can be told apart from a completely open URL. Losing it does not reveal the push log or another install's reminders.
 
 Responses are JSON. `2xx` means the Worker accepted the call. The push client returns `"accepted"` only for a `2xx` from `PUT /reminders`.
 
@@ -83,7 +94,7 @@ This is the uncompressed P-256 point, base64url, for `pushManager.subscribe({ ap
 }
 ```
 
-`deviceId` is 8 to 80 characters from `A-Z`, `a-z`, `0-9`, `_`, and `-`. A UUID is fine. The response is `{ "ok": true }`. Sending again for the same device replaces the subscription.
+`deviceId` is 8 to 80 characters from `A-Z`, `a-z`, `0-9`, `_`, and `-`. A UUID is fine. The first response is `{ "ok": true, "deviceToken": "..." }`. The PWA stores that token in `localStorage` under `reprise.nightly.push-device-token` and sends it as `X-Reprise-Device-Token` after that. Replacing an existing subscription requires the same token. The Worker stores only a hash of the token.
 
 ### `PUT /reminders`
 
@@ -132,7 +143,7 @@ The endpoint path is not returned. `404` or `410` from the push service deletes 
 
 ### `GET /push-log`
 
-Requires the shared secret.
+Requires `X-Reprise-Admin-Secret`. The Pages bundle cannot call this. `X-Reprise-Push-Secret` is rejected here.
 
 ```json
 {
@@ -166,12 +177,14 @@ KV is eventually consistent. A reminder saved in the same minute it is due can m
 `src/platform/push.ts` keeps the existing function signatures.
 
 - `subscribeToReminders` returns `unsupported` when the browser has no Push API. With the env vars unset, it returns the existing `unconfigured` reason and does not call the network. When both are set, it waits for the service worker, fetches the VAPID key, calls `pushManager.subscribe({ userVisibleOnly: true })`, and `POST /subscribe`. `subscribed` is returned only after that post is `2xx`.
-- `syncReminderTimes` still strips every field except `id`, `at`, and `category`. It `PUT`s `/reminders` only when both env vars are set, and returns `accepted` only on `2xx`.
+- `syncReminderTimes` still strips every field except `id`, `at`, and `category`. It `PUT`s `/reminders` only when both env vars are set and this install already has a device token. It returns `accepted` only on `2xx`. It never sends an admin secret.
 
 ```bash
 VITE_PUSH_WORKER_URL=https://reprise-pwa-push.<account>.workers.dev
 VITE_PUSH_SHARED_SECRET=<the same value as PUSH_SHARED_SECRET>
 ```
+
+Those two variables are embedded in the Pages JavaScript. Anyone who can load the site can read `VITE_PUSH_SHARED_SECRET`. Do not put `PUSH_ADMIN_SECRET` in a `VITE_` variable.
 
 `http://` is accepted only for `localhost` and `127.0.0.1`. A missing or empty variable leaves the build in the unconfigured state, so `npm run build:web` does not need a deployed Worker.
 
@@ -205,7 +218,7 @@ This uses the free plan only: a Worker, one cron trigger, and one KV namespace. 
 5. Run `npx wrangler kv namespace create PUSH_KV`.
 6. Copy the printed `id` into `push-worker/wrangler.toml`, replacing the placeholder. Local `wrangler dev` works before that. `wrangler deploy` does not.
 7. Set `ALLOWED_ORIGIN` to the Pages origin, `VAPID_SUBJECT` to your mailto, and `VAPID_PUBLIC_KEY` to the public key.
-8. Run `npx wrangler secret put VAPID_PRIVATE_KEY` and `npx wrangler secret put PUSH_SHARED_SECRET`.
+8. Run `npx wrangler secret put VAPID_PRIVATE_KEY`, `npx wrangler secret put PUSH_SHARED_SECRET`, and `npx wrangler secret put PUSH_ADMIN_SECRET`. Keep the admin secret off the Pages build.
 9. Run `npx wrangler deploy`.
 
 The free `workers.dev` hostname is enough. Note the URL and use it as `VITE_PUSH_WORKER_URL`. Deploy is manual. This repository's release workflows do not run it.
@@ -218,6 +231,7 @@ VAPID_SUBJECT=mailto:push@example.com
 VAPID_PUBLIC_KEY=<public key>
 VAPID_PRIVATE_KEY=<private key>
 PUSH_SHARED_SECRET=<secret>
+PUSH_ADMIN_SECRET=<admin secret, not a VITE_ variable>
 ```
 
 Then `npx wrangler dev`.

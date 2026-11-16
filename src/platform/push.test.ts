@@ -11,6 +11,17 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
+function storage(initial: Record<string, string> = {}) {
+  const values = new Map(Object.entries(initial));
+  vi.stubGlobal("localStorage", {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      values.set(key, value);
+    },
+  });
+  return values;
+}
+
 describe("push client stub", () => {
   it("keeps only id, time, and category", () => {
     const prepared = reminderTimes([
@@ -48,6 +59,7 @@ describe("push client stub", () => {
   it("sends only id, time, and category when the worker is configured", async () => {
     vi.stubEnv("VITE_PUSH_WORKER_URL", "https://push.example");
     vi.stubEnv("VITE_PUSH_SHARED_SECRET", "local-secret");
+    storage({ "reprise.nightly.push-device-token": "device-token-0123456789abcdef" });
     vi.stubGlobal("PushManager", function PushManager() {});
     vi.stubGlobal("navigator", { serviceWorker: {} });
     const fetchSpy = vi.fn(async () => new Response("{}", { status: 200 }));
@@ -65,6 +77,8 @@ describe("push client stub", () => {
     const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://push.example/reminders");
     expect(new Headers(init.headers).get("x-reprise-push-secret")).toBe("local-secret");
+    expect(new Headers(init.headers).get("x-reprise-device-token")).toBe("device-token-0123456789abcdef");
+    expect(new Headers(init.headers).has("x-reprise-admin-secret")).toBe(false);
     expect(JSON.parse(String(init.body))).toMatchObject({
       reminders: [{ id: "event-1", at: 1_700_000_000, category: "Deadline" }],
     });
@@ -74,6 +88,7 @@ describe("push client stub", () => {
   it("does not report accepted when the worker rejects the sync", async () => {
     vi.stubEnv("VITE_PUSH_WORKER_URL", "https://push.example");
     vi.stubEnv("VITE_PUSH_SHARED_SECRET", "local-secret");
+    storage({ "reprise.nightly.push-device-token": "device-token-0123456789abcdef" });
     vi.stubGlobal("PushManager", function PushManager() {});
     vi.stubGlobal("navigator", { serviceWorker: {} });
     const fetchSpy = vi.fn(async () => new Response("no", { status: 401 }));
@@ -87,6 +102,7 @@ describe("push client stub", () => {
   it("subscribes with the fetched VAPID key and stores the endpoint only after 2xx", async () => {
     vi.stubEnv("VITE_PUSH_WORKER_URL", "https://push.example/");
     vi.stubEnv("VITE_PUSH_SHARED_SECRET", "local-secret");
+    const saved = storage();
     const subscribe = vi.fn(async (options: PushSubscriptionOptionsInit) => {
       expect(options.userVisibleOnly).toBe(true);
       expect(options.applicationServerKey).toBeInstanceOf(ArrayBuffer);
@@ -106,7 +122,9 @@ describe("push client stub", () => {
       if (String(url).endsWith("/vapid-public-key")) {
         return new Response(JSON.stringify({ publicKey: "AQID" }), { status: 200 });
       }
-      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      return new Response(JSON.stringify({ ok: true, deviceToken: "issued-device-token-0123456789" }), {
+        status: 200,
+      });
     });
     vi.stubGlobal("fetch", fetchSpy);
     await expect(subscribeToReminders()).resolves.toEqual({
@@ -118,6 +136,7 @@ describe("push client stub", () => {
     expect(JSON.parse(String(post[1].body)).subscription.endpoint).toBe(
       "https://web.push.apple.com/device",
     );
+    expect(saved.get("reprise.nightly.push-device-token")).toBe("issued-device-token-0123456789");
   });
 
   it("registers the worker at the Pages base without caching", async () => {

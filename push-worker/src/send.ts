@@ -25,7 +25,18 @@ export async function sendNotification(input: {
       privateKey: input.env.VAPID_PRIVATE_KEY,
       nowMs: input.nowMs,
     });
-    const body = await encryptWebPush(encodePayload(input.payload), {
+    const plaintext = encodePayload(input.payload);
+    if (plaintext.byteLength > LIMITS.maxPayloadBytes) {
+      return {
+        ok: false,
+        stale: false,
+        status: 0,
+        reason: "notification payload is too large",
+        endpointHost: endpoint.host,
+        apnsId: null,
+      };
+    }
+    const body = await encryptWebPush(plaintext, {
       p256dh: base64urlDecode(input.subscription.p256dh),
       auth: base64urlDecode(input.subscription.auth),
     });
