@@ -1,7 +1,7 @@
 {
   "productName": "Reprise Nightly",
   "identifier": "com.reprise.nightly",
-  "version": "3.4.3-nightly.20261115.1",
+  "version": "3.4.4-nightly.20261116.1",
   "bundle": {
     "icon": [
       "icons/nightly/32x32.png",
@@ -12,6 +12,8 @@
     ],
     "windows": {
       "nsis": {
+        "installMode": "perMachine",
+        "installerHooks": "./windows/hooks.nsh",
         "installerIcon": "icons/nightly/icon.ico",
         "uninstallerIcon": "icons/nightly/icon.ico"
       }

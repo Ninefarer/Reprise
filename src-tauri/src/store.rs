@@ -34,12 +34,25 @@ impl Store {
     }
     /// Permanently remove a task and its owned records in one transaction.
     /// Children are retained, with their parent reference cleared.
+    #[cfg(test)]
     pub fn delete_task(&mut self, id: &str, expected_updated_at: i64) -> Result<()> {
+        self.delete_with_receipt(id, expected_updated_at, None)
+            .map(|_| ())
+    }
+    pub fn delete_with_receipt(
+        &mut self,
+        id: &str,
+        expected_updated_at: i64,
+        token: Option<&str>,
+    ) -> Result<()> {
         let task = self.task(id)?;
         if task.updated_at != expected_updated_at {
             return Err("This task changed elsewhere. Reload it before deleting.".into());
         }
         let tx = self.conn.transaction().map_err(err)?;
+        let receipt = token
+            .map(|_| crate::deletion::capture(&tx, id))
+            .transpose()?;
         tx.execute("DELETE FROM events WHERE task_id=?1", [id])
             .map_err(err)?;
         tx.execute("DELETE FROM history WHERE task_id=?1", [id])
@@ -49,6 +62,14 @@ impl Store {
         tx.execute("UPDATE tasks SET data=json_set(data,'$.parent_task_id',NULL,'$.updated_at',json_extract(data,'$.updated_at')+1) WHERE json_extract(data,'$.parent_task_id')=?1", [id]).map_err(err)?;
         tx.execute("DELETE FROM tasks WHERE id=?1", [id])
             .map_err(err)?;
+        if let (Some(token), Some(mut receipt)) = (token, receipt) {
+            crate::deletion::capture_detached(&tx, &mut receipt)?;
+            tx.execute(
+                "INSERT INTO deletion_undo(token,data) VALUES(?1,?2)",
+                params![token, receipt.to_string()],
+            )
+            .map_err(err)?;
+        }
         tx.commit().map_err(err)
     }
     pub fn open(path: &std::path::Path) -> Result<Self> {
@@ -77,6 +98,8 @@ impl Store {
         if version < 3 {
             conn.execute_batch("BEGIN; CREATE TABLE IF NOT EXISTS retired_notifications(id TEXT PRIMARY KEY,at INTEGER NOT NULL); PRAGMA user_version=3; COMMIT;").map_err(err)?;
         }
+        // Undo notices are scoped to the running app, never replayed after restart.
+        conn.execute_batch("CREATE TABLE IF NOT EXISTS deletion_undo(token TEXT PRIMARY KEY,data TEXT NOT NULL CHECK(json_valid(data))); DELETE FROM deletion_undo;").map_err(err)?;
         Ok(Self { conn })
     }
     pub fn settings(&self) -> Result<Settings> {

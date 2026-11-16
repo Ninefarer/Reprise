@@ -84,12 +84,6 @@ button:not(:disabled):active {
   animation: panel-exit var(--motion-modal) var(--motion-ease) forwards;
   pointer-events: none;
 }
-.undo-toast {
-  animation:
-    toast-enter var(--motion-modal) var(--motion-ease),
-    toast-exit var(--motion-fast) ease-in calc(30s - var(--motion-fast))
-      forwards;
-}
 .task-card.completion-feedback {
   color: var(--text);
   border-inline-start-color: var(--status-finished);
@@ -166,21 +160,6 @@ button:not(:disabled):active {
     translate: 100% 0;
   }
 }
-@keyframes toast-enter {
-  from {
-    opacity: 0;
-    translate: 0 var(--motion-distance);
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
-}
-@keyframes toast-exit {
-  to {
-    opacity: 0;
-  }
-}
 @keyframes completion-feedback {
   0%,
   55% {
@@ -230,5 +209,69 @@ button:not(:disabled):active {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Animate both the card and its occupied space so siblings never jump.
+   The layout wrapper owns height; its child owns horizontal motion. */
+.notice-slot {
+  display: grid;
+  grid-template-rows: 1fr;
+  min-width: 0;
+  width: 100%;
+  animation: notice-expand 320ms var(--motion-ease) both;
+}
+.notice-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+.notice-space {
+  padding-bottom: 10px;
+}
+.slide-card {
+  animation: notice-slide-in 320ms var(--motion-ease) both;
+}
+.notice-slot[data-leaving="true"] {
+  pointer-events: none;
+  animation: notice-collapse 320ms var(--motion-ease) both;
+}
+.slide-card[data-leaving="true"] {
+  pointer-events: none;
+  animation: notice-slide-out 320ms var(--motion-ease) both;
+}
+@keyframes notice-expand {
+  from {
+    grid-template-rows: 0fr;
+  }
+  to {
+    grid-template-rows: 1fr;
+  }
+}
+@keyframes notice-collapse {
+  from {
+    grid-template-rows: 1fr;
+  }
+  to {
+    grid-template-rows: 0fr;
+  }
+}
+@keyframes notice-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 30px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes notice-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(calc(100% + 30px));
   }
 }

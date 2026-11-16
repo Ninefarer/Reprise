@@ -31,9 +31,9 @@ Build scripts independently verify the produced Minisign signature and signed-ve
 
 - `signed-updater-qa.yml` builds two signed, isolated QA installers and uploads Actions artifacts. It does not create a release. Artifact checks reject tampered bytes, wrong versions and changed signed comments.
 - `signed-release.yml` accepts an approved source SHA, channel and `publish` flag. Publication defaults to false. It retains frontend/Rust checks, strict Clippy, formatting, signed-artifact verification and channel-branch validation.
-- Publishing requires `UPDATER_ACCEPTANCE_FINGERPRINT`, a repository variable recorded only after an installed signed upgrade passes. It covers the updater backend, verifier, public key, identities and channel configuration; changing those invalidates the gate.
+- Publishing requires `UPDATER_ACCEPTANCE_FINGERPRINT`, a repository variable recorded only after an installed signed upgrade passes. It covers the updater backend, verifier, public key, identities, channel configuration, NSIS install mode and installer hooks. Changing those invalidates the gate. The install mode determines whether an update requests administrator approval and where the program files are written.
 - Publication has release-write permission; builds do not. It rechecks signatures/source metadata, creates a draft, verifies uploaded digests and tag target, then publishes. Existing versioned releases/tags cannot be overwritten.
-- Stable descriptions use approved banners and user-facing notes; Nightly retains technical detail. Signing does not change in-app release-note formatting.
+- Stable descriptions use the ✦, → and ▲ prefixes in [docs/RELEASING.md](RELEASING.md). Nightly retains technical detail. Signing does not change in-app release-note formatting. Published Stable notes through 3.4.3 keep their original pixel-art banners.
 
 Never set the acceptance variable to bypass testing. First-time runs must remain artifacts-only until the installed-upgrade record is complete.
 

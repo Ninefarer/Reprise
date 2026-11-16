@@ -136,7 +136,7 @@ beforeEach(() => {
     }
     if (cmd === "delete_task") {
       data.tasks = data.tasks.filter((t) => t.id !== args.id);
-      return;
+      return "deletion-receipt";
     }
     return [];
   });
@@ -148,6 +148,19 @@ afterEach(() => {
 async function openSettings(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByLabelText(/Profile menu for/));
   await user.click(await screen.findByRole("menuitem", { name: "Settings" }));
+}
+async function openNotifications(user: ReturnType<typeof userEvent.setup>) {
+  await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
+  // The shortcut focuses the panel on the next animation frame. Escape is
+  // handled by the panel, so it has to land after that frame.
+  await act(async () => {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+  const panel = screen.getByRole("complementary", { name: "Notifications" });
+  expect(panel.contains(document.activeElement)).toBe(true);
+  return panel;
 }
 describe("native-window snapshot suspension", () => {
   function suspendSnapshots() {
@@ -2165,13 +2178,13 @@ describe("right notification panel", () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("navigation");
-    await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
+    await openNotifications(user);
     await user.keyboard("{Escape}");
     const exiting = document.querySelector(".notification-dock")!;
     expect(exiting.getAttribute("data-exiting")).toBe("true");
     expect(exiting.hasAttribute("inert")).toBe(true);
     expect(document.activeElement?.tagName).toBe("MAIN");
-    await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
+    await openNotifications(user);
     expect(
       screen
         .getByRole("complementary", { name: "Notifications" })
@@ -2192,7 +2205,7 @@ describe("right notification panel", () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("navigation");
-    await user.keyboard("{Control>}{Shift>}n{/Shift}{/Control}");
+    await openNotifications(user);
     await user.keyboard("{Escape}");
     expect(document.querySelector(".notification-dock")).toBeNull();
   });
@@ -2423,4 +2436,35 @@ describe("semantic task presentation", () => {
     );
     expect(data.tasks[0].status).toBe("Settled");
   });
+});
+
+it("offers deletion Undo and restores the deleted task through its backend receipt", async () => {
+  const task = closedTask("Dropped");
+  data.tasks = [task];
+  const fallback = mocks.invoke.getMockImplementation()!;
+  mocks.invoke.mockImplementation(async (cmd, args) => {
+    if (cmd === "undo_deletion") {
+      data.tasks = [task];
+      return;
+    }
+    return fallback(cmd, args);
+  });
+  const user = userEvent.setup();
+  render(<App />);
+  await user.click(
+    await screen.findByRole("button", { name: /^Dropped\s*1 items$/ }),
+  );
+  await user.click(screen.getByRole("button", { name: /^More actions for/ }));
+  await user.click(
+    screen.getByRole("menuitem", { name: "Delete Permanently" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Delete permanently" }));
+  await screen.findByText("Click undo to revert the deletion.");
+  expect(data.tasks).toHaveLength(0);
+  await user.click(screen.getByRole("button", { name: "Undo" }));
+  expect(mocks.invoke).toHaveBeenCalledWith("undo_deletion", {
+    token: "deletion-receipt",
+  });
+  await screen.findByText("Dropped intention");
+  expect(data.tasks).toHaveLength(1);
 });

@@ -1,4 +1,5 @@
-<!-- TEMPLATE ONLY: replace variables with verified facts and remove empty sections before publication. No Stable banners. -->
+<!-- TEMPLATE ONLY: replace variables with verified facts and remove empty sections before publication. Do not use the Stable symbol prefixes. -->
+
 # Reprise {{VERSION}} Nightly
 
 Source: `{{BRANCH}} @ {{FULL_COMMIT_SHA}}`.

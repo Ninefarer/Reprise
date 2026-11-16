@@ -1,47 +1,47 @@
 # GitHub release descriptions
 
-These instructions govern GitHub descriptions only. They do not change `src/changelog.ts`, in-app categories, rendering, parsing, update checks, release channels or versioning. Use the `reprise-release-manager` skill; these project instructions replace its older Stable bullet-prefix guidance.
+These instructions govern GitHub descriptions only. They do not change `src/changelog.ts`, in-app categories, rendering, parsing, update checks, release channels or versioning. Use the `reprise-release-manager` skill with the conventions below.
 
 ## Stable
 
-Use `docs/releases/stable.md`. Describe confirmed user-visible additions, changes and bug fixes. Use each relevant official PNG as its section heading with meaningful alt text and ordinary Markdown bullets. Do not add duplicate text section headings or symbols before bullets. Omit empty categories. Keep one concise sentence per bullet where possible. No em dash separators, promotional claims, invented contributors or unverified issue/PR references.
+Use `docs/releases/stable.md`. Describe confirmed user-visible additions, changes and bug fixes. Prefix each bullet:
 
-Do not include Implementation, Validation or Known Limitations sections in Stable descriptions. Do not include test counts, build output, CI reports or architectural explanations. Continue running and recording all checks in development records; excluding them from user-facing copy does not waive testing. Communicate any material user-impacting issue honestly during release review; do not hide it or claim a fix. Obtain approval for appropriate user-facing communication before publication.
+- `✦` for a new capability.
+- `→` for a change to existing behavior.
+- `▲` for a resolved defect.
 
-`...HEY` is optional, uses paragraphs, and requires a personal message supplied or approved by the developer. Never manufacture a voice, opinion, thank-you or announcement. Omit this section otherwise.
+Omit a prefix when it has no confirmed entry. Keep one concise sentence per bullet where possible. No em dashes, promotional claims, invented contributors or unverified issue or pull-request references. Do not add pixel-art banners, duplicate text headings, or symbols other than the three prefixes.
+
+Do not include Implementation, Validation or Known Limitations sections. Do not include test counts, build output, CI reports or architectural explanations. Continue running and recording checks in development records. Excluding them from user-facing copy does not waive testing. Communicate a material user-impacting issue honestly during release review. Obtain approval before publication.
+
+An optional personal note is a paragraph supplied or approved by the developer. Never manufacture a voice, opinion, thank-you or announcement. Omit the note otherwise.
 
 ## Nightly
 
-Use `docs/releases/nightly.md`. Retain implementation details, commit references, tests, experimental behavior, installation guidance and known limitations. Distinguish successful submission from observed notification display. Do not automatically use the Stable banners. Keep prerelease channels and separate installation/data identities intact.
+Use `docs/releases/nightly.md`. Keep implementation detail, commit references, tests, experimental behavior, installation guidance and known limitations. Distinguish a successful notification submission from an observed notification. Do not use the Stable prefixes. Keep the prerelease channel and its separate installation and data identity.
 
-## Artwork and private repository hosting
+## What the workflow checks
 
-Use the original files, byte-for-byte, from `assets/releases/`: `additions.png`, `changes.png`, `bugfixes.png`, `hey.png`. Do not normalize dimensions, crop, recolor or re-encode them. ...HEY has intentionally different proportions. Use natural aspect ratios. Do not duplicate identical assets per release.
+`scripts/updater/build-release.mjs` reads `docs/releases/VERSION.md` and the publisher uploads that file with `--notes-file`. Neither script generates prose, prefixes or images. For Stable, the build rejects a heading named Implementation, Validation or Known limitations. It does not require or reject the symbol prefixes.
 
-After the artwork is committed and an authorized push makes it available, pin every banner URL to that full immutable commit SHA, using this GitHub repository-image form:
+Published Stable notes from 3.3.0 through 3.4.3 use the pixel-art banners in `assets/releases/` with ordinary bullets. Those files stay as published. Do not rewrite them to the prefix style. New Stable notes, starting with 3.4.4, use the prefixes above.
 
-`https://github.com/Ninefarer/Reprise/blob/FULL_ARTWORK_COMMIT_SHA/assets/releases/additions.png?raw=true`
+## Artwork boundary
 
-Use the corresponding filename for each section. Verify each URL and the rendered description while authenticated as a reader of this repository. Do not publish unresolved template variables or an image URL that has not been checked. GitHub private images require repository access; no anonymous/public availability is promised. Do not place access tokens or expiring signed image URLs in descriptions. If repository-image rendering does not work in the release preview, stop and review a GitHub-hosted private attachment alternative with the owner. Do not create a public asset repository, change visibility, or upload externally without approval.
-
-At the time these instructions were added, the artwork existed locally but was untracked. Consequently no live immutable artwork URL had been verified. Local previews are not GitHub-rendering verification.
-
-## Packaging boundary
-
-`assets/releases/` is repository documentation, outside Vite's `src` and public assets. Tauri currently bundles `dist` and has no resource glob including this directory. Keep this boundary. Do not add artwork to installer resources or distributable ZIPs; do not zip the entire repository as an application package. GitHub's automatic source archives can naturally include tracked documentation; they are not application installation packages.
+`assets/releases/` remains repository artwork: `additions.png`, `changes.png`, `bugfixes.png` and `hey.png`. Do not normalize, crop, recolor or re-encode those files, and do not regenerate them. They are not headings in new Stable notes. Do not import them into Vite or Tauri resources. Tauri bundles `dist` and has no resource glob for this directory. Do not zip the repository as an application package.
 
 ## Manual release procedure
 
-Descriptions remain deliberately authored from verified changes and stored as `docs/releases/VERSION.md`. The signed Windows release workflow builds, verifies and publishes those exact notes using `--notes-file`; it does not generate prose or invent categories. See [signed update operations](UPDATES.md).
+Author the description from verified changes and store it as `docs/releases/VERSION.md`. See [signed update operations](UPDATES.md).
 
-Dispatch `.github/workflows/signed-release.yml` with the channel, approved full source SHA and `publish` flag. The default is artifacts only. Publishing requires the installed-upgrade acceptance fingerprint; both the build and publisher independently validate it. Stable source must belong to `main`, Nightly to `develop`. Versioned releases and tags cannot be reused. The `nightly-updates` prerelease is solely a rolling manifest pointer and never replaces Latest Stable.
+Dispatch `.github/workflows/signed-release.yml` with the channel, approved full source SHA and `publish` flag. The default is artifacts only. Publishing requires the installed-upgrade acceptance fingerprint. The build and the publisher both validate it. Stable source must belong to `main`, Nightly to `develop`. Versioned releases and tags cannot be reused. The `nightly-updates` prerelease is only a rolling manifest pointer and never replaces Latest Stable.
 
 1. Inspect the intended branch, commit range, versions, confirmed changes and release channel.
-2. Prepare the corresponding template. Fill only verified changes and references; omit empty categories and unapproved ...HEY.
-3. Run all relevant checks, preserve test coverage, and keep results in development records. Inspect installer contents and assets.
-4. Check immutable banner URLs and authenticated rendering for Stable. Check technical claims and known limitations for Nightly.
-5. Present final description, exact source commit, channel and installer/checksum for review.
-6. Obtain explicit publication authorization before pushing, tagging, creating or editing a release. Keep Nightly prereleases from replacing the latest Stable release.
-7. After authorized publication, verify tag target, uploaded assets, checksum and release channel. Do not silently rewrite historical releases.
+2. Prepare the corresponding template. Fill only verified changes. Omit empty prefixes and an unapproved personal note.
+3. Run the relevant checks, preserve test coverage, and keep the results in development records.
+4. For Stable, confirm the three prefixes and the absence of developer sections. For Nightly, confirm the technical claims and known limitations.
+5. Present the final description, exact source commit, channel and installer checksum for review.
+6. Obtain explicit publication authorization before pushing, tagging, creating or editing a release. Keep a Nightly prerelease from replacing the latest Stable release.
+7. After authorized publication, verify the tag target, uploaded assets, checksum and release channel. Do not silently rewrite historical releases.
 
 Documentation: https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax
