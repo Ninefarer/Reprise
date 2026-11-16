@@ -23,4 +23,4 @@ python scripts/icons/verify-windows-icon.py --ico src-tauri/icons/stable/icon.ic
 # Default resource ID 32512 is the Tauri application icon.
 ```
 
-The stock NSIS template creates desktop and Start Menu links with the executable target and no separate icon path. Update mode normally preserves existing links (with migration handling for renamed binaries). Installer/uninstaller icons do not control the desktop shortcut. See the [2026-11-12 investigation](qa/windows-icons-2026-11-12.md) for release binary evidence and a scoped desktop remedy.
+The stock NSIS template creates desktop and Start Menu links with the executable target and no separate icon path. Update mode normally preserves existing links (with migration handling for renamed binaries). Installer/uninstaller icons do not control the desktop shortcut. A stale desktop icon after a correct executable resource is consistent with Explorer keeping the existing shortcut image. Refresh the desktop, or set that shortcut's icon to the installed channel executable. That check does not require reinstalling or clearing the global icon cache.
