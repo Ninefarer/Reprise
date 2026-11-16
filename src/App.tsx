@@ -54,6 +54,7 @@ import "./desktop-glass.css";
 import "./density.css";
 import "./context-menu.css";
 import { taskCategory, reviewCategory } from "./taskColors";
+import { PhoneChrome } from "./PhoneChrome";
 import type { UpdateActivity } from "./updates";
 const captureWindowMode = new URLSearchParams(location.search).has("capture");
 function Application({
@@ -85,7 +86,8 @@ function Application({
       null,
     ),
     [now, setNow] = useState(Math.floor(Date.now() / 1000)),
-    [notificationsOpen, setNotificationsOpen] = useState(false);
+    [notificationsOpen, setNotificationsOpen] = useState(false),
+    [phoneMore, setPhoneMore] = useState(false);
   const [replayingSetup, setReplayingSetup] = useState(false);
   const [confirmSetup, setConfirmSetup] = useState(false);
   const settingsEditor = useRef<SettingsEditor | null>(null);
@@ -172,6 +174,10 @@ function Application({
       window.removeEventListener("pointerdown", mark);
     };
   }, []);
+  useEffect(() => {
+    if (platform.kind !== "web") return;
+    document.documentElement.dataset.drawer = phoneMore ? "open" : "closed";
+  }, [phoneMore]);
   useEffect(() => {
     document.documentElement.dataset.modalDepth = String(
       Number(!!editor) +
@@ -703,6 +709,7 @@ function Application({
     else action();
   }
   function navigate(v: View, anchor?: string) {
+    setPhoneMore(false);
     if (v === "Notification History") {
       setNotificationsOpen(true);
       requestAnimationFrame(() =>
@@ -1434,6 +1441,17 @@ function Application({
           error={error}
         />
       )}
+      <PhoneChrome
+        view={view}
+        more={phoneMore}
+        notificationsOpen={notificationsOpen}
+        onNavigate={navigate}
+        onMore={setPhoneMore}
+        onAlerts={() => {
+          setPhoneMore(false);
+          setNotificationsOpen((open) => !open);
+        }}
+      />
     </div>
   );
 }

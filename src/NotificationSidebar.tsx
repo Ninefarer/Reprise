@@ -1,3 +1,4 @@
+import { platform } from "reprise:platform";
 import { SlideSlot, useNoticePresence } from "./SlideSlot";
 import { Select } from "./Select";
 import {
@@ -365,7 +366,9 @@ export function NotificationSidebar({
                     <time>{date(n.created_at)}</time>
                     {n.state === "Failed" && (
                       <span className="notice-failed">
-                        Could not send to Windows
+                        {platform.kind === "web"
+                          ? "Could not show the alert"
+                          : "Could not send to Windows"}
                       </span>
                     )}
                     {n.state === "Pending" && <span>Waiting to send</span>}

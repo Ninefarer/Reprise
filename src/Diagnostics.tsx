@@ -55,13 +55,21 @@ export function Diagnostics() {
               : "Awaiting heartbeat"}{" "}
             · last tick {date(data.health.heartbeat)}
           </dd>
-          <dt>Background / tray</dt>
+          <dt>{platform.kind === "web" ? "Background" : "Background / tray"}</dt>
           <dd>
-            {data.health.tray_running ? "Tray process running" : "Not running"}
+            {platform.kind === "web"
+              ? "No system tray. Reminders run while this page is open."
+              : data.health.tray_running
+                ? "Tray process running"
+                : "Not running"}
           </dd>
           <dt>Last successful submission</dt>
           <dd>{date(data.last_submission)}</dd>
-          <dt>Quick Capture shortcut</dt>
+          <dt>
+            {platform.kind === "web"
+              ? "Quick Capture"
+              : "Quick Capture shortcut"}
+          </dt>
           <dd>{data.health.shortcut_error || "Registered"}</dd>
         </dl>
       )}

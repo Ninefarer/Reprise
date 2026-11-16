@@ -31,6 +31,10 @@ The placeholder key is `reprise.nightly.pwa.v1`. On iOS, a Home Screen install d
 
 `createWebSession` is the only reader of the document. Replace `createLocalStoragePlaceholder` without changing `StoredDocument` or the session.
 
+## Phone layout
+
+`src/pwa-phone.css` is imported only by `src/platform/web.ts`. The Tauri bundle does not include it. At widths up to 430px the sidebar leaves the document flow and the existing navigation is opened from a bottom tab bar. Dialogs and menus become full-width sheets. Safe-area insets and `100dvh` (with a `100vh` fallback) apply at every web width. Form fields are at least 16px and controls at least 44px tall inside that phone query.
+
 ## What the web build does
 
 - Reuses the existing React UI.

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { platform } from "reprise:platform";
 import {
   defaultCommandShortcut,
   shortcutError,
@@ -44,7 +45,11 @@ export function ShortcutRecorder({
             )
               return;
             if (event.metaKey) {
-              setError("Windows shortcuts are reserved by the system.");
+              setError(
+                platform.kind === "web"
+                  ? "That modifier is reserved by the browser."
+                  : "Windows shortcuts are reserved by the system.",
+              );
               return;
             }
             const next = shortcutFromEvent(event);
