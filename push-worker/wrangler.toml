@@ -1,0 +1,25 @@
+# Nightly iOS PWA push sender. Not used by the Windows app.
+# Deploy steps: docs/PWA-PUSH.md
+#
+# Secrets are not stored in this file:
+#   npx wrangler secret put VAPID_PRIVATE_KEY
+#   npx wrangler secret put PUSH_SHARED_SECRET
+
+name = "reprise-pwa-push"
+main = "src/index.ts"
+compatibility_date = "2026-10-15"
+
+[vars]
+ALLOWED_ORIGIN = "https://ninefarer.github.io"
+VAPID_SUBJECT = "mailto:reprise@example.com"
+# Public key from `npm run vapid`. Safe to commit; the private key is not.
+VAPID_PUBLIC_KEY = ""
+
+# Replace id after `npx wrangler kv namespace create PUSH_KV`.
+# The placeholder is enough for local `wrangler dev`. Deploy refuses it.
+[[kv_namespaces]]
+binding = "PUSH_KV"
+id = "00000000000000000000000000000000"
+
+[triggers]
+crons = ["* * * * *"]

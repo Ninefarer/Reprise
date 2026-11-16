@@ -1,0 +1,10 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Reprise push fixture</title>
+<script>
+  window.__pushes = [];
+  window.__ready = navigator.serviceWorker.register("/sw.js").then(() => navigator.serviceWorker.ready);
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "push") window.__pushes.push(event.data);
+  });
+</script>

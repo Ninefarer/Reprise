@@ -14,6 +14,7 @@ These files stay in the repository. In-app release notes come from `src/changelo
 
 - [Build and test](BUILDING.md): prerequisites, commands, and channel configuration.
 - [Nightly PWA](PWA.md): web build seam, storage placeholder, and Pages workflow. Not a Stable release.
+- [PWA push](PWA-PUSH.md): the Nightly Web Push worker. Not part of the Windows app, and not deployed by the release workflows.
 - [Architecture and reliability](ARCHITECTURE.md): SQLite, scheduling, notifications, Glass, and Windows acceptance checks.
 - [Updater integration](UPDATES.md): feeds, signing, and the publication gate.
 - [GitHub release conventions](RELEASING.md): separate Stable and Nightly writing rules.

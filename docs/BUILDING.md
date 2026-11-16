@@ -67,7 +67,7 @@ npm run build:web
 npm run check:pwa
 ```
 
-`dev:web` serves the app at `http://127.0.0.1:5173/Reprise/` so asset URLs match GitHub project Pages. The web build writes `dist-web/` and leaves `dist/` for Tauri. See [Nightly PWA](PWA.md) for what is implemented, what is intentionally left for other branches, and the Pages setup.
+`dev:web` serves the app at `http://127.0.0.1:5173/Reprise/` so asset URLs match GitHub project Pages. The web build writes `dist-web/` and leaves `dist/` for Tauri. See [Nightly PWA](PWA.md) for the browser seam and [PWA push](PWA-PUSH.md) for the separate reminder worker.
 
 ## Working and releasing
 

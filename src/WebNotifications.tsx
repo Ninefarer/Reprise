@@ -14,8 +14,9 @@ export function WebNotifications() {
         shows the permission prompt from a tap, and only for a Home Screen app.
       </p>
       <p className="hint">
-        Timed reminders after you leave are not available yet. Task text stays
-        on this device. This build keeps tasks in local storage, and backup is
+        Closed-app reminders use the Nightly push service when it is
+        configured. Task text stays on this device. This build keeps tasks in
+        local storage, and backup is
         not available yet. Home Screen storage is separate from Safari tabs.
       </p>
       <div className="dialog-actions">
@@ -35,7 +36,9 @@ export function WebNotifications() {
               setDetail(
                 push.status === "unconfigured"
                   ? push.reason
-                  : "Notifications are allowed while Reprise is open.",
+                  : push.status === "subscribed"
+                    ? "This install can receive closed-app reminders."
+                    : "Notifications are allowed while Reprise is open.",
               );
             });
           }}

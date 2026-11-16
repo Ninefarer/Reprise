@@ -1,0 +1,19 @@
+{
+  "name": "reprise-pwa-push",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:e2e": "sh -c 'if command -v xvfb-run >/dev/null && [ -z \"$DISPLAY\" ]; then exec xvfb-run -a node e2e/run.mjs; else exec node e2e/run.mjs; fi'",
+    "vapid": "node scripts/generate-vapid-keys.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.46.0"
+  }
+}

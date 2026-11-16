@@ -3,6 +3,9 @@ node_modules/
 /dist/
 /dist-web/
 /artifacts/
+/push-worker/.wrangler/
+/push-worker/.dev.vars
+/push-worker/dist/
 /src-tauri/target/
 /src-tauri/gen/schemas/
 
