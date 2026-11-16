@@ -16,7 +16,7 @@ No schema, dependencies, scheduling rules, lifecycle states, native-glass code o
 
 ## Measured result
 
-Release-mode Windows x64 QA builds used the isolated identity `com.reprise.performance.qa`, Classic dark/opaque appearance, 100 synthetic tasks and 100 synthetic notices. Each row represents the first complete 90 seconds of a native-state-validated observation; startup, focus and transitions are excluded. See the [before record](refresh-activity-2026-11-12.json) and [after record](window-refresh-suspension-2026-11-13.json).
+Release-mode Windows x64 QA builds used the isolated identity `com.reprise.performance.qa`, Classic dark/opaque appearance, 100 synthetic tasks and 100 synthetic notices. Each row represents the first complete 90 seconds of a native-state-validated observation; startup, focus and transitions are excluded. See the [after record](window-refresh-suspension-2026-11-13.json). The before counts in the table are the November 12 observations.
 
 | Main window / Quick Capture | Full snapshots before | Full snapshots after | Lightweight Capture reads after | Skipped requests after |
 | --- | ---: | ---: | ---: | ---: |
