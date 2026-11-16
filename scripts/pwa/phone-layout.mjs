@@ -110,9 +110,47 @@ try {
   if (!dialog || dialog.x < -1 || dialog.x + dialog.width > 394) {
     failures.push(`welcome dialog box ${JSON.stringify(dialog)}`);
   }
+  const welcomeInset = await page.evaluate(() => {
+    const heading = document.getElementById("nightly-title");
+    const shell = heading?.closest("dialog");
+    if (!heading || !shell) return null;
+    const title = heading.getBoundingClientRect();
+    const frame = shell.getBoundingClientRect();
+    return {
+      left: title.left - frame.left,
+      right: frame.right - title.right,
+    };
+  });
+  if (!welcomeInset || welcomeInset.left < 16 || welcomeInset.right < 16) {
+    failures.push(`welcome dialog text inset ${JSON.stringify(welcomeInset)}`);
+  }
   await page.getByRole("button", { name: "Continue to Nightly" }).click();
   await page.getByRole("navigation", { name: "Sections" }).waitFor();
   await measure("main view");
+  const shortTargets = await page.evaluate(() =>
+    [...document.querySelectorAll("button, [role='button']")]
+      .filter((el) => {
+        const style = getComputedStyle(el);
+        if (style.display === "none" || style.visibility === "hidden") return false;
+        if (el.closest("[hidden], [inert]")) return false;
+        const rect = el.getBoundingClientRect();
+        if (rect.width < 1 || rect.height < 1) return false;
+        if (rect.bottom < 0 || rect.top > innerHeight) return false;
+        return rect.height < 44;
+      })
+      .map((el) => ({
+        name: (el.getAttribute("aria-label") || el.textContent || el.tagName)
+          .trim()
+          .slice(0, 40),
+        height: Math.round(el.getBoundingClientRect().height),
+      })),
+  );
+  console.log("short targets", JSON.stringify(shortTargets));
+  if (shortTargets.length) {
+    failures.push(
+      `${shortTargets.length} buttons under 44px: ${shortTargets.map((item) => `${item.name} ${item.height}`).join(", ")}`,
+    );
+  }
   const mainFields = await fieldSizes();
   console.log("main fields", JSON.stringify(mainFields));
   if (!mainFields.length) failures.push("main view has no visible text fields");

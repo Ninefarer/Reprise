@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { showNightlyWelcome } from "../Nightly";
 import { createWebPlatform } from "./web";
 import {
   WEB_STORAGE_KEY,
@@ -82,6 +83,38 @@ describe("web storage placeholder", () => {
     await expect(storage.requestPersistence()).resolves.toBe(false);
     expect(persist).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+});
+
+describe("Nightly welcome", () => {
+  it("stays hidden after dismiss and a new session", async () => {
+    const storage = createMemoryStorage();
+    const first = createWebPlatform({
+      storage,
+      version,
+      now: () => 1_700_000_000,
+    });
+    const opened = await first.snapshot();
+    expect(
+      showNightlyWelcome(
+        opened?.release?.version,
+        opened?.release?.nightly_welcome_seen,
+      ),
+    ).toBe(true);
+    await first.acknowledgeNightlyWelcome(version);
+    const second = createWebPlatform({
+      storage,
+      version,
+      now: () => 1_700_000_100,
+    });
+    const again = await second.snapshot();
+    expect(again?.release?.nightly_welcome_seen).toBe(version);
+    expect(
+      showNightlyWelcome(
+        again?.release?.version,
+        again?.release?.nightly_welcome_seen,
+      ),
+    ).toBe(false);
   });
 });
 

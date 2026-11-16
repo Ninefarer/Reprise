@@ -3,7 +3,7 @@ import { greeting } from "./greeting";
 import { matchesShortcut } from "./shortcuts";
 import { TextContextMenus } from "./TextContextMenu";
 import { trace, traceSnapshot, traceStart } from "./performance";
-import { isNightly, NightlyDisclosure } from "./Nightly";
+import { isNightly, NightlyDisclosure, showNightlyWelcome } from "./Nightly";
 import { Onboarding, RedoOnboardingDialog } from "./Onboarding";
 import { QuickCapture } from "./QuickCapture";
 import {
@@ -256,6 +256,16 @@ function Application({
       error
     )
       return;
+    if (
+      platform.kind === "web" &&
+      !showNightlyWelcome(
+        data.release?.version,
+        data.release?.nightly_welcome_seen,
+      )
+    ) {
+      setNightlySeen(true);
+      return;
+    }
     setNightlySeen(true);
     setReleaseDialog("new");
   }, [
@@ -1302,7 +1312,13 @@ function Application({
       {releaseDialog === "new" && isNightly(data.release?.version) ? (
         <NightlyDisclosure
           version={data.release!.version}
-          onClose={() => setReleaseDialog(null)}
+          onClose={() => {
+            setReleaseDialog(null);
+            const version = data.release?.version;
+            if (platform.kind === "web" && version) {
+              void platform.acknowledgeNightlyWelcome(version);
+            }
+          }}
         />
       ) : (
         releaseDialog && (

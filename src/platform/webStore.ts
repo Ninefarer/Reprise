@@ -256,6 +256,11 @@ export function createWebSession(options: WebSessionOptions) {
         doc.settings.last_seen_release = version;
       }, true);
     },
+    acknowledgeNightlyWelcome(version: string) {
+      return exclusive((doc) => {
+        doc.nightly_welcome_seen = version;
+      }, true);
+    },
     deleteTask(id: string, expectedUpdatedAt: number) {
       const token = crypto.randomUUID();
       return exclusive((doc) => {
@@ -591,6 +596,7 @@ function toSnapshot(
         version,
         doc.settings.last_seen_release ?? null,
       ),
+      nightly_welcome_seen: doc.nightly_welcome_seen ?? null,
     },
   };
 }

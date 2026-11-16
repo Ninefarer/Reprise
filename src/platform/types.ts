@@ -132,6 +132,12 @@ export interface Platform {
   notificationPanelPreferences(pinned: boolean): Promise<void>;
   sidebarPreferences(input: SidebarPreferencesInput): Promise<void>;
   acknowledgeRelease(version: string): Promise<void>;
+  /**
+   * Remember that this Nightly welcome was dismissed.
+   * Tauri keeps that for the running process only, so this is a no-op.
+   * Web writes `nightly_welcome_seen` through `WebStorage`.
+   */
+  acknowledgeNightlyWelcome(version: string): Promise<void>;
   deleteTask(id: string, expectedUpdatedAt: number): Promise<string>;
   undoDeletion(token: string): Promise<void>;
   finalizeDeletion(token: string): Promise<void>;

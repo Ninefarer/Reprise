@@ -128,6 +128,8 @@ export function createWebPlatform(options: WebPlatformOptions = {}): Platform {
     sidebarPreferences: (input) => refreshAfter(session.sidebarPreferences(input)),
     acknowledgeRelease: (version) =>
       refreshAfter(session.acknowledgeRelease(version)),
+    acknowledgeNightlyWelcome: (version) =>
+      refreshAfter(session.acknowledgeNightlyWelcome(version)),
     deleteTask: (id, expectedUpdatedAt) =>
       refreshAfter(session.deleteTask(id, expectedUpdatedAt)),
     undoDeletion: (token) => refreshAfter(session.undoDeletion(token)),

@@ -4,6 +4,13 @@ export const issueUrl = "https://github.com/Ninefarer/Reprise/issues/new";
 export function isNightly(version?: string) {
   return !!version && /^\d+\.\d+\.\d+-nightly(?:[.+]|$)/.test(version);
 }
+/** True until this exact Nightly version has been dismissed. */
+export function showNightlyWelcome(
+  version: string | undefined,
+  seen: string | null | undefined,
+) {
+  return isNightly(version) && seen !== version;
+}
 export function NightlyBadge({ version }: { version: string }) {
   return (
     <div

@@ -135,6 +135,8 @@ export interface Snapshot {
     version: string;
     acknowledged: string | null;
     should_show: boolean;
+    /** Set on the web build after Continue to Nightly. Desktop omits it. */
+    nightly_welcome_seen?: string | null;
   };
   avatar?: string | null;
   tasks: Task[];

@@ -62,6 +62,13 @@ export interface StoredDocument {
   events: StoredEvent[];
   /** Data URL for the profile image, or null. Stays on device. */
   avatar: string | null;
+  /**
+   * Nightly welcome version the user dismissed with Continue to Nightly.
+   * Desktop keeps that in process memory. Web reloads, so it lives on this
+   * document. Omit it until the first dismiss. Round-trip the field; do not
+   * bump `version` for its absence.
+   */
+  nightly_welcome_seen?: string | null;
 }
 
 export class WebStoragePendingError extends Error {

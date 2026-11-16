@@ -32,6 +32,7 @@ export const platform: Platform = {
     invoke("notification_panel_preferences", { pinned }),
   sidebarPreferences: (input) => invoke("sidebar_preferences", { ...input }),
   acknowledgeRelease: (version) => invoke("acknowledge_release", { version }),
+  acknowledgeNightlyWelcome: async () => {},
   deleteTask: (id, expectedUpdatedAt) =>
     invoke("delete_task", { id, expectedUpdatedAt }),
   undoDeletion: (token) => invoke("undo_deletion", { token }),
