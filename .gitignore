@@ -10,6 +10,9 @@ node_modules/
 .vite/
 .cache/
 /coverage/
+/test-results/
+/playwright-report/
+/blob-report/
 *.tsbuildinfo
 *.log
 

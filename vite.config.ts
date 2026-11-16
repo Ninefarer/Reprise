@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { readFileSync, writeFileSync } from "node:fs";
 import { defineConfig, type Plugin } from "vite";
 import { fileURLToPath } from "node:url";
 
@@ -22,9 +24,31 @@ export default defineConfig(({ mode }) => {
         ),
       },
     },
-    plugins: [pwaHtml(web)],
+    plugins: [pwaHtml(web), ...(web ? [shellCacheVersion()] : [])],
   };
 });
+
+function shellCacheVersion(): Plugin {
+  return {
+    name: "reprise-shell-cache-version",
+    apply: "build",
+    closeBundle() {
+      const dir = fileURLToPath(new URL("./dist-web/", import.meta.url));
+      const swPath = `${dir}sw.js`;
+      const index = readFileSync(`${dir}index.html`, "utf8");
+      const hash = createHash("sha256").update(index).digest("hex").slice(0, 12);
+      const sw = readFileSync(swPath, "utf8");
+      const marker = 'const CACHE_VERSION = "reprise-nightly-shell-v1"';
+      if (!sw.includes(marker)) {
+        throw new Error("service worker is missing the shell cache version");
+      }
+      writeFileSync(
+        swPath,
+        sw.replace(marker, `const CACHE_VERSION = "reprise-nightly-shell-${hash}"`),
+      );
+    },
+  };
+}
 
 function pwaHtml(web: boolean): Plugin {
   return {

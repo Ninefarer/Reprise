@@ -9,6 +9,7 @@ import { AppearanceSettings } from "./AppearanceSettings";
 import { AvatarEditor } from "./Profile";
 import { Diagnostics, TestNotification } from "./Diagnostics";
 import { WebNotifications } from "./WebNotifications";
+import { WebBackupSlot } from "./WebBackupSlot";
 import { platform } from "reprise:platform";
 export interface SettingsEditor {
   dirty: boolean;
@@ -189,6 +190,7 @@ export function Preferences({
         await save(sections[section]);
       }}
     >
+      <WebBackupSlot />
       <div className="settings-tabs-scroll">
         <div
           ref={tabs}

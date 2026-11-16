@@ -66,13 +66,19 @@ if (largest < 512) fail("installability wants a 512px icon");
 const atLeast192 = icons.some((icon) => Number(icon.sizes.split("x")[0]) >= 192);
 if (!atLeast192) fail("installability wants an icon at least 192px");
 
-for (const name of ["push", "notificationclick", "fetch"]) {
+for (const name of ["push", "notificationclick", "fetch", "install", "activate"]) {
   if (!worker.includes(`addEventListener("${name}"`)) {
     fail(`service worker missing ${name} handler`);
   }
 }
-if (worker.includes("caches.open") || worker.includes("cache.add")) {
-  fail("service worker must not add a cache strategy in this branch");
+if (!worker.includes("caches.open") || !worker.includes("/Reprise/")) {
+  fail("service worker must precache the /Reprise/ app shell");
+}
+if (!worker.includes("caches.delete") || !worker.includes("reprise-nightly-shell-")) {
+  fail("service worker must delete old versioned shell caches");
+}
+if (!worker.includes("showNotification") || !worker.includes("reprise-notification-click")) {
+  fail("service worker must keep push display and notification clicks");
 }
 
 const apple = new URL("icons/apple-touch-icon.png", root);

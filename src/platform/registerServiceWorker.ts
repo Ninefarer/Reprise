@@ -1,7 +1,6 @@
 /**
- * Registers the Nightly service worker. The worker file is a stub: it does
- * not cache. `feature/pwa-storage` owns the caching strategy. Push display
- * and notification clicks already live in `pwa/public/sw.js`.
+ * Registers the Nightly service worker. Caching, push display, and
+ * notification clicks live in `pwa/public/sw.js`.
  */
 export function registerServiceWorker(
   nav: Pick<Navigator, "serviceWorker"> = navigator,

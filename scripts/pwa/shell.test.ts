@@ -22,11 +22,17 @@ describe("PWA shell source", () => {
     );
   });
 
-  it("handles push and notification clicks without a cache", () => {
+  it("precaches the Pages shell and still handles push clicks", () => {
     expect(worker).toContain('addEventListener("push"');
     expect(worker).toContain('addEventListener("notificationclick"');
     expect(worker).toContain('addEventListener("fetch"');
-    expect(worker).not.toContain("caches.open");
+    expect(worker).toContain('addEventListener("install"');
+    expect(worker).toContain('addEventListener("activate"');
+    expect(worker).toContain("caches.open");
+    expect(worker).toContain("caches.delete");
+    expect(worker).toContain('const CACHE_VERSION = "reprise-nightly-shell-v1"');
+    expect(worker).toContain("/Reprise/");
+    expect(worker).toContain("showNotification");
     expect(worker).toContain("reprise-notification-click");
   });
 });

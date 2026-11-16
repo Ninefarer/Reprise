@@ -15,8 +15,9 @@ export function WebNotifications() {
       </p>
       <p className="hint">
         Timed reminders after you leave are not available yet. Task text stays
-        on this device. This build keeps tasks in local storage, and backup is
-        not available yet. Home Screen storage is separate from Safari tabs.
+        on this device. Export or import a backup at the top of Settings. On a
+        phone, open More, then Settings. Home Screen storage is separate from
+        Safari tabs.
       </p>
       <div className="dialog-actions">
         <button

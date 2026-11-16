@@ -23,9 +23,8 @@ export type { PushClient, PushSubscriptionState, ReminderSyncResult, ReminderTim
  * from `reprise:platform` (selected in `vite.config.ts`). Import these types
  * from `src/platform/types.ts`.
  *
- * Web persistence is `src/platform/storage.ts`. IndexedDB, durable-storage
- * permission, and JSON backup belong on `feature/pwa-storage` and should
- * replace the placeholder without changing this interface.
+ * Web persistence is `src/platform/storage.ts`. The Nightly web build uses
+ * IndexedDB there. This interface stays the same for Windows and web.
  *
  * Closed-app reminder delivery is `src/platform/push.ts`. The worker and
  * HTTP API belong in `docs/PWA-PUSH.md` and are not called from here.
@@ -115,8 +114,8 @@ export interface Platform {
   start(): void;
   /**
    * Tauri resolves true because tasks live in a SQLite file.
-   * Web delegates to `WebStorage.requestPersistence()`. The placeholder
-   * resolves false and does not call `navigator.storage.persist()`.
+   * Web delegates to `WebStorage.requestPersistence()`, which calls
+   * `navigator.storage.persist()` and returns false where that API is missing.
    * Call this from a user gesture.
    */
   requestDurableStorage(): Promise<boolean>;

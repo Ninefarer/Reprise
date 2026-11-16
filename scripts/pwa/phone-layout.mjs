@@ -161,8 +161,63 @@ try {
   await measure("main view at 320");
   await page.getByRole("button", { name: "More", exact: true }).click();
   await measure("more sheet at 320");
-  await setWidth(430);
-  await measure("main view at 430");
+  await page.getByLabel(/Profile menu for/).click();
+  await page.getByRole("menuitem", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "Export backup" }).waitFor();
+  for (const width of [320, 393, 430]) {
+    await setWidth(width);
+    await measure(`backup controls at ${width}`);
+    const backup = await page.evaluate((expected) => {
+      const root = document.documentElement;
+      const section = document.querySelector(".web-backup");
+      if (!section) return { missing: true };
+      const rect = section.getBoundingClientRect();
+      const controls = [...section.querySelectorAll("button, input")].map((el) => {
+        const box = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        return {
+          name: el.getAttribute("aria-label") || el.textContent?.trim() || el.tagName,
+          right: box.right,
+          height: box.height,
+          fontSize: Number.parseFloat(style.fontSize),
+          type: el.getAttribute("type"),
+        };
+      });
+      return {
+        missing: false,
+        clientWidth: root.clientWidth,
+        sectionRight: rect.right,
+        controls,
+        expected,
+      };
+    }, width);
+    console.log(`backup box ${width}`, JSON.stringify(backup));
+    if (backup.missing) {
+      failures.push(`backup controls missing at ${width}`);
+      continue;
+    }
+    if (backup.sectionRight > backup.clientWidth + 1) {
+      failures.push(
+        `backup section reaches ${backup.sectionRight} at ${width}px (client ${backup.clientWidth})`,
+      );
+    }
+    for (const control of backup.controls) {
+      if (control.right > backup.clientWidth + 1) {
+        failures.push(
+          `${control.name} reaches ${control.right} at ${width}px`,
+        );
+      }
+      if (control.type === "file") {
+        if (control.fontSize < 16) {
+          failures.push(`${control.name} is ${control.fontSize}px at ${width}`);
+        }
+        continue;
+      }
+      if (control.height < 44) {
+        failures.push(`${control.name} is ${control.height}px tall at ${width}`);
+      }
+    }
+  }
 } finally {
   await browser.close();
   server.close();

@@ -3,7 +3,7 @@ import { createPushStub, syncReminderTimes } from "./push";
 import { registerServiceWorker } from "./registerServiceWorker";
 import {
   WEB_STORAGE_KEY,
-  browserLocalStorage,
+  browserIndexedDbStorage,
   type WebStorage,
 } from "./storage";
 import type { Platform } from "./types";
@@ -32,7 +32,7 @@ export interface WebPlatformOptions {
 export function createWebPlatform(options: WebPlatformOptions = {}): Platform {
   const listeners = new Map<string, Set<Handler>>();
   let storage = options.storage;
-  const store = () => (storage ??= browserLocalStorage());
+  const store = () => (storage ??= browserIndexedDbStorage());
   const permission =
     options.permission ??
     ((): NotificationPermission | "unsupported" => {

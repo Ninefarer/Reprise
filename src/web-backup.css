@@ -1,0 +1,65 @@
+/* Backup controls for the Nightly web build. Every rule stays on the web platform. */
+html[data-platform="web"] .web-backup {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+  overflow: clip;
+}
+
+html[data-platform="web"] .web-backup * {
+  box-sizing: border-box;
+}
+
+html[data-platform="web"] .web-backup p {
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+html[data-platform="web"] .web-backup-actions,
+html[data-platform="web"] .web-backup-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+html[data-platform="web"] .web-backup button {
+  width: 100%;
+  max-width: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: 16px;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+html[data-platform="web"] .web-backup input.web-backup-file[type="file"] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  font-size: 16px;
+  opacity: 0;
+  pointer-events: none;
+}

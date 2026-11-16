@@ -1,19 +1,50 @@
 /*
  * Reprise Nightly service worker.
  *
- * Caching is intentionally absent. feature/pwa-storage replaces the fetch
- * listener. This file only makes the page controlled, shows a Web Push
- * payload, and focuses the open app when a notification is clicked.
+ * Precaches the app shell under /Reprise/ so the installed app can open
+ * offline. The cache name is versioned; activate deletes older
+ * reprise-nightly-shell-* caches. The web build replaces CACHE_VERSION
+ * with a hash of that build's index.html.
  *
- * Push payloads should stay minimal. Task notes are not required here.
- * A useful closed-app alert can be a title of "Reprise" and a generic body.
+ * Push display and notification clicks stay in this file. Payloads should
+ * stay minimal. Task notes are not required here.
  */
-self.addEventListener("install", () => {
-  self.skipWaiting();
+const CACHE_VERSION = "reprise-nightly-shell-v1";
+const SHELL_PREFIX = "/Reprise/";
+const SHELL_PATHS = [
+  "/Reprise/",
+  "/Reprise/index.html",
+  "/Reprise/manifest.webmanifest",
+  "/Reprise/icons/icon-128.png",
+  "/Reprise/icons/icon-256.png",
+  "/Reprise/icons/icon-512.png",
+  "/Reprise/icons/apple-touch-icon.png",
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    (async () => {
+      await precacheShell();
+      await self.skipWaiting();
+    })(),
+  );
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter(
+            (key) =>
+              key.startsWith("reprise-nightly-shell-") && key !== CACHE_VERSION,
+          )
+          .map((key) => caches.delete(key)),
+      );
+      await self.clients.claim();
+    })(),
+  );
 });
 
 self.addEventListener("fetch", (event) => {
@@ -21,8 +52,85 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET" || url.origin !== self.location.origin) {
     return;
   }
-  event.respondWith(fetch(event.request));
+  if (!url.pathname.startsWith(SHELL_PREFIX)) return;
+  event.respondWith(fromNetworkThenCache(event.request));
 });
+
+async function precacheShell() {
+  const cache = await caches.open(CACHE_VERSION);
+  let html = "";
+  for (const path of SHELL_PATHS) {
+    const response = await fetch(path, { cache: "reload" });
+    if (!response.ok) continue;
+    if (path === "/Reprise/" || path.endsWith("/index.html")) {
+      html = html || (await response.clone().text());
+    }
+    await putClean(cache, path, response);
+  }
+  if (!html) throw new Error("The Reprise app shell could not be cached.");
+  const assets = new Set();
+  for (const match of html.matchAll(/(?:src|href)=["']([^"']+)["']/g)) {
+    const raw = match[1];
+    if (!raw || raw.startsWith("data:") || raw.startsWith("blob:")) continue;
+    let pathname;
+    try {
+      pathname = new URL(raw, self.registration.scope).pathname;
+    } catch {
+      continue;
+    }
+    if (!pathname.startsWith(SHELL_PREFIX) || pathname.endsWith("/sw.js")) {
+      continue;
+    }
+    assets.add(pathname);
+  }
+  await Promise.all(
+    [...assets].map(async (path) => {
+      const response = await fetch(path, { cache: "reload" });
+      if (!response.ok) throw new Error(`Missing shell asset ${path}`);
+      await putClean(cache, path, response);
+    }),
+  );
+}
+
+async function putClean(cache, key, response) {
+  const headers = new Headers(response.headers);
+  // The body is already decoded. Leaving these headers makes the browser
+  // reject or miss the cached script when the page asks for it offline.
+  for (const name of ["content-encoding", "content-length", "transfer-encoding", "vary"]) {
+    headers.delete(name);
+  }
+  await cache.put(
+    key,
+    new Response(await response.arrayBuffer(), {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    }),
+  );
+}
+
+async function fromNetworkThenCache(request) {
+  const cache = await caches.open(CACHE_VERSION);
+  try {
+    const fresh = await fetch(request);
+    if (fresh && fresh.ok) await putClean(cache, request, fresh.clone());
+    return fresh;
+  } catch {
+    const cached = await matchShell(cache, request);
+    if (cached) return cached;
+    return Response.error();
+  }
+}
+
+async function matchShell(cache, request) {
+  const cached = await cache.match(request, { ignoreVary: true });
+  if (cached) return cached;
+  if (request.mode !== "navigate") return undefined;
+  return (
+    (await cache.match("/Reprise/", { ignoreVary: true })) ||
+    (await cache.match("/Reprise/index.html", { ignoreVary: true }))
+  );
+}
 
 self.addEventListener("push", (event) => {
   let payload = {};
