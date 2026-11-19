@@ -26,7 +26,9 @@ export function NotificationSidebar({
   onManage,
   onUpdate,
   updateActivity,
+  revealRequest,
 }: {
+  revealRequest?: { id: string; sequence: number } | null;
   open: boolean;
   pinned: boolean;
   notices: Notice[];
@@ -58,6 +60,28 @@ export function NotificationSidebar({
   const [category, setCategory] = useState("All"),
     [unread, setUnread] = useState(false),
     [query, setQuery] = useState("");
+  const revealedSequence = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (!revealRequest) return;
+    setCategory("Updates");
+    setUnread(false);
+    setQuery("");
+  }, [revealRequest?.sequence]);
+  useEffect(() => {
+    if (!revealRequest || !shown || category !== "Updates" || unread || query)
+      return;
+    const frame = requestAnimationFrame(() => {
+      const article = Array.from(
+        panel.current?.querySelectorAll<HTMLElement>("[data-notice-id]") ?? [],
+      ).find((node) => node.dataset.noticeId === revealRequest.id);
+      if (article) {
+        revealedSequence.current = revealRequest.sequence;
+        article.scrollIntoView?.({ block: "nearest" });
+        article.focus({ preventScroll: true });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [revealRequest?.sequence, shown, category, unread, query, notices]);
   const panel = useRef<HTMLElement>(null),
     timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
     opener = useRef<HTMLElement | null>(null),
@@ -242,7 +266,7 @@ export function NotificationSidebar({
                   {notices.filter((n) => !n.read).length}
                 </span>
               </h2>
-              <p>Waitin' for ya</p>
+              <p>Reminders and app updates</p>
             </div>
             <button
               className="notification-pin"
@@ -354,6 +378,8 @@ export function NotificationSidebar({
                 <article
                   className={`notice slide-card ${n.read ? "" : "unread"}`}
                   data-leaving={leaving}
+                  data-notice-id={n.id}
+                  tabIndex={-1}
                 >
                   <div className="task-meta">
                     <span
@@ -362,6 +388,7 @@ export function NotificationSidebar({
                     >
                       {categoryLabel(n.category)}
                     </span>
+                    {!n.read && <span className="notice-unread">Unread</span>}
                     <time>{date(n.created_at)}</time>
                     {n.state === "Failed" && (
                       <span className="notice-failed">
@@ -442,12 +469,12 @@ export function NotificationSidebar({
                 <h3>
                   {notices.length
                     ? "No matching reminders."
-                    : "Nothing waiting here."}
+                    : "No notifications yet."}
                 </h3>
                 <p>
                   {notices.length
                     ? "Try another filter or search."
-                    : "Your reminders will leave a record here."}
+                    : "Reminders and update checks appear here."}
                 </p>
               </div>
             )}

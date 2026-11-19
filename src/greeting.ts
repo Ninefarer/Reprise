@@ -4,14 +4,49 @@ export function greeting(at: number, name = "") {
     hour = date.getHours();
   const choices =
     hour < 5
-      ? ["A quiet moment", "Hello, night owl", "Still up"]
+      ? [
+          "Still up",
+          "Hello, night owl",
+          "Working late",
+          "Up late",
+          "Back for a late one",
+          "Hello again",
+        ]
       : hour < 12
-        ? ["Good morning", "A fresh start", "Morning, welcome back"]
+        ? [
+            "Good morning",
+            "Morning",
+            "Hello, early bird",
+            "Good to see you this morning",
+            "You're up early",
+            "Good to see you",
+          ]
         : hour < 17
-          ? ["Good afternoon", "Hello again", "An afternoon check-in"]
+          ? [
+              "Good afternoon",
+              "Afternoon",
+              "Hello again",
+              "Good to see you this afternoon",
+              "Back at it",
+              "Good to see you",
+            ]
           : hour < 22
-            ? ["Good evening", "Evening, welcome back", "A moment to return"]
-            : ["A quiet evening", "Hello, night owl", "An evening check-in"];
+            ? [
+                "Good evening",
+                "Evening",
+                "Welcome back",
+                "Good to see you this evening",
+                "Back for the evening",
+                "Hello again",
+              ]
+            : [
+                "Hello, night owl",
+                "Still up",
+                "Welcome back",
+                "Up a little later",
+                "Working late",
+                "Hello again",
+              ];
   const index =
     (date.getFullYear() + date.getMonth() * 31 + date.getDate()) %
     choices.length;

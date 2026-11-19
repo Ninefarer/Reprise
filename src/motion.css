@@ -86,7 +86,6 @@ button:not(:disabled):active {
 }
 .task-card.completion-feedback {
   color: var(--text);
-  border-inline-start-color: var(--status-finished);
   pointer-events: none;
   animation: completion-feedback var(--motion-complete) var(--motion-ease)
     forwards;

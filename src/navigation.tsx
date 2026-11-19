@@ -53,12 +53,11 @@ export const navigation: {
   title: string;
   items: View[];
 }[] = [
-  { id: "general", title: "Hub", items: ["Home", "Daily Review"] },
+  { id: "general", title: "Hub", items: ["Home", "Inbox", "Daily Review"] },
   {
     id: "tasks",
     title: "Ongoing",
     items: [
-      "Inbox",
       "DoNow",
       "Scheduled",
       "Settled",

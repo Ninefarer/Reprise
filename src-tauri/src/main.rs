@@ -3,6 +3,7 @@ mod actions;
 mod deletion;
 mod diagnostics;
 mod domain;
+mod manual_updates;
 mod notifications;
 #[cfg(test)]
 mod performance_baseline;
@@ -295,6 +296,7 @@ fn main() {
             notifications::manage_notifications,
             visuals::native_glass,
             updates::check_updates,
+            manual_updates::check_updates_now,
             updates::install_update,
             notification_panel_preferences,
             snapshot,

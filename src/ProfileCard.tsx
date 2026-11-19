@@ -188,7 +188,7 @@ export function ProfileCardDialog({
       }}
     >
       <header className="profile-card-dialog-head">
-        <h2 id={heading}>Profile card</h2>
+        <h2 id={heading}>Namecards</h2>
         <button type="button" autoFocus onClick={onClose}>
           Close
         </button>

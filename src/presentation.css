@@ -1,0 +1,176 @@
+/* Softer corners without turning task rows or overview tiles into pills.
+   Avatars and Namecards retain their own geometry. */
+:root {
+  --radius-control: 14px;
+  --radius-panel: 18px;
+}
+:root
+  :is(button, summary):not(.sidebar-resizer):not(.notification-edge):not(
+    .profile-card-dialog *
+  ) {
+  border-radius: var(--radius-control);
+}
+:root
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    .select-trigger,
+    .date-time-trigger
+  ) {
+  border-radius: var(--radius-control);
+}
+:root textarea {
+  border-radius: 14px;
+}
+:root :is(.task-card, .settings-section, .notice, .undo-toast, .capture) {
+  border-radius: var(--radius-panel);
+}
+:root .overview button:not(.profile-card-dialog *) {
+  border-radius: 7px;
+}
+:root .task-card[data-status="Inbox"] {
+  border-radius: 9px;
+}
+:root .task-card[data-status="Inbox"] .task-actions button {
+  border-radius: 7px;
+}
+:root .settings-tabs-scroll {
+  border: 0;
+  padding: 3px 0;
+}
+:root .settings-tabs {
+  gap: 4px;
+  min-width: 0;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+:root .settings-tabs::after {
+  display: none;
+}
+:root .settings-tabs button {
+  padding: 9px 16px;
+}
+:root .settings-tabs button:hover {
+  background: var(--hover);
+}
+:root .settings-tabs [aria-selected="true"] {
+  background: var(--selected);
+  color: var(--text);
+}
+.preferences .settings-save-bar {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 20px;
+  box-shadow: 0 4px 18px var(--shadow);
+}
+.settings-save-bar > [role="status"] {
+  order: -1;
+  margin-right: auto;
+  color: var(--muted);
+}
+.preferences .settings-section {
+  padding: 22px;
+}
+.preferences .setup-row {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.preferences .dialog-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+/* Keep the dock flush to the window, with scrolling inside the content area. */
+html:has(.app) {
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+.app {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.app > .content {
+  height: 100%;
+  max-width: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+.app > .sidebar {
+  height: 100%;
+}
+.notification-dock {
+  height: 100dvh;
+}
+.notification-head,
+.notification-filters,
+.notification-management {
+  border-color: var(--border);
+}
+.notification-head p {
+  margin-bottom: 0;
+}
+.notification-management {
+  gap: 8px;
+}
+.notification-management button {
+  min-height: 34px;
+}
+.notification-scroll .notice-space {
+  padding: 5px 0;
+}
+.notification-scroll .notice:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* Rounded controls retain native high-contrast colors and keyboard focus rings. */
+@media (max-width: 900px) {
+  .preferences .settings-section {
+    padding: 18px;
+  }
+  .settings-save-bar {
+    gap: 8px;
+  }
+}
+
+/* Preserve the compact task and overview geometry from the reference. */
+:root
+  .overview
+  button:not(.sidebar-resizer):not(.notification-edge):not(
+    .profile-card-dialog *
+  ) {
+  border-radius: 7px;
+}
+:root .task-card[data-status="Inbox"] .task-actions button {
+  border-radius: 7px;
+}
+
+/* Slightly softer surfaces, with the Inbox and overview exceptions above. */
+:root :is(.settings-section, .notice, .undo-toast) {
+  border-radius: var(--radius-panel);
+}
+:root .task-card:not([data-status="Inbox"]) {
+  border-radius: 14px;
+}
+:root .task-dialog:not(.profile-card-dialog) {
+  border-radius: 18px;
+}
+:root :is(.control-popup, .context-menu) {
+  border-radius: 16px;
+}
+
+.notification-dock .notice-unread {
+  color: var(--accent);
+  font-weight: 600;
+}
+.notification-dock .notice:not(.unread) h3 {
+  font-weight: 500;
+}

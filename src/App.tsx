@@ -57,8 +57,9 @@ import "./motion.css";
 import "./desktop-glass.css";
 import "./density.css";
 import "./context-menu.css";
+import "./presentation.css";
 import { taskCategory, reviewCategory } from "./taskColors";
-import type { UpdateActivity } from "./updates";
+import { friendlyUpdateError, type UpdateActivity } from "./updates";
 const captureWindowMode = new URLSearchParams(location.search).has("capture");
 function Application({
   captureMode = captureWindowMode,
@@ -90,6 +91,10 @@ function Application({
     ),
     [now, setNow] = useState(Math.floor(Date.now() / 1000)),
     [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationRequest, setNotificationRequest] = useState<{
+    id: string;
+    sequence: number;
+  } | null>(null);
   const [replayingSetup, setReplayingSetup] = useState(false);
   const [confirmSetup, setConfirmSetup] = useState(false);
   const [profileCardOpen, setProfileCardOpen] = useState(false);
@@ -109,6 +114,8 @@ function Application({
   const [checkingUpdates, setCheckingUpdates] = useState(false),
     [updateActivity, setUpdateActivity] = useState<UpdateActivity | null>(null);
   const updateOperation = useRef(false);
+  const automaticCheckRunning = useRef(false);
+  const manualCheckPending = useRef(false);
   const [completionFeedback, setCompletionFeedback] = useState<
       { task: Task; view: View; until: number }[]
     >([]),
@@ -403,22 +410,30 @@ function Application({
     const check = async () => {
       if (updateOperation.current) return;
       updateOperation.current = true;
+      automaticCheckRunning.current = true;
       try {
         const result = await invoke<{
           notice_id: string | null;
           message?: string;
         }>("check_updates", { automatic: true });
         if (!disposed) {
-          if (result?.message) setUpdateCheckMessage(result.message);
+          if (result?.message)
+            setUpdateCheckMessage(
+              /couldn't|failed|error|not configured/i.test(result.message)
+                ? friendlyUpdateError(result.message)
+                : result.message,
+            );
           if (result?.notice_id) await load("event");
         }
       } catch (error) {
-        if (!disposed)
-          setUpdateCheckMessage(
-            `Automatic update check couldn't finish: ${String(error)}`,
-          );
+        if (!disposed) setUpdateCheckMessage(friendlyUpdateError(error));
       } finally {
         updateOperation.current = false;
+        automaticCheckRunning.current = false;
+        if (!disposed && manualCheckPending.current) {
+          manualCheckPending.current = false;
+          void checkUpdates();
+        }
       }
     };
     const first = setTimeout(() => void check(), 30000);
@@ -542,20 +557,39 @@ function Application({
     busy,
   ]);
   async function checkUpdates() {
-    if (setupActive || updateOperation.current) return;
+    if (setupActive) return;
+    if (updateOperation.current) {
+      if (automaticCheckRunning.current) {
+        manualCheckPending.current = true;
+        setCheckingUpdates(true);
+        setUpdateCheckMessage("Finishing the background check first...");
+      } else
+        setUpdateCheckMessage(
+          "An update is already running. Wait for it to finish.",
+        );
+      return;
+    }
     updateOperation.current = true;
     setCheckingUpdates(true);
+    setUpdateCheckMessage("");
     setUpdateActivity(null);
     try {
       const result = await invoke<{
         notice_id: string | null;
         message?: string;
-      }>("check_updates");
+      }>("check_updates_now");
       setUpdateCheckMessage(result?.message ?? "");
       await load();
-      if (result?.notice_id) setNotificationsOpen(true);
+      setNotificationsOpen(true);
+      if (result?.notice_id)
+        setNotificationRequest((previous) => ({
+          id: result.notice_id!,
+          sequence: (previous?.sequence ?? 0) + 1,
+        }));
     } catch (error) {
-      setError(String(error));
+      const message = friendlyUpdateError(error);
+      setUpdateCheckMessage(message);
+      setError(message);
     } finally {
       updateOperation.current = false;
       setCheckingUpdates(false);
@@ -578,7 +612,7 @@ function Application({
         stage: "error",
         downloaded: 0,
         total: null,
-        message: String(error),
+        message: friendlyUpdateError(error, "install"),
       });
     } finally {
       updateOperation.current = false;
@@ -840,7 +874,7 @@ function Application({
           aria-invalid={!!captureError}
           aria-describedby={captureError ? "capture-error" : undefined}
           aria-label="Capture a task"
-          placeholder="What would you like to come back to?"
+          placeholder="Task title"
           value={title}
           onChange={(e) => {
             setTitle(e.target.value);
@@ -1354,6 +1388,7 @@ function Application({
           open={notificationsOpen}
           pinned={!!settings.notification_panel_pinned}
           notices={notifications}
+          revealRequest={notificationRequest}
           tasks={tasks}
           busy={busy}
           onOpenChange={setNotificationsOpen}

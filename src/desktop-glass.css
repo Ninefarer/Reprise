@@ -41,7 +41,7 @@
     rgba(var(--surface-rgb), var(--glass-pane-alpha));
 }
 :root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
-  .sidebar {
+  :is(.sidebar, .notification-dock) {
   background:
     linear-gradient(110deg, var(--glass-reflection), transparent 65%),
     rgba(var(--surface-rgb), var(--glass-nav-alpha));
@@ -56,11 +56,7 @@
   border-color: var(--glass-edge);
   box-shadow: var(--glass-inner), var(--glass-shadow);
 }
-/* Keep lifecycle edges distinct from the neutral illuminated perimeter. */
-:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
-  .task-card[data-status] {
-  border-inline-start-color: var(--task-accent);
-}
+
 :root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
   :is(.settings-section, .capture) {
   background:
@@ -96,7 +92,7 @@
   :root .quick {
     background: var(--bg) !important;
   }
-  :root .sidebar {
+  :root :is(.sidebar, .notification-dock) {
     background: var(--sidebar) !important;
     box-shadow: none !important;
   }
@@ -121,4 +117,24 @@
   .capture
   input {
   background: transparent;
+}
+
+/* Blur only content within the webview behind this overlay. The desktop
+   transparency and Acrylic material still come from the native window. */
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  .notification-dock {
+  backdrop-filter: blur(24px);
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  .notification-dock
+  .notice {
+  background: rgba(var(--surface-rgb), var(--glass-card-alpha));
+  border-color: var(--glass-edge);
+}
+@media (forced-colors: active),
+  (prefers-reduced-transparency: reduce),
+  (prefers-contrast: more) {
+  :root .notification-dock {
+    backdrop-filter: none;
+  }
 }

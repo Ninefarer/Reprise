@@ -395,10 +395,10 @@ it("opens the optional profile card, persists the finish and restores focus", as
   await openSettings(user);
   expect(mocks.invoke).not.toHaveBeenCalledWith("profile_completion_count");
 
-  const trigger = screen.getByRole("button", { name: "View profile card" });
+  const trigger = screen.getByRole("button", { name: "Namecards" });
   trigger.focus();
   await user.keyboard("{Enter}");
-  const dialog = screen.getByRole("dialog", { name: "Profile card" });
+  const dialog = screen.getByRole("dialog", { name: "Namecards" });
   const card = within(dialog);
   expect(card.getByRole("heading", { name: data.settings.name })).toBeTruthy();
   expect(dialog.querySelector("img")?.getAttribute("src")).toBe(data.avatar);
@@ -415,16 +415,18 @@ it("opens the optional profile card, persists the finish and restores focus", as
   await waitFor(() =>
     expect(data.settings.profile_card_finish).toBe("prismatic"),
   );
-  expect(card.getByRole("article").getAttribute("data-finish")).toBe("prismatic");
+  expect(card.getByRole("article").getAttribute("data-finish")).toBe(
+    "prismatic",
+  );
 
   fireEvent(dialog, new Event("cancel", { cancelable: true }));
-  expect(screen.queryByRole("dialog", { name: "Profile card" })).toBeNull();
+  expect(screen.queryByRole("dialog", { name: "Namecards" })).toBeNull();
   expect(document.activeElement).toBe(trigger);
   first.unmount();
 
   render(<App />);
   await openSettings(user);
-  await user.click(screen.getByRole("button", { name: "View profile card" }));
+  await user.click(screen.getByRole("button", { name: "Namecards" }));
   expect(
     (screen.getByRole("radio", { name: "Prismatic" }) as HTMLInputElement).checked,
   ).toBe(true);
@@ -582,7 +584,7 @@ describe("Nightly channel", () => {
       data.release = { version, acknowledged: null, should_show: false };
       render(<App />);
       await screen.findByRole("heading", {
-        name: "Set up your space.",
+        name: "Set up Reprise.",
       });
       expect(!!document.querySelector(".setup-nightly")).toBe(sky);
       expect(document.documentElement.dataset.family).toBe("pitch-black");
@@ -600,7 +602,7 @@ describe("Nightly channel", () => {
     const user = userEvent.setup();
     const app = render(<App />);
     await screen.findByRole("heading", {
-      name: "Set up your space.",
+      name: "Set up Reprise.",
     });
     expect(screen.queryByRole("navigation")).toBeNull();
     expect(screen.queryByRole("note", { name: /Nightly build/ })).toBeNull();
@@ -719,7 +721,7 @@ describe("Nightly channel", () => {
     await screen.findByLabelText(/Profile menu for Dim/);
     expect(
       screen.queryByRole("heading", {
-        name: "Set up your space.",
+        name: "Set up Reprise.",
       }),
     ).toBeNull();
   });
@@ -863,7 +865,7 @@ describe("Nightly channel", () => {
     ).toBe(true);
     expect(
       screen.getByRole("heading", {
-        name: "Set up your space.",
+        name: "Set up Reprise.",
       }),
     ).toBeTruthy();
     const second = await screen.findByRole("heading", {
@@ -1296,23 +1298,44 @@ describe("workspace UI", () => {
       "compact",
     );
   });
-  it("does not create or open notifications when an update source is absent", async () => {
+  it("shows a visible manual check result when an update source is absent", async () => {
     const original = mocks.invoke.getMockImplementation()!;
-    mocks.invoke.mockImplementation(async (cmd, args) =>
-      cmd === "check_updates"
-        ? { notice_id: null, message: "Update source not configured." }
-        : original(cmd, args),
-    );
+    mocks.invoke.mockImplementation(async (cmd, args) => {
+      if (cmd === "check_updates_now") {
+        data.notifications = [
+          {
+            id: "update:check:unconfigured",
+            task_id: null,
+            category: "Updates",
+            title: "Update source not configured",
+            message: "Updates are not configured for this build.",
+            created_at: 100,
+            scheduled_at: 100,
+            submitted_at: null,
+            state: "UpdateNotConfigured",
+            read: false,
+          },
+        ];
+        return {
+          notice_id: data.notifications[0].id,
+          message: "Update source not configured.",
+        };
+      }
+      return original(cmd, args);
+    });
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
     await user.click(screen.getByRole("tab", { name: "About" }));
     await user.click(screen.getByRole("button", { name: "Check for updates" }));
     await screen.findByText("Update source not configured.");
-    expect(data.notifications).toHaveLength(0);
+    expect(data.notifications).toHaveLength(1);
     expect(
-      screen.queryByRole("complementary", { name: "Notifications" }),
-    ).toBeNull();
+      screen.getByRole("complementary", { name: "Notifications" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Updates are not configured for this build."),
+    ).toBeTruthy();
   });
   it("keeps diagnostics and notification tests out of stable Settings", async () => {
     const user = userEvent.setup();
@@ -1934,9 +1957,14 @@ describe("personal sidebar navigation", () => {
     );
     expect(
       within(screen.getByRole("navigation")).queryByRole("button", {
-        name: /^Inbox/,
+        name: /^Current/,
       }),
     ).toBeNull();
+    expect(
+      within(screen.getByRole("navigation")).getByRole("button", {
+        name: /^Inbox/,
+      }),
+    ).toBeTruthy();
     expect(screen.getByRole("button", { name: /^Finished/ })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Archive" }));
     await waitFor(() =>
@@ -2042,7 +2070,7 @@ describe("right notification panel", () => {
     async (state, title) => {
       const original = mocks.invoke.getMockImplementation()!;
       mocks.invoke.mockImplementation(async (cmd, args) => {
-        if (cmd === "check_updates") {
+        if (cmd === "check_updates_now") {
           data.notifications = [
             {
               id: "update:check:one",
@@ -2133,7 +2161,7 @@ describe("right notification panel", () => {
     let rejectInstall: (error: Error) => void = () => {};
     const original = mocks.invoke.getMockImplementation()!;
     mocks.invoke.mockImplementation(async (cmd, args) => {
-      if (cmd === "check_updates") {
+      if (cmd === "check_updates_now") {
         data.notifications = [
           {
             id: "update:available:3.2.0",
@@ -2184,7 +2212,7 @@ describe("right notification panel", () => {
     await waitFor(() =>
       expect(
         screen.getByRole("status", { name: "Update progress" }).textContent,
-      ).toContain("Signature verification failed"),
+      ).toContain("This download couldn't be verified."),
     );
     expect(
       (
@@ -2397,7 +2425,7 @@ describe("semantic task presentation", () => {
     expect(
       screen.getByRole("heading", { name: /Notifications/, level: 2 }),
     ).toBeTruthy();
-    expect(screen.getByText("Waitin' for ya")).toBeTruthy();
+    expect(screen.getByText("Reminders and app updates")).toBeTruthy();
     expect(commandDestinations).toContain("Notification History");
     expect(navigation.flatMap((g) => g.items)).not.toContain(
       "Notification History",
@@ -2510,4 +2538,71 @@ it("offers deletion Undo and restores the deleted task through its backend recei
   });
   await screen.findByText("Dropped intention");
   expect(data.tasks).toHaveLength(1);
+});
+
+it("honors a manual update check requested during an automatic check", async () => {
+  const fallback = mocks.invoke.getMockImplementation()!;
+  let resolveAutomatic!: (value: unknown) => void;
+  let automaticTimer: (() => void) | undefined;
+  const originalTimeout = globalThis.setTimeout;
+  const timeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+    callback: () => void,
+    delay?: number,
+    ...args: unknown[]
+  ) => {
+    if (delay === 30000 && !automaticTimer) automaticTimer = callback;
+    return originalTimeout(callback, delay, ...args);
+  }) as typeof setTimeout);
+  mocks.invoke.mockImplementation(async (cmd, args) => {
+    if (cmd === "check_updates" && args?.automatic)
+      return new Promise((resolve) => {
+        resolveAutomatic = resolve;
+      });
+    if (cmd === "check_updates_now") {
+      data.notifications = [
+        {
+          id: "update:check:current",
+          task_id: null,
+          category: "Updates",
+          title: "You are up to date",
+          message: "Current version confirmed",
+          created_at: 100,
+          scheduled_at: 100,
+          submitted_at: null,
+          state: "UpdateCurrent",
+          read: false,
+        },
+      ];
+      return {
+        notice_id: data.notifications[0].id,
+        message: "Current version confirmed",
+      };
+    }
+    return fallback(cmd, args);
+  });
+  try {
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "About" }));
+    act(() => automaticTimer!());
+    await user.click(screen.getByRole("button", { name: "Check for updates" }));
+    expect(
+      screen.getByText("Finishing the background check first..."),
+    ).toBeTruthy();
+    expect(mocks.invoke).not.toHaveBeenCalledWith("check_updates_now");
+    await act(async () =>
+      resolveAutomatic({
+        notice_id: null,
+        message: "Background check completed",
+      }),
+    );
+    await screen.findByText("You are up to date");
+    expect(mocks.invoke).toHaveBeenCalledWith("check_updates_now");
+    expect(
+      screen.getByRole("complementary", { name: "Notifications" }),
+    ).toBeTruthy();
+  } finally {
+    timeoutSpy.mockRestore();
+  }
 });

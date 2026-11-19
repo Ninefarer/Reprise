@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { offeredVersion, updateMessage } from "./updates";
+import { offeredVersion, updateMessage, friendlyUpdateError } from "./updates";
 import type { Notice } from "./model";
 const offer: Notice = {
   id: "update:available:3.2.0",
@@ -60,4 +60,24 @@ describe("update notifications", () => {
       }),
     ).toContain("will restart");
   });
+});
+
+it("turns transport and installation internals into plain-language update feedback", () => {
+  for (const detail of [
+    "error sending request for url (https://example.invalid/latest.json): dns error",
+    "network unreachable",
+    "TLS connection failed",
+    "request timed out",
+  ]) {
+    expect(friendlyUpdateError(detail)).toBe(
+      "Couldn't reach the update service. Check your internet connection and try again.",
+    );
+    expect(friendlyUpdateError(detail)).not.toContain("https://");
+  }
+  expect(
+    friendlyUpdateError("Signature verification failed", "install"),
+  ).toContain("couldn't be verified");
+  expect(friendlyUpdateError("internal updater panic code 42")).not.toContain(
+    "42",
+  );
 });

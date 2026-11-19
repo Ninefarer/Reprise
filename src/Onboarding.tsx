@@ -107,18 +107,18 @@ export function Onboarding({
               <h1 ref={heading} tabIndex={-1} id="setup-title">
                 {
                   [
-                    "Set up your space.",
+                    "Set up Reprise.",
                     "Choose when tasks return.",
-                    "Start with one thing.",
+                    "Add your first task.",
                   ][step]
                 }
               </h1>
               <p className="setup-intro">
                 {
                   [
-                    "Make yourself at home. You can change all of this later.",
+                    "Choose a name and appearance. You can change these in Settings.",
                     "Set return times, daily review reminders, and quiet hours.",
-                    "Capture something for later. No dates or priorities needed.",
+                    "Add a task now, or skip this step.",
                   ][step]
                 }
               </p>
@@ -259,7 +259,7 @@ export function Onboarding({
                     Your first task
                     <input
                       maxLength={500}
-                      placeholder="What would you like to come back to?"
+                      placeholder="Task title"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                     />

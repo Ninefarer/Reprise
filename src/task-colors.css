@@ -79,9 +79,6 @@
   background: var(--sidebar);
   border-radius: 4px;
 }
-.task-card[data-status] {
-  border-inline-start: 2px solid var(--task-accent);
-}
 .status[data-status] {
   color: var(--task-accent);
   border-color: var(--task-accent);
@@ -106,23 +103,12 @@
   border-color: var(--task-accent);
   background: var(--surface);
 }
-.section-heading[data-status] h2::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--task-accent);
-}
+
 .empty[data-status] > svg {
   color: var(--task-accent);
 }
 .context-menu button > span[data-status] {
   color: var(--task-accent);
-}
-select[data-status],
-.select-trigger[data-status] {
-  border-inline-start: 3px solid var(--task-accent);
 }
 select option[data-status],
 .select-options [data-status] {
