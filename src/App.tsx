@@ -36,6 +36,7 @@ import {
 import { Icon } from "./navigation";
 import { TaskDialog, type TaskIntent } from "./TaskDialog";
 import { Preferences, type SettingsEditor } from "./Preferences";
+import { ProfileCardDialog } from "./ProfileCard";
 import { UnsavedSettingsDialog } from "./UnsavedSettingsDialog";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { Sidebar } from "./Sidebar";
@@ -91,6 +92,7 @@ function Application({
     [notificationsOpen, setNotificationsOpen] = useState(false);
   const [replayingSetup, setReplayingSetup] = useState(false);
   const [confirmSetup, setConfirmSetup] = useState(false);
+  const [profileCardOpen, setProfileCardOpen] = useState(false);
   const settingsEditor = useRef<SettingsEditor | null>(null);
   const registerSettingsEditor = useCallback(
     (editor: SettingsEditor | null) => {
@@ -181,9 +183,10 @@ function Application({
         Number(!!deleting) +
         Number(palette) +
         Number(!!releaseDialog) +
-        Number(confirmSetup),
+        Number(confirmSetup) +
+        Number(profileCardOpen),
     );
-  }, [editor, deleting, palette, releaseDialog, confirmSetup]);
+  }, [editor, deleting, palette, releaseDialog, confirmSetup, profileCardOpen]);
   useEffect(() => {
     if (
       quick ||
@@ -245,6 +248,7 @@ function Application({
       !data ||
       !themeReady ||
       !isNightly(data.release?.version) ||
+      profileCardOpen ||
       editor ||
       deleting ||
       palette ||
@@ -261,6 +265,7 @@ function Application({
     setupActive,
     data,
     themeReady,
+    profileCardOpen,
     editor,
     deleting,
     palette,
@@ -466,6 +471,7 @@ function Application({
       (event) => {
         if (event.payload.review) {
           setNativeTaskId(null);
+          setProfileCardOpen(false);
           setView("Daily Review");
           setQuery("");
         } else if (event.payload.task_id)
@@ -497,6 +503,7 @@ function Application({
     if (
       setupActive ||
       !nativeTaskId ||
+      profileCardOpen ||
       editor ||
       deleting ||
       palette ||
@@ -527,6 +534,7 @@ function Application({
   }, [
     setupActive,
     nativeTaskId,
+    profileCardOpen,
     editor,
     deleting,
     palette,
@@ -583,6 +591,7 @@ function Application({
       if (
         !quick &&
         !setupActive &&
+        !profileCardOpen &&
         !(
           e.target instanceof Element &&
           e.target.closest("[data-shortcut-recorder]")
@@ -599,7 +608,7 @@ function Application({
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [data?.settings.command_shortcut, setupActive]);
+  }, [data?.settings.command_shortcut, setupActive, profileCardOpen]);
   function setUndo(notice: Omit<UndoNotice, "key">) {
     setUndoNotices((current) => [
       ...current,
@@ -1164,6 +1173,7 @@ function Application({
               settings={settings}
               avatar={data.avatar}
               onRefresh={load}
+              onOpenProfileCard={() => setProfileCardOpen(true)}
               onRedoOnboarding={() =>
                 afterSettings(() => setConfirmSetup(true))
               }
@@ -1268,6 +1278,22 @@ function Application({
           )}
         </>
       </main>
+      {profileCardOpen && (
+        <ProfileCardDialog
+          name={settings.name}
+          avatar={data.avatar}
+          finish={settings.profile_card_finish ?? "holographic"}
+          now={now}
+          motionEnabled={
+            settings.animation !== "off" &&
+            data.system_visuals?.animations_enabled !== false
+          }
+          onFinishChange={(finish) =>
+            preferences({ profile_card_finish: finish })
+          }
+          onClose={() => setProfileCardOpen(false)}
+        />
+      )}
       {settingsLeave && (
         <UnsavedSettingsDialog
           onStay={() => setSettingsLeave(null)}

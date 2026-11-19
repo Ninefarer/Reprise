@@ -1,6 +1,41 @@
-use crate::Db;
+use crate::{store::Store, Db};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use tauri::{Emitter, Manager};
+
+#[tauri::command]
+pub async fn profile_completion_count(db: tauri::State<'_, Db>) -> Result<i64, String> {
+    db.lock()
+        .map_err(|e| e.to_string())?
+        .profile_completion_count()
+}
+
+impl Store {
+    fn profile_completion_count(&self) -> Result<i64, String> {
+        // An Undo always follows the transition it reverses in the task's history.
+        // Include currently finished tasks so older records without history also count.
+        self.conn
+            .query_row(
+                "WITH transitions AS (
+                     SELECT task_id, json_extract(before_data, '$.status') AS before_status,
+                            json_extract(after_data, '$.status') AS after_status,
+                            LEAD(action, 1, '') OVER (PARTITION BY task_id ORDER BY id) AS next_action
+                     FROM history
+                 )
+                 SELECT COUNT(*) FROM (
+                     SELECT id FROM tasks WHERE json_extract(data, '$.status') = 'Finished'
+                     UNION
+                     SELECT task_id FROM transitions
+                     WHERE after_status = 'Finished'
+                       AND before_status IS NOT 'Finished'
+                       AND next_action != 'Undone'
+                 )",
+                [],
+                |row| row.get(0),
+            )
+            .map_err(|e| e.to_string())
+    }
+}
+
 pub fn avatar(app: &tauri::AppHandle, name: &Option<String>) -> Option<String> {
     let name = name.as_ref()?;
     if !safe_name(name) {
@@ -75,6 +110,49 @@ fn write_crop(dir: &std::path::Path, encoded: &str) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::{Status, Task};
+
+    #[test]
+    fn completion_count_uses_retained_history_and_respects_undo() {
+        let mut store = Store::init(rusqlite::Connection::open_in_memory().unwrap()).unwrap();
+        let mut first = store
+            .save(Task::new("First task".into(), 100), "Created", 100)
+            .unwrap();
+        let mut second = store
+            .save(Task::new("Second task".into(), 101), "Created", 101)
+            .unwrap();
+        assert_eq!(store.profile_completion_count().unwrap(), 0);
+
+        first.status = Status::Finished;
+        first = store.save(first, "Finished", 102).unwrap();
+        first.status = Status::Inbox;
+        first = store.save(first, "Reopened", 103).unwrap();
+        assert_eq!(store.profile_completion_count().unwrap(), 1);
+        first.status = Status::Finished;
+        first = store.save(first, "Finished", 104).unwrap();
+        assert_eq!(store.profile_completion_count().unwrap(), 1);
+
+        second.status = Status::Finished;
+        second = store.save(second, "Finished", 105).unwrap();
+        assert_eq!(store.profile_completion_count().unwrap(), 2);
+        store.undo(&second.id, second.updated_at, 106).unwrap();
+        assert_eq!(store.profile_completion_count().unwrap(), 1);
+
+        store
+            .delete_with_receipt(&first.id, first.updated_at, Some("undo"))
+            .unwrap();
+        assert_eq!(store.profile_completion_count().unwrap(), 0);
+        store.restore_deletion("undo").unwrap();
+        assert_eq!(store.profile_completion_count().unwrap(), 1);
+
+        // A finished task can predate the available history.
+        store
+            .conn
+            .execute("DELETE FROM history WHERE task_id = ?1", [&first.id])
+            .unwrap();
+        assert_eq!(store.profile_completion_count().unwrap(), 1);
+    }
+
     #[test]
     fn managed_crop_is_validated_and_persists_independently() {
         let dir =

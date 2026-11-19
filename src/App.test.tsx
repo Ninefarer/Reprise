@@ -107,6 +107,7 @@ beforeEach(() => {
       return;
     }
     if (cmd === "snapshot") return structuredClone(data);
+    if (cmd === "profile_completion_count") return 27;
     if (cmd === "notification_panel_preferences") {
       data.settings.notification_panel_pinned = args.pinned;
       return;
@@ -387,6 +388,48 @@ describe("native-window snapshot suspension", () => {
     expect(off).toHaveBeenCalledOnce();
   });
 });
+it("opens the optional profile card, persists the finish and restores focus", async () => {
+  data.avatar = "data:image/png;base64,avatar";
+  const user = userEvent.setup();
+  const first = render(<App />);
+  await openSettings(user);
+  expect(mocks.invoke).not.toHaveBeenCalledWith("profile_completion_count");
+
+  const trigger = screen.getByRole("button", { name: "View profile card" });
+  trigger.focus();
+  await user.keyboard("{Enter}");
+  const dialog = screen.getByRole("dialog", { name: "Profile card" });
+  const card = within(dialog);
+  expect(card.getByRole("heading", { name: data.settings.name })).toBeTruthy();
+  expect(dialog.querySelector("img")?.getAttribute("src")).toBe(data.avatar);
+  expect(await card.findByText("27")).toBeTruthy();
+  expect(
+    card.getByText(
+      new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(),
+    ),
+  ).toBeTruthy();
+  expect(
+    card.getAllByRole("radio").map((radio) => radio.parentElement?.textContent),
+  ).toEqual(["Classic", "Holographic", "Polychrome", "Prismatic"]);
+  await user.click(card.getByRole("radio", { name: "Prismatic" }));
+  await waitFor(() =>
+    expect(data.settings.profile_card_finish).toBe("prismatic"),
+  );
+  expect(card.getByRole("article").getAttribute("data-finish")).toBe("prismatic");
+
+  fireEvent(dialog, new Event("cancel", { cancelable: true }));
+  expect(screen.queryByRole("dialog", { name: "Profile card" })).toBeNull();
+  expect(document.activeElement).toBe(trigger);
+  first.unmount();
+
+  render(<App />);
+  await openSettings(user);
+  await user.click(screen.getByRole("button", { name: "View profile card" }));
+  expect(
+    (screen.getByRole("radio", { name: "Prismatic" }) as HTMLInputElement).checked,
+  ).toBe(true);
+});
+
 describe("Settings draft protection", () => {
   it("saves one section without discarding drafts or overwriting independent settings", async () => {
     const user = userEvent.setup();

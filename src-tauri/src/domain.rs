@@ -86,10 +86,21 @@ impl Task {
         Ok(())
     }
 }
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ProfileCardFinish {
+    Classic,
+    #[default]
+    Holographic,
+    Polychrome,
+    Prismatic,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
     pub name: String,
+    pub profile_card_finish: ProfileCardFinish,
     pub workspace: String,
     pub theme: String,
     pub density: String,
@@ -129,6 +140,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             name: String::new(),
+            profile_card_finish: ProfileCardFinish::default(),
             workspace: String::new(),
             theme: "system".into(),
             density: "comfortable".into(),

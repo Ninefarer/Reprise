@@ -37,6 +37,7 @@ export function Preferences({
   settings,
   onSave,
   onRedoOnboarding,
+  onOpenProfileCard,
   onVisual,
   system,
   version,
@@ -50,6 +51,7 @@ export function Preferences({
 }: {
   settings: Settings;
   onRedoOnboarding: () => void;
+  onOpenProfileCard: () => void;
   avatar?: string | null;
   onRefresh?: () => Promise<void>;
   onSave: (s: Partial<Settings>) => Promise<boolean>;
@@ -253,6 +255,9 @@ export function Preferences({
               onChange={(event) => set("name", event.target.value)}
             />
           </label>
+          <button type="button" onClick={onOpenProfileCard}>
+            View profile card
+          </button>
         </section>
         <section className="settings-section setup-row">
           <h2>Setup</h2>

@@ -222,6 +222,7 @@ fn save_settings(
     let d = db.lock().map_err(|e| e.to_string())?;
     let current = d.settings()?;
     settings.profile_image = current.profile_image;
+    settings.profile_card_finish = current.profile_card_finish;
     settings.sidebar_width = current.sidebar_width;
     settings.sidebar_collapsed = current.sidebar_collapsed;
     settings.sidebar_groups = current.sidebar_groups;
@@ -301,6 +302,7 @@ fn main() {
             save_task,
             save_settings,
             save_preference_patch,
+            profile::profile_completion_count,
             task_history,
             read_notice,
             delete_task,

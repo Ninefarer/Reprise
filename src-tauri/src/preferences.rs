@@ -57,6 +57,7 @@ impl Store {
     pub fn preference_patch(&self, patch: Map<String, Value>) -> Result<(), String> {
         const ALLOWED: &[&str] = &[
             "name",
+            "profile_card_finish",
             "settlement_mode",
             "return_time",
             "review_time",
@@ -102,6 +103,43 @@ impl Store {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::ProfileCardFinish;
+
+    #[test]
+    fn profile_card_finish_defaults_and_round_trips_with_other_preferences() {
+        let store = Store::init(rusqlite::Connection::open_in_memory().unwrap()).unwrap();
+        store
+            .conn
+            .execute(
+                "INSERT INTO settings VALUES (1, '{\"name\":\"Reprise\"}')",
+                [],
+            )
+            .unwrap();
+        assert_eq!(
+            store.settings().unwrap().profile_card_finish,
+            ProfileCardFinish::Holographic
+        );
+        let patch_finish = |finish| {
+            store.preference_patch(Map::from_iter([(
+                "profile_card_finish".into(),
+                serde_json::json!(finish),
+            )]))
+        };
+        for (value, expected) in [
+            ("classic", ProfileCardFinish::Classic),
+            ("holographic", ProfileCardFinish::Holographic),
+            ("polychrome", ProfileCardFinish::Polychrome),
+            ("prismatic", ProfileCardFinish::Prismatic),
+        ] {
+            patch_finish(value).unwrap();
+            assert_eq!(store.settings().unwrap().profile_card_finish, expected);
+        }
+        assert!(patch_finish("unknown").is_err());
+        let saved = store.settings().unwrap();
+        assert_eq!(saved.profile_card_finish, ProfileCardFinish::Prismatic);
+        assert_eq!(saved.name, "Reprise");
+    }
+
     #[test]
     fn custom_shortcuts_reject_conflicts_and_preserve_existing_choices() {
         for value in [

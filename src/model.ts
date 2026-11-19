@@ -32,6 +32,11 @@ export type Material = "flat" | "frosted" | "glass";
 export type Accent =
   "theme" | "lavender" | "sage" | "icy-blue" | "rose" | "neutral";
 export type AnimationPreference = "off" | "subtle" | "expressive";
+export type ProfileCardFinish =
+  | "classic"
+  | "holographic"
+  | "polychrome"
+  | "prismatic";
 export interface VisualPreferences {
   theme: Theme;
   theme_family: ThemeFamily;
@@ -69,6 +74,7 @@ export interface Task {
 }
 export interface Settings {
   name: string;
+  profile_card_finish?: ProfileCardFinish;
   workspace: string;
   theme: Theme;
   density: Density;
