@@ -33,6 +33,11 @@ const rows = [];
 await mkdir("artifacts/motion", { recursive: true });
 try {
   await page.bringToFront();
+  const disclosure = page.getByRole("button", {
+    name: "Continue to Nightly",
+    exact: true,
+  });
+  if (await disclosure.count()) await disclosure.click();
   console.log(
     await page.evaluate(() => ({
       active: document.documentElement.dataset.windowActive,
@@ -84,6 +89,7 @@ try {
   await page.waitForTimeout(650);
   assert.equal(await page.locator(".control-popup").count(), 0);
   assert.equal(await page.locator(".notification-dock").count(), 0);
+  assert.equal(await page.locator(".glass-morph-shell").count(), 0);
   for (const name of ["Inbox", "Daily Review", "Home", "Scheduled", "Home"]) {
     await page
       .getByRole("navigation")
@@ -101,42 +107,46 @@ try {
     for (const family of ["classic", "pitch-black", "ashen-white", "peach"])
       for (const theme of ["light", "dark"])
         for (const material of ["clear", "acrylic"]) {
-          await ipc("visual_preferences", {
-            patch: {
-              theme_family: family,
-              theme,
-              desktop_glass: true,
-              desktop_material: material,
-              animation: "expressive",
-            },
-          });
-          await page.waitForTimeout(120);
-          await page.keyboard.press("Control+Shift+n");
-          await page
-            .getByRole("combobox", { name: "Category", exact: true })
-            .click();
-          await page.waitForTimeout(500);
-          rows.push(
-            await page.evaluate(() => {
-              const el = document.querySelector(".control-popup"),
-                c = getComputedStyle(el),
-                r = el.getBoundingClientRect();
-              return {
-                family: document.documentElement.dataset.family,
-                theme: document.documentElement.dataset.theme,
-                material: document.documentElement.dataset.glassVariant,
-                opacity: c.opacity,
-                transform: c.transform,
-                inViewport:
-                  r.left >= 0 &&
-                  r.right <= innerWidth &&
-                  r.top >= 0 &&
-                  r.bottom <= innerHeight,
-              };
-            }),
-          );
-          await page.keyboard.press("Escape");
-          await page.keyboard.press("Escape");
+          for (const tint of [35, 60, 90]) {
+            await ipc("visual_preferences", {
+              patch: {
+                theme_family: family,
+                theme,
+                desktop_glass: true,
+                desktop_material: material,
+                desktop_tint: tint,
+                animation: "expressive",
+              },
+            });
+            await page.waitForTimeout(120);
+            await page.keyboard.press("Control+Shift+n");
+            await page
+              .getByRole("combobox", { name: "Category", exact: true })
+              .click();
+            await page.waitForTimeout(500);
+            rows.push(
+              await page.evaluate((requestedTint) => {
+                const el = document.querySelector(".control-popup"),
+                  c = getComputedStyle(el),
+                  r = el.getBoundingClientRect();
+                return {
+                  family: document.documentElement.dataset.family,
+                  theme: document.documentElement.dataset.theme,
+                  material: document.documentElement.dataset.glassVariant,
+                  requestedTint,
+                  opacity: c.opacity,
+                  transform: c.transform,
+                  inViewport:
+                    r.left >= 0 &&
+                    r.right <= innerWidth &&
+                    r.top >= 0 &&
+                    r.bottom <= innerHeight,
+                };
+              }, tint),
+            );
+            await page.keyboard.press("Escape");
+            await page.keyboard.press("Escape");
+          }
         }
     await ipc("visual_preferences", { patch: { animation: "off" } });
     await page.waitForTimeout(150);

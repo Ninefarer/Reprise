@@ -88,6 +88,10 @@ export function springMotion(
   frame: (progress: number) => Record<string, string>,
   profile: MotionProfile = "fluid",
   initial = 0,
+  tracks: {
+    element: HTMLElement;
+    frame: (progress: number) => Record<string, string>;
+  }[] = [],
 ) {
   let state: SpringState = { position: initial, velocity: 0 },
     target = initial;
@@ -96,10 +100,17 @@ export function springMotion(
     physics = { frequency: 38, damping: 1 },
     settled: (() => void) | undefined;
   let generation = 0;
-  const apply = (position: number) =>
+  let followers: Animation[] = [];
+  const apply = (position: number) => {
     Object.assign(element.style, frame(position));
+    tracks.forEach((track) =>
+      Object.assign(track.element.style, track.frame(position)),
+    );
+  };
   const cancel = () => {
     generation++;
+    followers.forEach((animation) => animation.cancel());
+    followers = [];
     if (active) {
       active.onfinish = null;
       active.cancel();
@@ -149,6 +160,7 @@ export function springMotion(
       };
       start = state;
       const frames: Keyframe[] = [];
+      const values: number[] = [];
       let duration = 0;
       for (let step = 0; step <= 72; step++) {
         duration = step * (1000 / 120);
@@ -160,6 +172,7 @@ export function springMotion(
           physics.damping,
         );
         frames.push(frame(sampled.position));
+        values.push(sampled.position);
         if (
           step > 0 &&
           Math.abs(sampled.position - target) < 0.001 &&
@@ -168,6 +181,7 @@ export function springMotion(
           break;
       }
       frames[frames.length - 1] = frame(target);
+      values[values.length - 1] = target;
       if (duration === 0) {
         finish();
         return;
@@ -178,6 +192,13 @@ export function springMotion(
         easing: "linear",
         fill: "both",
       });
+      followers = tracks.map((track) =>
+        track.element.animate(values.map(track.frame), {
+          duration,
+          easing: "linear",
+          fill: "both",
+        }),
+      );
       active.onfinish = () => {
         if (generation === current) finish();
       };

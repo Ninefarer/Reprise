@@ -7,7 +7,9 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { MenuGlyph } from "./menuIcons";
-import { springMotion, surfaceFrame, type SpringMotion } from "./motion";
+import { type SpringMotion } from "./motion";
+import { popupSurfaceMotion } from "./glassMotion";
+import "./glass-motion.css";
 export interface MenuAction {
   id: string;
   label: string;
@@ -66,13 +68,20 @@ export function PopupMenu({
     motion.current?.to(0, () => closeCallback.current());
   }
   useLayoutEffect(() => {
-    const controller = springMotion(ref.current!, surfaceFrame);
+    const panel = ref.current!;
+    const controller = popupSurfaceMotion(panel, () => ({
+      left: Math.max(8, Math.min(innerWidth - 32, x - 12)),
+      top: Math.max(8, Math.min(innerHeight - 28, y - 10)),
+      width: 24,
+      height: 20,
+      radius: 6,
+    }));
     motion.current = controller;
     return () => {
       controller.dispose();
       motion.current = null;
     };
-  }, []);
+  }, [x, y]);
   useLayoutEffect(() => {
     closingRef.current = false;
     setClosing(false);

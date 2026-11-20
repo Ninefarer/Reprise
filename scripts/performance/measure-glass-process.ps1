@@ -17,21 +17,28 @@ do {
 $cores=[Environment]::ProcessorCount
 $rows=@()
 $previous=Get-Date
-$previousCpu=(@(Get-Process -Id $ids -ErrorAction SilentlyContinue) | Measure-Object CPU -Sum).Sum
+$previousCpu=@{}
+Get-Process -Id $ids -ErrorAction SilentlyContinue | ForEach-Object { $previousCpu[[int]$_.Id]=[double]$_.CPU }
 $sample=0
 Get-Counter -Counter '\GPU Engine(*)\Utilization Percentage' -MaxSamples $Seconds -SampleInterval 1 | ForEach-Object {
   $gpuSample=$_
   $current=Get-Date
   $owned=@(Get-Process -Id $ids -ErrorAction SilentlyContinue)
-  $cpu=($owned | Measure-Object CPU -Sum).Sum
+  $nextCpu=@{}; $cpuDelta=0.0; $newProcesses=0
+  foreach ($process in $owned) {
+    $processKey=[int]$process.Id; $processCpu=[double]$process.CPU
+    $nextCpu[$processKey]=$processCpu
+    if ($previousCpu.ContainsKey($processKey)) { $cpuDelta += [Math]::Max(0.0,$processCpu-$previousCpu[$processKey]) } else { $newProcesses++ }
+  }
+  $exitedProcesses=@($previousCpu.Keys | Where-Object { -not $nextCpu.ContainsKey($_) }).Count
   # Cooked PDH values preserve fractional utilization; integer WMI values rounded
   # this workload to zero and cannot establish that GPU work is absent.
   $engines=@($gpuSample.CounterSamples | Where-Object { $_.InstanceName -match '^pid_(\d+)_' -and $ids -contains [int]$Matches[1] })
   $gpu=($engines | Measure-Object CookedValue -Maximum).Maximum
   $dwmIds=@(Get-Process dwm | ForEach-Object { $_.Id })
   $dwm=@($gpuSample.CounterSamples | Where-Object { $_.InstanceName -match '^pid_(\d+)_' -and $dwmIds -contains [int]$Matches[1] })
-  $rows += [pscustomobject]@{sample=$sample; at=$current.ToUniversalTime().ToString('o'); elapsedMs=($current-$previous).TotalMilliseconds; cpuMachinePercent=100*($cpu-$previousCpu)/($current-$previous).TotalSeconds/$cores; privateMiB=($owned | Measure-Object PrivateMemorySize64 -Sum).Sum/1MB; busiestGpuEnginePercent=$gpu; gpuCounters=$engines.Count; sharedDwmBusiestEnginePercent=($dwm | Measure-Object CookedValue -Maximum).Maximum}
-  $previous=$current; $previousCpu=$cpu
+  $rows += [pscustomobject]@{sample=$sample; at=$current.ToUniversalTime().ToString('o'); elapsedMs=($current-$previous).TotalMilliseconds; cpuMachinePercent=100*$cpuDelta/($current-$previous).TotalSeconds/$cores; cpuNewProcesses=$newProcesses; cpuExitedProcesses=$exitedProcesses; privateMiB=($owned | Measure-Object PrivateMemorySize64 -Sum).Sum/1MB; busiestGpuEnginePercent=$gpu; gpuCounters=$engines.Count; sharedDwmBusiestEnginePercent=($dwm | Measure-Object CookedValue -Maximum).Maximum}
+  $previous=$current; $previousCpu=$nextCpu
   $sample++
 }
 $report=[pscustomobject]@{label=$Label; rootPid=$root[0].Id; processIds=$ids; logicalProcessors=$cores; samples=$rows; notes=@('CPU normalized to whole-machine capacity; private bytes summed over process tree','GPU is busiest owned engine from cooked PDH counters; not total GPU','DWM is shared with other applications and cannot be attributed to Reprise','Seconds specifies sample count; actual elapsed intervals include counter query overhead; short peaks may be missed')}

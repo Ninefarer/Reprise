@@ -15,6 +15,7 @@ export function NavigationSelection({
   const controller = useRef<SpringMotion | null>(null);
   const left = useRef(0),
     initialized = useRef(false);
+  const shape = useRef({ from: 0, to: 0, height: 0 });
   useLayoutEffect(() => {
     const node = marker.current!,
       nav = container.current ?? node.parentElement!;
@@ -35,10 +36,29 @@ export function NavigationSelection({
       node.hidden = false;
       node.style.width = `${selected.offsetWidth}px`;
       node.style.height = `${selected.offsetHeight}px`;
+      shape.current = {
+        from: initialized.current ? shape.current.to : top,
+        to: top,
+        height: selected.offsetHeight,
+      };
       if (!controller.current)
         controller.current = springMotion(
           node,
-          (y) => ({ transform: `translate(${left.current}px, ${y}px)` }),
+          (y) => {
+            const { from, to, height } = shape.current,
+              distance = to - from;
+            const p = distance
+              ? Math.max(0, Math.min(1, (y - from) / distance))
+              : 1;
+            const energy = Math.sin(p * Math.PI),
+              flex = energy * Math.min(6, Math.abs(distance) * 0.04);
+            return {
+              transform: `translate(${left.current}px, ${y - flex / 2}px)`,
+              height: `${height + flex}px`,
+              borderRadius: `${6 + energy * 1.5}px`,
+              boxShadow: `inset 0 1px 0 rgb(255 255 255 / ${energy * 0.18})`,
+            };
+          },
           "fluid",
           top,
         );

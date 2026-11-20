@@ -2,6 +2,7 @@ import { displayDateInput, parseDateInput, validLocalValue } from "./dateInput";
 export { validLocalValue } from "./dateInput";
 import { useEffect, useId, useRef, useState } from "react";
 import { ControlPopup } from "./ControlPopup";
+import { ConnectedGlassControls } from "./ConnectedGlassControls";
 import "./controls.css";
 
 export function DateTimeField({
@@ -322,13 +323,13 @@ function DateTimePicker({
           onChange={(e) => setTime(e.target.value)}
         />
       </label>
-      <div className="time-presets">
+      <ConnectedGlassControls className="time-presets">
         {["09:00", "12:00", "15:00", "18:00"].map((t) => (
           <button type="button" key={t} onClick={() => setTime(t)}>
             {t}
           </button>
         ))}
-      </div>
+      </ConnectedGlassControls>
       {!valid && (
         <p role="alert">
           {validLocalValue(output, type)

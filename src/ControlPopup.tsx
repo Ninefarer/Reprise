@@ -1,6 +1,22 @@
-import { useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
 import { useSurfacePresence } from "./useMotion";
+import { morphSurface } from "./glassMotion";
+import { springMotion, surfaceFrame } from "./motion";
+import "./glass-motion.css";
+
+function positionPopup(box: HTMLElement, trigger: HTMLElement) {
+  const rect = trigger.getBoundingClientRect();
+  box.style.minWidth = `${Math.min(rect.width, innerWidth - 16)}px`;
+  box.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - box.offsetWidth - 8))}px`;
+  box.style.top = `${Math.max(8, Math.min(rect.bottom + 4, innerHeight - box.offsetHeight - 8))}px`;
+}
 
 /** A selection surface, including inside native modal dialogs. */
 export function ControlPopup({
@@ -18,7 +34,37 @@ export function ControlPopup({
     panel = useRef<HTMLDivElement>(null);
   const callback = useRef(onClose);
   callback.current = onClose;
-  const present = useSurfacePresence(open, panel);
+  const factory = useCallback(
+    (box: HTMLDivElement) => {
+      layer.current?.showPopover?.();
+      positionPopup(box, anchor.current!);
+      if (
+        document.documentElement.dataset.glassFidelity === "legacy" ||
+        !box.offsetWidth
+      )
+        return springMotion(box, surfaceFrame);
+      return morphSurface(box, () => {
+        const r = anchor.current!.getBoundingClientRect();
+        return {
+          left: r.left,
+          top: r.top,
+          width: r.width,
+          height: r.height,
+          radius:
+            parseFloat(getComputedStyle(anchor.current!).borderTopLeftRadius) ||
+            6,
+        };
+      });
+    },
+    [anchor],
+  );
+  const present = useSurfacePresence(
+    open,
+    panel,
+    "fluid",
+    surfaceFrame,
+    factory,
+  );
   const host =
     anchor.current?.closest("dialog[open], .setup-screen") ?? document.body;
   useLayoutEffect(() => {
@@ -27,9 +73,7 @@ export function ControlPopup({
       box = panel.current!;
     surface.showPopover?.();
     const rect = anchor.current!.getBoundingClientRect();
-    box.style.minWidth = `${Math.min(rect.width, innerWidth - 16)}px`;
-    box.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - box.offsetWidth - 8))}px`;
-    box.style.top = `${Math.max(8, Math.min(rect.bottom + 4, innerHeight - box.offsetHeight - 8))}px`;
+    positionPopup(box, anchor.current!);
     // Expansion stays connected to its trigger even when clamped above it.
     box.style.setProperty(
       "--popup-origin",

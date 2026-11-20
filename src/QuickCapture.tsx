@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { LogicalSize } from "@tauri-apps/api/dpi";
 import { listen } from "@tauri-apps/api/event";
-import { springMotion, surfaceFrame } from "./motion";
+import { springMotion } from "./motion";
 import { hideQuickCapture, registerCaptureExit } from "./captureMotion";
 export function QuickCapture({
   children,
@@ -18,7 +18,24 @@ export function QuickCapture({
   const root = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     const node = root.current!;
-    const controller = springMotion(node, surfaceFrame, "gentle");
+    const style = getComputedStyle(node),
+      radius = parseFloat(style.borderTopLeftRadius) || 0;
+    const shadow =
+      style.boxShadow === "none" ? "0 0 0 transparent" : style.boxShadow;
+    const controller = springMotion(
+      node,
+      (value) => {
+        const p = Math.max(0, Math.min(1, value)),
+          energy = Math.sin(p * Math.PI);
+        return {
+          transform: "none",
+          opacity: String(Math.min(1, p * 5)),
+          clipPath: `inset(${(1 - p) * 3}px 0 0 round ${radius}px)`,
+          boxShadow: `${shadow}, inset 0 1px 0 rgb(255 255 255 / ${energy * 0.18})`,
+        };
+      },
+      "gentle",
+    );
     let generation = 0,
       alive = true;
     let pending: { promise: Promise<void>; resolve: () => void } | undefined;

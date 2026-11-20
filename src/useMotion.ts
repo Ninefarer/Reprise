@@ -8,30 +8,35 @@ import {
 } from "react";
 import {
   motionAllowed,
+  observeMotionPolicy,
   springMotion,
   surfaceFrame,
   type MotionProfile,
   type SpringMotion,
 } from "./motion";
+import { glassPressFrame } from "./glassMotion";
 
 export function useSurfacePresence<T extends HTMLElement>(
   open: boolean,
   ref: RefObject<T | null>,
   profile: MotionProfile = "fluid",
   frame = surfaceFrame,
+  factory?: (element: T) => SpringMotion,
 ) {
   const [retained, setRetained] = useState(open);
   const present = open || retained;
   const controller = useRef<SpringMotion | null>(null);
   useLayoutEffect(() => {
     if (!present || !ref.current) return;
-    const spring = springMotion(ref.current, frame, profile);
+    const spring = factory
+      ? factory(ref.current)
+      : springMotion(ref.current, frame, profile);
     controller.current = spring;
     return () => {
       spring.dispose();
       controller.current = null;
     };
-  }, [present, ref, profile, frame]);
+  }, [present, ref, profile, frame, factory]);
   useLayoutEffect(() => {
     if (open) setRetained(true);
     controller.current?.to(open ? 1 : 0, () => {
@@ -77,6 +82,7 @@ export function useTactileControls() {
   useEffect(() => {
     let pressed: HTMLElement | null = null;
     const controllers = new Map<HTMLElement, SpringMotion>();
+    const surfaces = new Map<HTMLElement, HTMLElement>();
     const release = () => {
       const node = pressed;
       pressed = null;
@@ -84,6 +90,9 @@ export function useTactileControls() {
       const controller = controllers.get(node);
       controller?.to(0, () => {
         controllers.delete(node);
+        surfaces.get(node)?.remove();
+        surfaces.delete(node);
+        delete node.dataset.surfacePress;
         node.style.removeProperty("scale");
       });
     };
@@ -94,18 +103,47 @@ export function useTactileControls() {
         !node ||
         node.matches(":disabled, [aria-disabled=true]") ||
         node.closest("[inert]") ||
-        !motionAllowed()
+        !motionAllowed() ||
+        window.matchMedia?.("(forced-colors: active)").matches
       )
         return;
       if (node !== pressed) release();
       pressed = node;
       let controller = controllers.get(node);
       if (!controller) {
-        controller = springMotion(
-          node,
-          (p) => ({ scale: String(1 - 0.014 * p) }),
-          "snappy",
-        );
+        if (
+          node.matches(".glass-control") &&
+          document.documentElement.dataset.glassFidelity !== "legacy"
+        ) {
+          const surface = document.createElement("span");
+          surface.className = "glass-press-surface";
+          surface.setAttribute("aria-hidden", "true");
+          const style = getComputedStyle(node),
+            shadow =
+              style.boxShadow === "none"
+                ? "0 0 0 transparent"
+                : style.boxShadow,
+            radius = parseFloat(style.borderTopLeftRadius) || 6;
+          for (const property of ["background", "border", "backdrop-filter"])
+            surface.style.setProperty(
+              property,
+              style.getPropertyValue(property),
+            );
+          node.append(surface);
+          node.dataset.surfacePress = "";
+          surfaces.set(node, surface);
+          controller = springMotion(
+            surface,
+            (p) => glassPressFrame(p, shadow, radius),
+            "snappy",
+          );
+        } else {
+          controller = springMotion(
+            node,
+            (p) => ({ scale: String(1 - 0.014 * p) }),
+            "snappy",
+          );
+        }
         controllers.set(node, controller);
       }
       controller.to(1);
@@ -132,6 +170,7 @@ export function useTactileControls() {
     document.addEventListener("keydown", keyDown, true);
     document.addEventListener("keyup", keyUp, true);
     window.addEventListener("blur", release);
+    const unobserve = observeMotionPolicy(release);
     return () => {
       document.removeEventListener("pointerdown", down, true);
       document.removeEventListener("pointerup", release, true);
@@ -139,10 +178,14 @@ export function useTactileControls() {
       document.removeEventListener("keydown", keyDown, true);
       document.removeEventListener("keyup", keyUp, true);
       window.removeEventListener("blur", release);
+      unobserve();
       controllers.forEach((controller, node) => {
         controller.dispose();
         node.style.removeProperty("scale");
+        delete node.dataset.surfacePress;
       });
+      surfaces.forEach((surface) => surface.remove());
+      surfaces.clear();
     };
   }, []);
 }
