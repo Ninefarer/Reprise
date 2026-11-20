@@ -192,6 +192,67 @@ const taskEditorCleanup: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "3.4.5",
+    date: "2026-11-20",
+    title: "Glass, motion and namecards",
+    sections: [
+      {
+        heading: "ADDITIONS",
+        accent: "new",
+        entries: [
+          {
+            text: "Namecards show your profile and task milestones with Classic, Holographic, Polychrome and Foil finishes, responsive tilt and rainbow effects.",
+          },
+          {
+            text: "Share a namecard by copying it to the clipboard as an image.",
+          },
+          {
+            text: "Choose Solid or Glass independently of your color theme, with Clear, Regular and Tinted glass and Fluid, Subtle or Reduced motion.",
+          },
+        ],
+      },
+      {
+        heading: "CHANGES",
+        accent: "little",
+        entries: [
+          {
+            text: "Softer rounded corners, more substantial glass surfaces and responsive transitions across navigation, menus, dialogs and Quick Capture.",
+          },
+          {
+            text: "Appearance settings separate Theme, Aesthetic and Motion while preserving your saved preferences.",
+          },
+          {
+            text: "Inbox lives in Hub, compact rows stay compact, and decorative colored edge strips give way to clearer labels.",
+          },
+          {
+            text: "Settings Save and Discard controls stay above the active section while scrolling.",
+          },
+          {
+            text: "Notifications follow your theme and glass settings, and Windows reminders include project, priority, deadline and waiting context.",
+          },
+          {
+            text: "More greetings for each time of day, shorter placeholders and clearer empty states.",
+          },
+        ],
+      },
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Clear glass retains native desktop diffusion with readable tint and accessible solid fallbacks.",
+          },
+          {
+            text: "Manual update checks reveal and focus their results, including previously cleared offers, and explain errors in plain language.",
+          },
+          {
+            text: "Motion handles interrupted transitions, closing overlays and reduced-motion preferences more consistently.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.4.5-nightly.20261119.1",
     date: "2026-11-19",
     title: "Notification and settings polish",

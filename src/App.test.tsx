@@ -892,7 +892,7 @@ describe("Nightly channel", () => {
     const second = await screen.findByRole("heading", {
       name: "Choose when tasks return.",
     });
-    expect(document.activeElement).toBe(second);
+    await waitFor(() => expect(document.activeElement).toBe(second));
     document.documentElement.dataset.motion = "off";
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.getByLabelText("Display name")).toBeTruthy();
