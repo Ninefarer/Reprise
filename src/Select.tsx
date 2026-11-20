@@ -91,7 +91,7 @@ export function Select({
         value={String(value)}
         type="button"
         role="combobox"
-        className="select-trigger"
+        className="select-trigger glass-surface glass-control"
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -122,73 +122,71 @@ export function Select({
           <path d="m4 6 4 4 4-4" />
         </svg>
       </button>
-      {open && (
-        <ControlPopup anchor={trigger} onClose={() => setOpen(false)}>
-          <div
-            id={listId}
-            role="listbox"
-            aria-label={
-              trigger.current?.labels?.[0]?.textContent?.trim() ||
-              props["aria-label"] ||
-              "Choices"
+      <ControlPopup open={open} anchor={trigger} onClose={() => setOpen(false)}>
+        <div
+          id={listId}
+          role="listbox"
+          aria-label={
+            trigger.current?.labels?.[0]?.textContent?.trim() ||
+            props["aria-label"] ||
+            "Choices"
+          }
+          className="select-options"
+          onKeyDown={(e) => {
+            if (["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) {
+              e.preventDefault();
+              const enabled = options
+                .map((o, i) => (o.disabled ? -1 : i))
+                .filter((i) => i >= 0);
+              const position = enabled.indexOf(active);
+              setActive(
+                enabled[
+                  e.key === "Home"
+                    ? 0
+                    : e.key === "End"
+                      ? enabled.length - 1
+                      : (position +
+                          (e.key === "ArrowDown" ? 1 : -1) +
+                          enabled.length) %
+                        enabled.length
+                ] ?? 0,
+              );
+            } else if (
+              e.key.length === 1 &&
+              !e.ctrlKey &&
+              !e.altKey &&
+              !e.metaKey &&
+              e.key !== " "
+            ) {
+              e.preventDefault();
+              search.current.value =
+                (Date.now() - search.current.at > 700
+                  ? ""
+                  : search.current.value) + e.key.toLocaleLowerCase();
+              search.current.at = Date.now();
+              const found = options.findIndex(
+                (o) =>
+                  !o.disabled &&
+                  String(o.label)
+                    .toLocaleLowerCase()
+                    .startsWith(search.current.value),
+              );
+              if (found >= 0) setActive(found);
             }
-            className="select-options"
-            onKeyDown={(e) => {
-              if (["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) {
-                e.preventDefault();
-                const enabled = options
-                  .map((o, i) => (o.disabled ? -1 : i))
-                  .filter((i) => i >= 0);
-                const position = enabled.indexOf(active);
-                setActive(
-                  enabled[
-                    e.key === "Home"
-                      ? 0
-                      : e.key === "End"
-                        ? enabled.length - 1
-                        : (position +
-                            (e.key === "ArrowDown" ? 1 : -1) +
-                            enabled.length) %
-                          enabled.length
-                  ] ?? 0,
-                );
-              } else if (
-                e.key.length === 1 &&
-                !e.ctrlKey &&
-                !e.altKey &&
-                !e.metaKey &&
-                e.key !== " "
-              ) {
-                e.preventDefault();
-                search.current.value =
-                  (Date.now() - search.current.at > 700
-                    ? ""
-                    : search.current.value) + e.key.toLocaleLowerCase();
-                search.current.at = Date.now();
-                const found = options.findIndex(
-                  (o) =>
-                    !o.disabled &&
-                    String(o.label)
-                      .toLocaleLowerCase()
-                      .startsWith(search.current.value),
-                );
-                if (found >= 0) setActive(found);
-              }
-            }}
-          >
-            {options.map((o, i) => (
-              <SelectOption
-                key={o.value}
-                option={o}
-                selected={String(value) === o.value}
-                active={active === i}
-                onChoose={() => choose(i)}
-                onActive={() => setActive(i)}
-              />
-            ))}
-          </div>
-        </ControlPopup>
-      )}
+          }}
+        >
+          {options.map((o, i) => (
+            <SelectOption
+              key={o.value}
+              option={o}
+              selected={String(value) === o.value}
+              active={open && active === i}
+              onChoose={() => choose(i)}
+              onActive={() => setActive(i)}
+            />
+          ))}
+        </div>
+      </ControlPopup>
     </>
   );
 }

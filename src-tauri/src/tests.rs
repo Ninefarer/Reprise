@@ -1,6 +1,86 @@
 use crate::{domain::*, store::Store};
 use chrono::{TimeZone, Timelike};
 #[test]
+fn aesthetics_migrate_legacy_settings_and_preserve_independent_choices() {
+    for glass in [false, true] {
+        let d = db();
+        let legacy = serde_json::json!({"desktop_glass":glass,"theme_family":"pitch-black","theme":"system","animation":"expressive","desktop_material":"acrylic","desktop_tint":90});
+        d.conn
+            .execute(
+                "INSERT OR REPLACE INTO settings VALUES(1,?1)",
+                [legacy.to_string()],
+            )
+            .unwrap();
+        let mut s = d.settings().unwrap();
+        assert_eq!(
+            s.selected_aesthetic(),
+            if glass {
+                Aesthetic::Glass
+            } else {
+                Aesthetic::Solid
+            }
+        );
+        crate::visuals::VisualPatch {
+            theme_family: Some("ashen-white".into()),
+            ..Default::default()
+        }
+        .apply(&mut s)
+        .unwrap();
+        d.set_settings(&s).unwrap();
+        let reopened = Store::init(d.conn).unwrap();
+        let mut saved = reopened.settings().unwrap();
+        assert_eq!(
+            saved.aesthetic,
+            Some(if glass {
+                Aesthetic::Glass
+            } else {
+                Aesthetic::Solid
+            })
+        );
+        assert_eq!(saved.animation, "expressive");
+        assert_eq!(saved.desktop_tint, 90);
+        for aesthetic in [Aesthetic::Solid, Aesthetic::Glass] {
+            crate::visuals::VisualPatch {
+                aesthetic: Some(aesthetic),
+                ..Default::default()
+            }
+            .apply(&mut saved)
+            .unwrap();
+            reopened.set_settings(&saved).unwrap();
+            saved = reopened.settings().unwrap();
+            assert_eq!(saved.selected_aesthetic(), aesthetic);
+            assert_eq!(saved.desktop_glass, aesthetic == Aesthetic::Glass);
+            assert_eq!(saved.desktop_material, "acrylic");
+            assert_eq!(saved.theme_family, "ashen-white");
+        }
+        crate::visuals::VisualPatch {
+            desktop_material: Some("tinted".into()),
+            ..Default::default()
+        }
+        .apply(&mut saved)
+        .unwrap();
+        reopened.set_settings(&saved).unwrap();
+        assert_eq!(reopened.settings().unwrap().desktop_material, "tinted");
+        crate::visuals::VisualPatch {
+            desktop_glass: Some(false),
+            ..Default::default()
+        }
+        .apply(&mut saved)
+        .unwrap();
+        assert_eq!(saved.selected_aesthetic(), Aesthetic::Solid);
+    }
+    assert!(
+        serde_json::from_str::<crate::visuals::VisualPatch>(r#"{"aesthetic":"unknown"}"#).is_err()
+    );
+    assert!(crate::visuals::VisualPatch {
+        aesthetic: Some(Aesthetic::Solid),
+        desktop_glass: Some(true),
+        ..Default::default()
+    }
+    .apply(&mut Settings::default())
+    .is_err());
+}
+#[test]
 fn visual_preferences_preserve_classic_mode_and_survive_restart() {
     let d = db();
     let mut s = d.settings().unwrap();

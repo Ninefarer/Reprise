@@ -1,4 +1,7 @@
-use crate::{domain::Settings, Db};
+use crate::{
+    domain::{Aesthetic, Settings},
+    Db,
+};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, sync::Mutex};
 use tauri::{Emitter, Manager};
@@ -21,6 +24,7 @@ pub struct VisualPatch {
     pub scrollbars: Option<String>,
     pub accent: Option<String>,
     pub animation: Option<String>,
+    pub aesthetic: Option<Aesthetic>,
     pub desktop_glass: Option<bool>,
     pub desktop_material: Option<String>,
     pub desktop_tint: Option<u8>,
@@ -39,6 +43,21 @@ impl VisualPatch {
         }
         if let Some(value) = self.desktop_glass {
             s.desktop_glass = value;
+            s.aesthetic = Some(if value {
+                Aesthetic::Glass
+            } else {
+                Aesthetic::Solid
+            });
+        }
+        if let Some(value) = self.aesthetic {
+            if self
+                .desktop_glass
+                .is_some_and(|legacy| legacy != (value == Aesthetic::Glass))
+            {
+                return Err("Conflicting aesthetic and legacy window appearance".into());
+            }
+            s.aesthetic = Some(value);
+            s.desktop_glass = value == Aesthetic::Glass;
         }
         if let Some(value) = self.desktop_tint {
             if !(35..=90).contains(&value) {
@@ -46,7 +65,7 @@ impl VisualPatch {
             }
             s.desktop_tint = value;
         }
-        value!(desktop_material, ["clear", "acrylic"]);
+        value!(desktop_material, ["clear", "acrylic", "tinted"]);
         value!(theme, ["system", "light", "dark"]);
         value!(
             accent,
@@ -139,6 +158,9 @@ pub fn visual_preferences(
     patch.apply(&mut s)?;
     d.set_settings(&s)?;
     drop(d);
+    // Hidden Capture suspends worker refreshes. Update its settings-only view
+    // before the next reveal rather than showing a stale material for one frame.
+    let _ = app.emit_to("capture", "visual-refresh", ());
     app.emit("refresh", ()).map_err(|e| e.to_string())
 }
 #[tauri::command]
@@ -154,6 +176,9 @@ pub fn window_ready(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Resu
     if show {
         window.show().map_err(|e| e.to_string())?;
         window.set_focus().map_err(|e| e.to_string())?;
+        if window.label() == "capture" {
+            let _ = window.emit("capture-shown", ());
+        }
     }
     Ok(())
 }
@@ -168,6 +193,7 @@ pub fn request_capture(app: &tauri::AppHandle) {
     if let Some(w) = app.get_webview_window("capture") {
         let _ = w.show();
         let _ = w.set_focus();
+        let _ = w.emit("capture-shown", ());
     }
 }
 pub fn request_dashboard(app: &tauri::AppHandle) {
@@ -176,6 +202,9 @@ pub fn request_dashboard(app: &tauri::AppHandle) {
         return;
     }
     if let Some(w) = app.get_webview_window("main") {
+        // show()/set_focus() do not restore an iconified HWND on Windows.
+        // Dashboard requests (tray and second instance) must restore it first.
+        let _ = w.unminimize();
         let _ = w.show();
         let _ = w.set_focus();
     }
@@ -186,6 +215,38 @@ pub struct NativeGlassResult {
     mode: String,
     error: Option<String>,
 }
+// Documented Windows 11 system backdrop. Older Windows returns an error and
+// stays opaque; never fall back to SetWindowCompositionAttribute accent hacks.
+fn system_backdrop(window: &tauri::WebviewWindow, enabled: bool) -> Result<(), String> {
+    #[link(name = "dwmapi")]
+    extern "system" {
+        fn DwmSetWindowAttribute(
+            hwnd: *mut std::ffi::c_void,
+            attribute: u32,
+            value: *const std::ffi::c_void,
+            size: u32,
+        ) -> i32;
+    }
+    let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+    // DWMWA_SYSTEMBACKDROP_TYPE = 38; TRANSIENTWINDOW = 3, NONE = 1.
+    let backdrop: i32 = if enabled { 3 } else { 1 };
+    // SAFETY: Tauri owns a live HWND. DWM reads this stack value synchronously.
+    let status = unsafe {
+        DwmSetWindowAttribute(
+            hwnd.0,
+            38,
+            (&backdrop as *const i32).cast(),
+            std::mem::size_of::<i32>() as u32,
+        )
+    };
+    if status < 0 {
+        Err(format!(
+            "Windows system backdrop unavailable (HRESULT {status:#x}); using solid material."
+        ))
+    } else {
+        Ok(())
+    }
+}
 #[tauri::command]
 pub fn native_glass(
     window: tauri::WebviewWindow,
@@ -193,46 +254,50 @@ pub fn native_glass(
     dark: bool,
     allow: bool,
 ) -> Result<NativeGlassResult, String> {
-    let s = db.lock().map_err(|e| e.to_string())?.settings()?;
+    let mut s = db.lock().map_err(|e| e.to_string())?.settings()?;
+    // Resolve System appearance for every opaque error/fallback path as well.
+    s.theme = if dark { "dark".into() } else { "light".into() };
     let allowed = system_visuals().advanced_effects != Some(false);
     let contrast = windows::UI::ViewManagement::AccessibilitySettings::new()
         .and_then(|v| v.HighContrast())
         .unwrap_or(true);
-    let enabled = s.desktop_glass && allowed && !contrast && allow;
-    window
-        .set_effects(None::<tauri::utils::config::WindowEffectsConfig>)
-        .map_err(|e| e.to_string())?;
+    let glass_selected = s.selected_aesthetic() == Aesthetic::Glass;
+    let enabled = glass_selected && allowed && !contrast && allow;
     if enabled {
         window
             .set_background_color(Some(tauri::utils::config::Color(0, 0, 0, 0)))
             .map_err(|e| e.to_string())?;
-        if s.desktop_material == "acrylic" {
-            if let Err(error) = window.set_effects(tauri::utils::config::WindowEffectsConfig {
-                effects: vec![tauri::utils::WindowEffect::Acrylic],
-                ..Default::default()
-            }) {
-                window
-                    .set_background_color(Some(native_background(&s)))
-                    .map_err(|e| e.to_string())?;
-                return Ok(NativeGlassResult {
-                    mode: "off".into(),
-                    error: Some(error.to_string()),
-                });
-            }
+        // Both variants need diffusion. Clear changes the surface recipe, never
+        // disables the native material or reduces the HWND to bare transparency.
+        if let Err(error) = system_backdrop(&window, true) {
+            let _ = system_backdrop(&window, false);
+            window
+                .set_background_color(Some(native_background(&s)))
+                .map_err(|e| e.to_string())?;
+            return Ok(NativeGlassResult {
+                mode: "off".into(),
+                error: Some(error),
+            });
         }
         Ok(NativeGlassResult {
-            mode: s.desktop_material,
+            // Native eligibility is distinct from the CSS material recipe.
+            // Regular's legacy mode name remains compatible with older WebViews.
+            mode: if s.desktop_material == "clear" {
+                "clear"
+            } else {
+                "acrylic"
+            }
+            .into(),
             error: None,
         })
     } else {
-        let mut s = s;
-        s.theme = if dark { "dark".into() } else { "light".into() };
+        let _ = system_backdrop(&window, false);
         window
             .set_background_color(Some(native_background(&s)))
             .map_err(|e| e.to_string())?;
         Ok(NativeGlassResult {
             mode: "off".into(),
-            error: if s.desktop_glass {
+            error: if glass_selected {
                 Some("Windows or accessibility preferences require opaque surfaces.".into())
             } else {
                 None

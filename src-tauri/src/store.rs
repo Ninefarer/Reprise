@@ -112,10 +112,12 @@ impl Store {
             .unwrap_or(Ok(Settings::default()))
     }
     pub fn set_settings(&self, s: &Settings) -> Result<()> {
+        let mut normalized = s.clone();
+        normalized.normalize_appearance();
         self.conn
             .execute(
                 "INSERT OR REPLACE INTO settings VALUES(1,?1)",
-                [serde_json::to_string(s).map_err(err)?],
+                [serde_json::to_string(&normalized).map_err(err)?],
             )
             .map_err(err)?;
         Ok(())

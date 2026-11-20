@@ -4,10 +4,12 @@ import { visualPreferences } from "./visuals";
 export function AppearanceSettings({
   settings,
   system,
+  surfaceFallback,
   onChange,
 }: {
   settings: Settings;
   system?: Snapshot["system_visuals"];
+  surfaceFallback?: string;
   onChange: (patch: Partial<VisualPreferences>) => Promise<void>;
 }) {
   const v = visualPreferences(settings),
@@ -17,89 +19,6 @@ export function AppearanceSettings({
     <>
       <section className="settings-section" id="appearance-section">
         <h2>Appearance</h2>
-        <div className="fields">
-          <label>
-            Window appearance
-            <Select
-              value={v.desktop_glass ? "glass" : "default"}
-              onChange={(e) =>
-                void onChange({ desktop_glass: e.target.value === "glass" })
-              }
-            >
-              <option value="default">Default (opaque)</option>
-              <option value="glass">Glass (native Windows transparency)</option>
-            </Select>
-          </label>
-          {v.desktop_glass && (
-            <label>
-              Glass material
-              <Select
-                value={v.desktop_material}
-                onChange={(e) =>
-                  void onChange({
-                    desktop_material: e.target.value as "clear" | "acrylic",
-                  })
-                }
-              >
-                <option value="clear">Clear</option>
-                <option value="acrylic">Acrylic</option>
-              </Select>
-            </label>
-          )}
-        </div>
-        {v.desktop_glass && (
-          <>
-            <label>
-              Glass intensity
-              <Select
-                value={
-                  v.desktop_tint === 82
-                    ? "subtle"
-                    : v.desktop_tint === 60
-                      ? "balanced"
-                      : v.desktop_tint === 38
-                        ? "crystal"
-                        : "custom"
-                }
-                onChange={(e) =>
-                  void onChange({
-                    desktop_tint:
-                      (
-                        { subtle: 82, balanced: 60, crystal: 38 } as Record<
-                          string,
-                          number
-                        >
-                      )[e.target.value] ?? v.desktop_tint,
-                  })
-                }
-              >
-                <option value="subtle">Subtle</option>
-                <option value="balanced">Balanced</option>
-                <option value="crystal">Crystal</option>
-                <option value="custom" disabled>
-                  Custom tint
-                </option>
-              </Select>
-            </label>
-            <label>
-              Glass tint: {v.desktop_tint}%
-              <input
-                type="range"
-                min="35"
-                max="90"
-                value={v.desktop_tint}
-                onChange={(e) =>
-                  void onChange({ desktop_tint: Number(e.target.value) })
-                }
-              />
-            </label>
-            <p className="hint">
-              Background tint only; Windows controls Acrylic blur. High contrast
-              and reduced transparency use opaque surfaces.
-            </p>
-          </>
-        )}
-
         <div className="fields">
           <label>
             Theme
@@ -178,8 +97,75 @@ export function AppearanceSettings({
               <option value="neutral">Neutral</option>
             </Select>
           </label>
+        </div>
+        <div className="fields">
           <label>
-            Animation
+            Aesthetic
+            <Select
+              value={v.aesthetic}
+              onChange={(e) =>
+                void onChange({
+                  aesthetic: e.target.value as VisualPreferences["aesthetic"],
+                })
+              }
+            >
+              <option value="solid">Solid</option>
+              <option value="glass">Glass</option>
+            </Select>
+          </label>
+          {v.aesthetic === "glass" && (
+            <label>
+              Glass material
+              <Select
+                value={v.desktop_material}
+                onChange={(e) =>
+                  void onChange({
+                    desktop_material: e.target
+                      .value as VisualPreferences["desktop_material"],
+                  })
+                }
+              >
+                <option value="clear">Clear</option>
+                <option value="acrylic">Regular</option>
+                <option value="tinted">Tinted</option>
+              </Select>
+            </label>
+          )}
+        </div>
+        {v.aesthetic === "glass" && (
+          <>
+            <label>
+              Glass tint: {v.desktop_tint}%
+              <input
+                type="range"
+                min="35"
+                max="90"
+                value={v.desktop_tint}
+                onChange={(e) =>
+                  void onChange({ desktop_tint: Number(e.target.value) })
+                }
+              />
+            </label>
+            <p className="hint">
+              Tint adjusts the selected material within a bounded range. Clear
+              retains desktop translucency even at 90%; Regular balances
+              diffusion and readability; Tinted adds stronger separation. Task
+              cards and form controls stay stable for reading. Windows controls
+              desktop diffusion and may use a solid fallback when effects or
+              transparency are unavailable.
+            </p>
+          </>
+        )}
+
+        {v.aesthetic === "glass" && surfaceFallback && (
+          <p className="hint" role="status">
+            Glass is currently unavailable. Solid surfaces are active; your
+            Glass selection and material settings are retained.
+          </p>
+        )}
+        <div className="fields">
+          <label>
+            Motion
             <Select
               value={v.animation}
               onChange={(e) =>
@@ -188,9 +174,9 @@ export function AppearanceSettings({
                 })
               }
             >
-              <option value="off">Off</option>
+              <option value="off">Reduced</option>
               <option value="subtle">Subtle</option>
-              <option value="expressive">Expressive</option>
+              <option value="expressive">Fluid</option>
             </Select>
           </label>
         </div>

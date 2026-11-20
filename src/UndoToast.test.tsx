@@ -177,3 +177,9 @@ it("shows at most three notices and starts queued deletion timers only on promot
   advance(1);
   expect(expired).toHaveBeenCalledTimes(2);
 });
+
+it("keeps update notices concise without the Windows notification disclaimer", () => {
+  setup({ ...notice, deletionToken: undefined });
+  expect(screen.queryByText(/already submitted to Windows/)).toBeNull();
+  expect(screen.getByText(/Updated/)).toBeTruthy();
+});

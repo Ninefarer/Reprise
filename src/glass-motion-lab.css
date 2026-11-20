@@ -1,0 +1,39 @@
+.glass-motion-lab {
+  max-width: 900px;
+  padding: 32px;
+  margin: auto;
+  background: linear-gradient(115deg, #15233c, #695a54);
+  min-height: 100vh;
+}
+.glass-motion-lab > label {
+  margin-right: 20px;
+}
+.motion-sample {
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid #ffffff30;
+  border-radius: 12px;
+  background: #15171e50;
+}
+.motion-sample .select-trigger {
+  max-width: 280px;
+}
+.connected-sample {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  width: 250px;
+}
+.connected-sample svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  fill: rgba(var(--surface-rgb), 0.74);
+}
+.connected-sample button {
+  position: relative;
+  width: 120px;
+  height: 38px;
+  background: transparent;
+  border: 0;
+}

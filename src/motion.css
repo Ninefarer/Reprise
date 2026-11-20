@@ -1,26 +1,27 @@
 /* Finite, event-driven motion. Nothing loops while the tray process is idle. */
 :root {
-  --motion-fast: 120ms;
-  --motion-menu: 130ms;
-  --motion-popover: 140ms;
-  --motion-modal: 180ms;
-  --motion-group: 180ms;
-  --motion-sidebar: 210ms;
-  --motion-complete: 220ms;
+  --motion-snappy: 120ms;
+  --motion-fluid: 220ms;
+  --motion-gentle: 280ms;
+  --motion-decisive: 220ms;
+  --motion-fast: var(--motion-snappy);
+  --motion-menu: var(--motion-fluid);
+  --motion-popover: var(--motion-fluid);
+  --motion-modal: var(--motion-gentle);
+  --motion-group: var(--motion-fluid);
+  --motion-sidebar: var(--motion-fluid);
+  --motion-complete: var(--motion-decisive);
+  --motion-notice: 320ms;
   --motion-return: 700ms;
   --motion-distance: 4px;
   --motion-scale: 0.98;
-  --press-distance: 1px;
   --motion-ease: cubic-bezier(0.2, 0.75, 0.3, 1);
 }
 :root[data-motion="expressive"] {
-  --motion-fast: 140ms;
-  --motion-menu: 140ms;
-  --motion-popover: 160ms;
-  --motion-modal: 210ms;
-  --motion-group: 200ms;
-  --motion-sidebar: 230ms;
-  --motion-complete: 240ms;
+  --motion-snappy: 140ms;
+  --motion-fluid: 240ms;
+  --motion-gentle: 300ms;
+  --motion-decisive: 240ms;
   --motion-return: 850ms;
   --motion-distance: 6px;
   --motion-scale: 0.975;
@@ -35,12 +36,48 @@ textarea {
     border-color var(--motion-fast) var(--motion-ease),
     color var(--motion-fast) var(--motion-ease);
 }
-button:not(:disabled):active {
-  translate: 0 var(--press-distance);
-}
 .context-menu {
   transform-origin: top left;
-  animation: menu-enter var(--motion-menu) var(--motion-ease);
+}
+.control-popup {
+  transform-origin: var(--popup-origin, top left);
+}
+[data-spring-surface] {
+  animation: none !important;
+}
+.control-shield[data-closing] {
+  pointer-events: none;
+}
+.sidebar nav {
+  position: relative;
+  isolation: isolate;
+}
+.navigation-selection {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 6px;
+  background: var(--selected);
+  pointer-events: none;
+  z-index: -1;
+}
+.sidebar nav[data-motion-selection] .nav-group button.active {
+  background: transparent;
+}
+@media (forced-colors: active) {
+  .navigation-selection {
+    display: none;
+  }
+  .sidebar nav[data-motion-selection] .nav-group button.active {
+    /* Keep Chromium's text backplates from covering HighlightText. The
+       system palette still owns both colors, including descendant icons. */
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+  .sidebar nav[data-motion-selection] .nav-group button.active :is(span, svg) {
+    color: inherit;
+  }
 }
 .profile-footer[open] [role="menu"],
 .sidebar-tooltip {
@@ -77,16 +114,11 @@ button:not(:disabled):active {
 .group-chevron {
   transition: transform var(--motion-group) var(--motion-ease);
 }
-.notification-dock {
-  animation: panel-enter var(--motion-modal) var(--motion-ease);
-}
 .notification-dock[data-exiting="true"] {
-  animation: panel-exit var(--motion-modal) var(--motion-ease) forwards;
   pointer-events: none;
 }
 .task-card.completion-feedback {
   color: var(--text);
-  border-inline-start-color: var(--status-finished);
   pointer-events: none;
   animation: completion-feedback var(--motion-complete) var(--motion-ease)
     forwards;
@@ -140,26 +172,6 @@ button:not(:disabled):active {
     opacity: 1;
   }
 }
-@keyframes panel-enter {
-  from {
-    opacity: 0;
-    translate: 100% 0;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
-}
-@keyframes panel-exit {
-  from {
-    opacity: 1;
-    translate: 0 0;
-  }
-  to {
-    opacity: 0;
-    translate: 100% 0;
-  }
-}
 @keyframes completion-feedback {
   0%,
   55% {
@@ -184,11 +196,10 @@ button:not(:disabled):active {
 :root[data-window-active="false"] *,
 :root[data-window-active="false"] *::before,
 :root[data-window-active="false"] *::after {
-  animation-play-state: paused !important;
+  animation: none !important;
   transition: none !important;
 }
 :root[data-motion="off"] {
-  --press-distance: 0px;
   transition: none !important;
   animation: none !important;
 }
@@ -200,9 +211,6 @@ button:not(:disabled):active {
   scroll-behavior: auto !important;
 }
 @media (prefers-reduced-motion: reduce) {
-  :root {
-    --press-distance: 0px;
-  }
   *,
   *::before,
   *::after {
@@ -219,7 +227,7 @@ button:not(:disabled):active {
   grid-template-rows: 1fr;
   min-width: 0;
   width: 100%;
-  animation: notice-expand 320ms var(--motion-ease) both;
+  animation: notice-expand var(--motion-notice) var(--motion-ease) both;
 }
 .notice-clip {
   min-height: 0;
@@ -229,15 +237,15 @@ button:not(:disabled):active {
   padding-bottom: 10px;
 }
 .slide-card {
-  animation: notice-slide-in 320ms var(--motion-ease) both;
+  animation: notice-slide-in var(--motion-notice) var(--motion-ease) both;
 }
 .notice-slot[data-leaving="true"] {
   pointer-events: none;
-  animation: notice-collapse 320ms var(--motion-ease) both;
+  animation: notice-collapse var(--motion-notice) var(--motion-ease) both;
 }
 .slide-card[data-leaving="true"] {
   pointer-events: none;
-  animation: notice-slide-out 320ms var(--motion-ease) both;
+  animation: notice-slide-out var(--motion-notice) var(--motion-ease) both;
 }
 @keyframes notice-expand {
   from {
@@ -258,7 +266,7 @@ button:not(:disabled):active {
 @keyframes notice-slide-in {
   from {
     opacity: 0;
-    transform: translateX(calc(100% + 30px));
+    transform: translateX(12px);
   }
   to {
     opacity: 1;
@@ -272,6 +280,6 @@ button:not(:disabled):active {
   }
   to {
     opacity: 0;
-    transform: translateX(calc(100% + 30px));
+    transform: translateX(12px);
   }
 }

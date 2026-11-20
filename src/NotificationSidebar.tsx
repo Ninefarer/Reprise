@@ -6,11 +6,16 @@ import {
   type NoticeAction,
 } from "./notifications";
 import { NotificationClearDialog } from "./NotificationClearDialog";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSurfacePresence } from "./useMotion";
 import { date, type Notice, type Task } from "./model";
 import { Icon } from "./navigation";
 import { taskCategory } from "./taskColors";
 import { offeredVersion, updateMessage, type UpdateActivity } from "./updates";
+const dockFrame = (p: number) => ({
+  opacity: String(Math.max(0, Math.min(1, p))),
+  transform: `translateX(${(1 - p) * 28}px)`,
+});
 
 export function NotificationSidebar({
   open,
@@ -26,7 +31,9 @@ export function NotificationSidebar({
   onManage,
   onUpdate,
   updateActivity,
+  revealRequest,
 }: {
+  revealRequest?: { id: string; sequence: number } | null;
   open: boolean;
   pinned: boolean;
   notices: Notice[];
@@ -53,56 +60,45 @@ export function NotificationSidebar({
     else
       setManagementError("Could not update notifications. Please try again.");
   }
-  const [present, setPresent] = useState(shown),
-    [exiting, setExiting] = useState(false);
   const [category, setCategory] = useState("All"),
     [unread, setUnread] = useState(false),
     [query, setQuery] = useState("");
+  const revealedSequence = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (!revealRequest) return;
+    setCategory("Updates");
+    setUnread(false);
+    setQuery("");
+  }, [revealRequest?.sequence]);
+  useEffect(() => {
+    if (!revealRequest || !shown || category !== "Updates" || unread || query)
+      return;
+    const frame = requestAnimationFrame(() => {
+      const article = Array.from(
+        panel.current?.querySelectorAll<HTMLElement>("[data-notice-id]") ?? [],
+      ).find((node) => node.dataset.noticeId === revealRequest.id);
+      if (article) {
+        revealedSequence.current = revealRequest.sequence;
+        article.scrollIntoView?.({ block: "nearest" });
+        article.focus({ preventScroll: true });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [revealRequest?.sequence, shown, category, unread, query, notices]);
   const panel = useRef<HTMLElement>(null),
     timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
     opener = useRef<HTMLElement | null>(null),
     keyboard = useRef(false),
     atEdge = useRef(false);
-  useLayoutEffect(() => {
-    if (shown) {
-      setPresent(true);
-      setExiting(false);
-      return;
-    }
-    if (!present) return;
-    const root = document.documentElement;
-    if (
-      root.dataset.motion === "off" ||
-      root.dataset.windowActive === "false" ||
-      document.visibilityState === "hidden" ||
-      matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      setPresent(false);
-      setExiting(false);
-      return;
-    }
-    setExiting(true);
-    const duration = getComputedStyle(root)
-      .getPropertyValue("--motion-modal")
-      .trim();
-    const milliseconds = duration.endsWith("ms")
-      ? parseFloat(duration)
-      : parseFloat(duration) * 1000;
-    const timeout = setTimeout(
-      () => {
-        setPresent(false);
-        setExiting(false);
-      },
-      Number.isFinite(milliseconds) ? milliseconds : 180,
-    );
-    return () => clearTimeout(timeout);
-  }, [shown]);
+  const present = useSurfacePresence(shown, panel, "gentle", dockFrame);
   const cancel = () => {
     clearTimeout(timer.current);
     timer.current = undefined;
   };
   const blocked = () =>
-    !!document.querySelector("dialog[open], .menu-shield, .control-shield");
+    !!document.querySelector(
+      "dialog[open], .menu-shield:not([data-closing]), .control-shield:not([data-closing])",
+    );
   function restoreFocus() {
     const target =
       opener.current?.isConnected &&
@@ -210,7 +206,8 @@ export function NotificationSidebar({
           id="notification-panel"
           className="notification-dock"
           data-pinned={pinned}
-          data-exiting={exiting}
+          data-exiting={!shown}
+          data-spring-surface
           aria-hidden={!shown}
           inert={!shown}
           aria-label="Notifications"
@@ -242,7 +239,7 @@ export function NotificationSidebar({
                   {notices.filter((n) => !n.read).length}
                 </span>
               </h2>
-              <p>Waitin' for ya</p>
+              <p>Reminders and app updates</p>
             </div>
             <button
               className="notification-pin"
@@ -354,6 +351,8 @@ export function NotificationSidebar({
                 <article
                   className={`notice slide-card ${n.read ? "" : "unread"}`}
                   data-leaving={leaving}
+                  data-notice-id={n.id}
+                  tabIndex={-1}
                 >
                   <div className="task-meta">
                     <span
@@ -362,6 +361,7 @@ export function NotificationSidebar({
                     >
                       {categoryLabel(n.category)}
                     </span>
+                    {!n.read && <span className="notice-unread">Unread</span>}
                     <time>{date(n.created_at)}</time>
                     {n.state === "Failed" && (
                       <span className="notice-failed">
@@ -442,12 +442,12 @@ export function NotificationSidebar({
                 <h3>
                   {notices.length
                     ? "No matching reminders."
-                    : "Nothing waiting here."}
+                    : "No notifications yet."}
                 </h3>
                 <p>
                   {notices.length
                     ? "Try another filter or search."
-                    : "Your reminders will leave a record here."}
+                    : "Reminders and update checks appear here."}
                 </p>
               </div>
             )}

@@ -2,6 +2,7 @@ import { TaskHistory } from "./TaskHistory";
 import { DateTimeField } from "./DateTimeField";
 import { Select } from "./Select";
 import { useEffect, useRef, useState } from "react";
+import { useDialogMotion } from "./useMotion";
 import {
   date,
   localInput,
@@ -44,6 +45,7 @@ export function TaskDialog({
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   const ref = useRef<HTMLDialogElement>(null);
+  const close = useDialogMotion(ref, onClose, task.id);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement;
     ref.current?.showModal();
@@ -69,7 +71,7 @@ export function TaskDialog({
       const ok = status
         ? await onTransition(draft, status)
         : await onSave(draft);
-      if (ok) onClose();
+      if (ok) close();
     } catch (e) {
       setError(String(e));
     } finally {
@@ -82,7 +84,7 @@ export function TaskDialog({
         ref={ref}
         className="task-dialog material-floating"
         aria-label="Task history"
-        onCancel={onClose}
+        onCancel={close}
       >
         <div className="delete-content">
           <h2>{task.title}</h2>
@@ -96,7 +98,7 @@ export function TaskDialog({
               </span>
             )}
           </div>
-          <button onClick={onClose}>Close history</button>
+          <button onClick={close}>Close history</button>
           {task.description && (
             <p className="readonly-notes">{task.description}</p>
           )}
@@ -116,7 +118,7 @@ export function TaskDialog({
       ref={ref}
       className="task-dialog material-floating"
       aria-labelledby="task-editor-heading"
-      onCancel={onClose}
+      onCancel={close}
     >
       <form
         noValidate
@@ -140,11 +142,7 @@ export function TaskDialog({
               }
             </h2>
           </div>
-          <button
-            type="button"
-            aria-label="Close task details"
-            onClick={onClose}
-          >
+          <button type="button" aria-label="Close task details" onClick={close}>
             ×
           </button>
         </div>
@@ -359,7 +357,7 @@ export function TaskDialog({
           Optional. Shown on the task card and included in search.
         </p>
         <div className="dialog-actions editor-primary-actions">
-          <button type="button" disabled={busy} onClick={onClose}>
+          <button type="button" disabled={busy} onClick={close}>
             Cancel
           </button>
           <button className="primary" disabled={busy}>

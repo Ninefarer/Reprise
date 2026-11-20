@@ -250,7 +250,6 @@ nav {
   background: var(--selected);
   color: var(--text);
   font-weight: 600;
-  box-shadow: inset 3px 0 var(--accent);
 }
 .nav-group button svg {
   color: var(--muted);
@@ -582,9 +581,6 @@ nav {
   border: 1px solid var(--border);
   border-radius: 8px;
   margin: 10px 0;
-}
-.notice.unread {
-  border-left: 3px solid var(--accent);
 }
 .notice h3 {
   margin: 9px 0 4px;

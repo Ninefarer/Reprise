@@ -1,6 +1,9 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { LogicalSize } from "@tauri-apps/api/dpi";
+import { listen } from "@tauri-apps/api/event";
+import { springMotion } from "./motion";
+import { hideQuickCapture, registerCaptureExit } from "./captureMotion";
 export function QuickCapture({
   children,
   error,
@@ -14,15 +17,85 @@ export function QuickCapture({
 }) {
   const root = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
+    const node = root.current!;
+    const style = getComputedStyle(node),
+      radius = parseFloat(style.borderTopLeftRadius) || 0;
+    const controller = springMotion(
+      node,
+      (value) => {
+        const p = Math.max(0, Math.min(1, value));
+        return {
+          transform: "none",
+          opacity: String(Math.min(1, p * 5)),
+          clipPath: `inset(${(1 - p) * 3}px 0 0 round ${radius}px)`,
+        };
+      },
+      "gentle",
+    );
+    let generation = 0,
+      alive = true;
+    let pending: { promise: Promise<void>; resolve: () => void } | undefined;
+    const reveal = () => {
+      generation++;
+      pending?.resolve();
+      pending = undefined;
+      node.inert = false;
+      node
+        .querySelector<HTMLInputElement>("input")
+        ?.focus({ preventScroll: true });
+      controller.to(1);
+    };
+    const unregister = registerCaptureExit(() => {
+      if (pending) return pending.promise;
+      const request = ++generation;
+      let resolve!: () => void, reject!: (error: unknown) => void;
+      const promise = new Promise<void>((yes, no) => {
+        resolve = yes;
+        reject = no;
+      });
+      pending = { promise, resolve };
+      node.inert = true;
+      controller.to(0, () => {
+        if (!alive || request !== generation) return;
+        void getCurrentWindow()
+          .hide()
+          .then(
+            () => {
+              if (request === generation) {
+                pending = undefined;
+                node.inert = false;
+              }
+              resolve();
+            },
+            (error) => {
+              if (request === generation) {
+                pending = undefined;
+                reveal();
+              }
+              reject(error);
+            },
+          );
+      });
+      return promise;
+    });
+    const unlisten = listen("capture-shown", reveal).catch(() => () => {});
+    reveal();
+    return () => {
+      alive = false;
+      generation++;
+      pending?.resolve();
+      unregister();
+      controller.dispose();
+      void unlisten.then((off) => off());
+    };
+  }, []);
+  useLayoutEffect(() => {
     if (typeof ResizeObserver === "undefined" || !root.current) return;
     let lastHeight = 0;
     const resize = () => {
       const height = Math.max(
         96,
-        Math.min(
-          360,
-          Math.ceil(root.current?.getBoundingClientRect().height ?? 0),
-        ),
+        Math.min(360, Math.ceil(root.current?.offsetHeight ?? 0)),
       );
       if (height === lastHeight) return;
       lastHeight = height;
@@ -37,7 +110,7 @@ export function QuickCapture({
   }, [onError]);
   async function close() {
     try {
-      await getCurrentWindow().hide();
+      await hideQuickCapture();
     } catch (error) {
       onError(String(error));
     }
@@ -46,6 +119,7 @@ export function QuickCapture({
     <main
       ref={root}
       className="quick"
+      data-spring-surface
       aria-label="Quick Capture"
       aria-busy={busy}
     >

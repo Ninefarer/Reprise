@@ -7,6 +7,9 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { MenuGlyph } from "./menuIcons";
+import { type SpringMotion } from "./motion";
+import { popupSurfaceMotion } from "./glassMotion";
+import "./glass-motion.css";
 export interface MenuAction {
   id: string;
   label: string;
@@ -36,7 +39,8 @@ export function PopupMenu({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const shield = useRef<HTMLDivElement>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const motion = useRef<SpringMotion | null>(null);
+  const closingRef = useRef(false);
   const previous = useRef<HTMLElement | null>(null);
   const owner = useRef(Symbol("context-menu"));
   const closeCallback = useRef(onClose);
@@ -52,21 +56,34 @@ export function PopupMenu({
       previous.current.focus({ preventScroll: true });
   };
   function close(animate = true, restoreFocus = true) {
-    if (closeTimer.current) return;
+    if (closingRef.current) return;
     if (restoreFocus) restore();
-    const reduced =
-      document.documentElement.dataset.motion === "off" ||
-      matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!animate || reduced) {
+    if (!animate) {
+      motion.current?.dispose();
       closeCallback.current();
       return;
     }
+    closingRef.current = true;
     setClosing(true);
-    closeTimer.current = setTimeout(() => closeCallback.current(), 90);
+    motion.current?.to(0, () => closeCallback.current());
   }
   useLayoutEffect(() => {
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    closeTimer.current = null;
+    const panel = ref.current!;
+    const controller = popupSurfaceMotion(panel, () => ({
+      left: Math.max(8, Math.min(innerWidth - 32, x - 12)),
+      top: Math.max(8, Math.min(innerHeight - 28, y - 10)),
+      width: 24,
+      height: 20,
+      radius: 6,
+    }));
+    motion.current = controller;
+    return () => {
+      controller.dispose();
+      motion.current = null;
+    };
+  }, [x, y]);
+  useLayoutEffect(() => {
+    closingRef.current = false;
     setClosing(false);
     previous.current = document.activeElement as HTMLElement;
     const menu = ref.current!,
@@ -79,6 +96,8 @@ export function PopupMenu({
       menu.style.top = `${Math.max(8, Math.min(y, innerHeight - menu.offsetHeight - 8))}px`;
     };
     place();
+    menu.style.transformOrigin = `${Math.max(0, Math.min(menu.offsetWidth, x - parseFloat(menu.style.left)))}px ${Math.max(0, Math.min(menu.offsetHeight, y - parseFloat(menu.style.top)))}px`;
+    motion.current?.to(1);
     menu
       .querySelector<HTMLButtonElement>("button:not(:disabled)")
       ?.focus({ preventScroll: true });
@@ -98,7 +117,6 @@ export function PopupMenu({
     window.addEventListener("blur", blur);
     document.addEventListener("reprise-context-menu", replace);
     return () => {
-      if (closeTimer.current) clearTimeout(closeTimer.current);
       window.removeEventListener("resize", resize);
       window.removeEventListener("scroll", scroll, true);
       window.removeEventListener("blur", blur);
@@ -117,6 +135,7 @@ export function PopupMenu({
       }
       className="menu-shield"
       data-closing={closing || undefined}
+      inert={closing}
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) close();
       }}
@@ -149,6 +168,7 @@ export function PopupMenu({
         role="menu"
         aria-label={label}
         aria-hidden={closing || undefined}
+        data-spring-surface
         onClick={(e) => e.stopPropagation()}
         onContextMenu={(e) => {
           e.preventDefault();

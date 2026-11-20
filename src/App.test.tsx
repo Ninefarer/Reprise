@@ -1,4 +1,5 @@
 import { selectOption } from "./testControls";
+import { mockMotion } from "./testMotion";
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -107,6 +108,7 @@ beforeEach(() => {
       return;
     }
     if (cmd === "snapshot") return structuredClone(data);
+    if (cmd === "profile_completion_count") return 27;
     if (cmd === "notification_panel_preferences") {
       data.settings.notification_panel_pinned = args.pinned;
       return;
@@ -119,6 +121,7 @@ beforeEach(() => {
     }
     if (cmd === "visual_preferences") {
       Object.assign(data.settings, args.patch);
+      if (args.patch.aesthetic) data.settings.desktop_glass = args.patch.aesthetic === "glass";
       return;
     }
     if (cmd === "acknowledge_release" && data.release) {
@@ -163,6 +166,25 @@ async function openNotifications(user: ReturnType<typeof userEvent.setup>) {
   return panel;
 }
 describe("native-window snapshot suspension", () => {
+  it("refreshes hidden Capture appearance without lifting the worker refresh gate", async () => {
+    const suspend = suspendSnapshots();
+    const app = render(<App captureMode />);
+    await screen.findByRole("main", { name: "Quick Capture" });
+    suspend(true);
+    data.settings.theme_family = "ashen-white";
+    await act(async () => {
+      mocks.listeners.get("refresh")!({ payload: null });
+    });
+    expect(document.documentElement.dataset.family).not.toBe("ashen-white");
+    mocks.invoke.mockClear();
+    await act(async () => {
+      mocks.listeners.get("visual-refresh")!({ payload: null });
+    });
+    expect(mocks.invoke).toHaveBeenCalledWith("snapshot");
+    expect(document.documentElement.dataset.family).toBe("ashen-white");
+    app.unmount();
+    expect(mocks.listeners.has("visual-refresh")).toBe(false);
+  });
   function suspendSnapshots() {
     let suspended = false;
     const original = mocks.invoke.getMockImplementation()!;
@@ -387,6 +409,50 @@ describe("native-window snapshot suspension", () => {
     expect(off).toHaveBeenCalledOnce();
   });
 });
+it("opens the optional profile card, persists the finish and restores focus", async () => {
+  data.avatar = "data:image/png;base64,avatar";
+  const user = userEvent.setup();
+  const first = render(<App />);
+  await openSettings(user);
+  expect(mocks.invoke).not.toHaveBeenCalledWith("profile_completion_count");
+
+  const trigger = screen.getByRole("button", { name: "Namecards" });
+  trigger.focus();
+  await user.keyboard("{Enter}");
+  const dialog = screen.getByRole("dialog", { name: "Namecards" });
+  const card = within(dialog);
+  expect(card.getByRole("heading", { name: data.settings.name })).toBeTruthy();
+  expect(dialog.querySelector("img")?.getAttribute("src")).toBe(data.avatar);
+  expect(await card.findByText("27")).toBeTruthy();
+  expect(
+    card.getByText(
+      new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(),
+    ),
+  ).toBeTruthy();
+  expect(
+    card.getAllByRole("radio").map((radio) => radio.parentElement?.textContent),
+  ).toEqual(["Classic", "Holographic", "Polychrome", "Foil"]);
+  await user.click(card.getByRole("radio", { name: "Foil" }));
+  await waitFor(() =>
+    expect(data.settings.profile_card_finish).toBe("prismatic"),
+  );
+  expect(card.getByRole("article").getAttribute("data-finish")).toBe(
+    "prismatic",
+  );
+
+  fireEvent(dialog, new Event("cancel", { cancelable: true }));
+  expect(screen.queryByRole("dialog", { name: "Namecards" })).toBeNull();
+  expect(document.activeElement).toBe(trigger);
+  first.unmount();
+
+  render(<App />);
+  await openSettings(user);
+  await user.click(screen.getByRole("button", { name: "Namecards" }));
+  expect(
+    (screen.getByRole("radio", { name: "Foil" }) as HTMLInputElement).checked,
+  ).toBe(true);
+});
+
 describe("Settings draft protection", () => {
   it("saves one section without discarding drafts or overwriting independent settings", async () => {
     const user = userEvent.setup();
@@ -539,7 +605,7 @@ describe("Nightly channel", () => {
       data.release = { version, acknowledged: null, should_show: false };
       render(<App />);
       await screen.findByRole("heading", {
-        name: "Set up your space.",
+        name: "Set up Reprise.",
       });
       expect(!!document.querySelector(".setup-nightly")).toBe(sky);
       expect(document.documentElement.dataset.family).toBe("pitch-black");
@@ -557,7 +623,7 @@ describe("Nightly channel", () => {
     const user = userEvent.setup();
     const app = render(<App />);
     await screen.findByRole("heading", {
-      name: "Set up your space.",
+      name: "Set up Reprise.",
     });
     expect(screen.queryByRole("navigation")).toBeNull();
     expect(screen.queryByRole("note", { name: /Nightly build/ })).toBeNull();
@@ -676,7 +742,7 @@ describe("Nightly channel", () => {
     await screen.findByLabelText(/Profile menu for Dim/);
     expect(
       screen.queryByRole("heading", {
-        name: "Set up your space.",
+        name: "Set up Reprise.",
       }),
     ).toBeNull();
   });
@@ -820,7 +886,7 @@ describe("Nightly channel", () => {
     ).toBe(true);
     expect(
       screen.getByRole("heading", {
-        name: "Set up your space.",
+        name: "Set up Reprise.",
       }),
     ).toBeTruthy();
     const second = await screen.findByRole("heading", {
@@ -878,7 +944,7 @@ describe("workspace UI", () => {
     await openSettings(user);
     await selectOption(
       user,
-      screen.getByLabelText("Window appearance"),
+      screen.getByLabelText("Aesthetic"),
       "glass",
     );
     await selectOption(
@@ -889,16 +955,12 @@ describe("workspace UI", () => {
     await waitFor(() => expect(data.settings.desktop_material).toBe("acrylic"));
     expect(data.settings.desktop_glass).toBe(true);
     expect(data.settings.theme).toBe("system");
-    await selectOption(
-      user,
-      screen.getByLabelText("Glass intensity"),
-      "balanced",
-    );
+    fireEvent.change(screen.getByLabelText(/Glass tint:/), { target: { value: "60" } });
     await waitFor(() => expect(data.settings.desktop_tint).toBe(60));
     await selectOption(
       user,
-      screen.getByLabelText("Window appearance"),
-      "default",
+      screen.getByLabelText("Aesthetic"),
+      "solid",
     );
     await waitFor(() => expect(data.settings.desktop_glass).toBe(false));
     expect(data.settings.desktop_material).toBe("acrylic");
@@ -934,7 +996,7 @@ describe("workspace UI", () => {
     render(<App />);
     await openSettings(user);
     await selectOption(user, screen.getByLabelText("Accent color"), "lavender");
-    await selectOption(user, screen.getByLabelText("Animation"), "expressive");
+    await selectOption(user, screen.getByLabelText("Motion"), "expressive");
     await waitFor(() =>
       expect(document.documentElement.dataset.accent).toBe("lavender"),
     );
@@ -1253,23 +1315,44 @@ describe("workspace UI", () => {
       "compact",
     );
   });
-  it("does not create or open notifications when an update source is absent", async () => {
+  it("shows a visible manual check result when an update source is absent", async () => {
     const original = mocks.invoke.getMockImplementation()!;
-    mocks.invoke.mockImplementation(async (cmd, args) =>
-      cmd === "check_updates"
-        ? { notice_id: null, message: "Update source not configured." }
-        : original(cmd, args),
-    );
+    mocks.invoke.mockImplementation(async (cmd, args) => {
+      if (cmd === "check_updates_now") {
+        data.notifications = [
+          {
+            id: "update:check:unconfigured",
+            task_id: null,
+            category: "Updates",
+            title: "Update source not configured",
+            message: "Updates are not configured for this build.",
+            created_at: 100,
+            scheduled_at: 100,
+            submitted_at: null,
+            state: "UpdateNotConfigured",
+            read: false,
+          },
+        ];
+        return {
+          notice_id: data.notifications[0].id,
+          message: "Update source not configured.",
+        };
+      }
+      return original(cmd, args);
+    });
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
     await user.click(screen.getByRole("tab", { name: "About" }));
     await user.click(screen.getByRole("button", { name: "Check for updates" }));
     await screen.findByText("Update source not configured.");
-    expect(data.notifications).toHaveLength(0);
+    expect(data.notifications).toHaveLength(1);
     expect(
-      screen.queryByRole("complementary", { name: "Notifications" }),
-    ).toBeNull();
+      screen.getByRole("complementary", { name: "Notifications" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Updates are not configured for this build."),
+    ).toBeTruthy();
   });
   it("keeps diagnostics and notification tests out of stable Settings", async () => {
     const user = userEvent.setup();
@@ -1891,9 +1974,14 @@ describe("personal sidebar navigation", () => {
     );
     expect(
       within(screen.getByRole("navigation")).queryByRole("button", {
-        name: /^Inbox/,
+        name: /^Current/,
       }),
     ).toBeNull();
+    expect(
+      within(screen.getByRole("navigation")).getByRole("button", {
+        name: /^Inbox/,
+      }),
+    ).toBeTruthy();
     expect(screen.getByRole("button", { name: /^Finished/ })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Archive" }));
     await waitFor(() =>
@@ -1999,7 +2087,7 @@ describe("right notification panel", () => {
     async (state, title) => {
       const original = mocks.invoke.getMockImplementation()!;
       mocks.invoke.mockImplementation(async (cmd, args) => {
-        if (cmd === "check_updates") {
+        if (cmd === "check_updates_now") {
           data.notifications = [
             {
               id: "update:check:one",
@@ -2090,7 +2178,7 @@ describe("right notification panel", () => {
     let rejectInstall: (error: Error) => void = () => {};
     const original = mocks.invoke.getMockImplementation()!;
     mocks.invoke.mockImplementation(async (cmd, args) => {
-      if (cmd === "check_updates") {
+      if (cmd === "check_updates_now") {
         data.notifications = [
           {
             id: "update:available:3.2.0",
@@ -2141,7 +2229,7 @@ describe("right notification panel", () => {
     await waitFor(() =>
       expect(
         screen.getByRole("status", { name: "Update progress" }).textContent,
-      ).toContain("Signature verification failed"),
+      ).toContain("This download couldn't be verified."),
     );
     expect(
       (
@@ -2174,17 +2262,30 @@ describe("right notification panel", () => {
     ).toBeTruthy();
   });
   it("finishes exit motion before unmounting and cancels it safely when reopened", async () => {
+    const motion = mockMotion();
     const focused = vi.spyOn(document, "hasFocus").mockReturnValue(true);
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("navigation");
     await openNotifications(user);
+    const opening = motion.animations
+      .filter((animation) =>
+        animation.element.classList.contains("notification-dock"),
+      )
+      .at(-1)!;
+    opening.currentTime = 80;
     await user.keyboard("{Escape}");
+    const stale = motion.animations
+      .filter((animation) =>
+        animation.element.classList.contains("notification-dock"),
+      )
+      .at(-1)!.onfinish;
     const exiting = document.querySelector(".notification-dock")!;
     expect(exiting.getAttribute("data-exiting")).toBe("true");
     expect(exiting.hasAttribute("inert")).toBe(true);
     expect(document.activeElement?.tagName).toBe("MAIN");
     await openNotifications(user);
+    act(() => stale?.());
     expect(
       screen
         .getByRole("complementary", { name: "Notifications" })
@@ -2195,10 +2296,19 @@ describe("right notification panel", () => {
       screen.getByRole("complementary", { name: "Notifications" }),
     ).toBeTruthy();
     await user.keyboard("{Escape}");
+    act(() =>
+      motion.animations
+        .filter((animation) =>
+          animation.element.classList.contains("notification-dock"),
+        )
+        .at(-1)!
+        .onfinish?.(),
+    );
     await waitFor(() =>
       expect(document.querySelector(".notification-dock")).toBeNull(),
     );
     focused.mockRestore();
+    motion.restore();
   });
   it("closes immediately with decorative motion disabled", async () => {
     data.settings.animation = "off";
@@ -2354,7 +2464,7 @@ describe("semantic task presentation", () => {
     expect(
       screen.getByRole("heading", { name: /Notifications/, level: 2 }),
     ).toBeTruthy();
-    expect(screen.getByText("Waitin' for ya")).toBeTruthy();
+    expect(screen.getByText("Reminders and app updates")).toBeTruthy();
     expect(commandDestinations).toContain("Notification History");
     expect(navigation.flatMap((g) => g.items)).not.toContain(
       "Notification History",
@@ -2467,4 +2577,71 @@ it("offers deletion Undo and restores the deleted task through its backend recei
   });
   await screen.findByText("Dropped intention");
   expect(data.tasks).toHaveLength(1);
+});
+
+it("honors a manual update check requested during an automatic check", async () => {
+  const fallback = mocks.invoke.getMockImplementation()!;
+  let resolveAutomatic!: (value: unknown) => void;
+  let automaticTimer: (() => void) | undefined;
+  const originalTimeout = globalThis.setTimeout;
+  const timeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+    callback: () => void,
+    delay?: number,
+    ...args: unknown[]
+  ) => {
+    if (delay === 30000 && !automaticTimer) automaticTimer = callback;
+    return originalTimeout(callback, delay, ...args);
+  }) as typeof setTimeout);
+  mocks.invoke.mockImplementation(async (cmd, args) => {
+    if (cmd === "check_updates" && args?.automatic)
+      return new Promise((resolve) => {
+        resolveAutomatic = resolve;
+      });
+    if (cmd === "check_updates_now") {
+      data.notifications = [
+        {
+          id: "update:check:current",
+          task_id: null,
+          category: "Updates",
+          title: "You are up to date",
+          message: "Current version confirmed",
+          created_at: 100,
+          scheduled_at: 100,
+          submitted_at: null,
+          state: "UpdateCurrent",
+          read: false,
+        },
+      ];
+      return {
+        notice_id: data.notifications[0].id,
+        message: "Current version confirmed",
+      };
+    }
+    return fallback(cmd, args);
+  });
+  try {
+    const user = userEvent.setup();
+    render(<App />);
+    await openSettings(user);
+    await user.click(screen.getByRole("tab", { name: "About" }));
+    act(() => automaticTimer!());
+    await user.click(screen.getByRole("button", { name: "Check for updates" }));
+    expect(
+      screen.getByText("Finishing the background check first..."),
+    ).toBeTruthy();
+    expect(mocks.invoke).not.toHaveBeenCalledWith("check_updates_now");
+    await act(async () =>
+      resolveAutomatic({
+        notice_id: null,
+        message: "Background check completed",
+      }),
+    );
+    await screen.findByText("You are up to date");
+    expect(mocks.invoke).toHaveBeenCalledWith("check_updates_now");
+    expect(
+      screen.getByRole("complementary", { name: "Notifications" }),
+    ).toBeTruthy();
+  } finally {
+    timeoutSpy.mockRestore();
+  }
 });

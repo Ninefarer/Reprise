@@ -33,82 +33,170 @@ fn category(category: &str) -> &str {
         _ => "Reminder",
     }
 }
+fn elapsed(seconds: i64) -> String {
+    let minutes = seconds.max(0) / 60;
+    if minutes < 60 {
+        format!("{} min", minutes.max(1))
+    } else if minutes < 1440 {
+        format!("{} hr", minutes / 60)
+    } else {
+        let days = minutes / 1440;
+        format!("{days} {}", if days == 1 { "day" } else { "days" })
+    }
+}
+fn batch_title(notices: &[Notice]) -> String {
+    let mut counts = std::collections::BTreeMap::<&str, usize>::new();
+    for notice in notices {
+        *counts.entry(&notice.category).or_default() += 1;
+    }
+    if counts.len() == 1 {
+        let count = notices.len();
+        return match notices[0].category.as_str() {
+            "Scheduled" => format!("{count} tasks are ready to start"),
+            "Deadline" => format!("{count} task deadlines"),
+            "Waiting" => format!("{count} follow-ups are due"),
+            "Snoozed" => format!("Snooze ended for {count} tasks"),
+            "Settled" => format!("{count} paused tasks have returned"),
+            _ => format!("{count} task reminders"),
+        };
+    }
+    counts
+        .iter()
+        .map(|(kind, count)| {
+            let label = match (*kind, *count) {
+                ("Deadline", 1) => "deadline",
+                ("Deadline", _) => "deadlines",
+                ("Waiting", 1) => "follow-up",
+                ("Waiting", _) => "follow-ups",
+                ("Scheduled", 1) => "scheduled start",
+                ("Scheduled", _) => "scheduled starts",
+                ("Snoozed", 1) => "snoozed task",
+                ("Snoozed", _) => "snoozed tasks",
+                ("Settled", 1) => "paused task",
+                ("Settled", _) => "paused tasks",
+                (_, 1) => "reminder",
+                _ => "reminders",
+            };
+            format!("{count} {label}")
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
 pub fn content(notices: &[Notice], tasks: &[Task]) -> Content {
+    content_at(notices, tasks, chrono::Utc::now().timestamp())
+}
+fn content_at(notices: &[Notice], tasks: &[Task], now: i64) -> Content {
     if notices.len() != 1 {
         let mut lines: Vec<String> = notices
             .iter()
             .take(3)
             .map(|n| {
+                let task = tasks.iter().find(|t| Some(&t.id) == n.task_id.as_ref());
+                let detail = task.and_then(|t| {
+                    if n.category == "Waiting" && !t.reason.trim().is_empty() {
+                        Some(format!("Waiting on {}", clean(&t.reason, 70)))
+                    } else if !t.project.trim().is_empty() {
+                        Some(clean(&t.project, 50))
+                    } else {
+                        None
+                    }
+                });
+                let heading = clean(
+                    if n.category == "DailyReview" {
+                        &n.message
+                    } else {
+                        &n.title
+                    },
+                    80,
+                );
                 format!(
-                    "{}: {}",
+                    "{}: {}{}",
                     category(&n.category),
-                    clean(
-                        if n.category == "DailyReview" {
-                            &n.message
-                        } else {
-                            &n.title
-                        },
-                        80
-                    )
+                    heading,
+                    detail.map(|v| format!(" ({v})")).unwrap_or_default()
                 )
             })
             .collect();
         if notices.len() > 3 {
-            lines.push(format!(
-                "And {} more. Open Reprise to review.",
-                notices.len() - 3
-            ));
+            lines.push(format!("And {} more in Reprise.", notices.len() - 3));
         }
         return Content {
-            title: format!("{} reminders to review", notices.len()),
+            title: clean(&batch_title(notices), 120),
             body: lines.join("\n"),
         };
     }
     let n = &notices[0];
     let task = tasks.iter().find(|t| Some(&t.id) == n.task_id.as_ref());
     let heading = clean(&n.title, 100);
+    let late = now.saturating_sub(n.scheduled_at);
     let (title, mut body) = match n.category.as_str() {
         "Scheduled" => (
             format!("Time to start: {heading}"),
-            format!(
-                "Planned for {}. Start when you're ready.",
-                date(n.scheduled_at)
-            ),
+            if late >= 60 {
+                format!(
+                    "Scheduled for {}, {} ago.",
+                    date(n.scheduled_at),
+                    elapsed(late)
+                )
+            } else {
+                format!("Scheduled for {}.", date(n.scheduled_at))
+            },
         ),
         "Snoozed" => (
             format!("Snooze ended: {heading}"),
-            "This task has returned for review. Choose its next step in Reprise.".into(),
-        ),
-        "Settled" => (
-            format!("Ready to revisit: {heading}"),
-            "Your settled task has returned for review. Pick up where you left off.".into(),
-        ),
-        "Waiting" => (
-            format!("Follow up: {heading}"),
-            "Your follow-up is due. The dependency is still marked as waiting.".into(),
-        ),
-        "Deadline" => (
-            format!("Deadline to review: {heading}"),
             format!(
-                "Due {}. Review, reschedule or finish this task in Reprise.",
+                "Snoozed until {}. The task is back in Resurfaced.",
                 date(n.scheduled_at)
             ),
         ),
-        "DailyReview" => ("Your daily review".into(), n.message.clone()),
+        "Settled" => (
+            format!("Paused task returned: {heading}"),
+            format!(
+                "Paused until {}. Start it now, or choose another return time.",
+                date(n.scheduled_at)
+            ),
+        ),
+        "Waiting" => (
+            format!("Follow up: {heading}"),
+            format!("Follow-up set for {}.", date(n.scheduled_at)),
+        ),
+        "Deadline" if late >= 60 => (
+            format!("Overdue: {heading}"),
+            format!(
+                "Due {}. Now {} overdue.",
+                date(n.scheduled_at),
+                elapsed(late)
+            ),
+        ),
+        "Deadline" => (
+            format!("Due now: {heading}"),
+            format!("Deadline: {}.", date(n.scheduled_at)),
+        ),
+        "DailyReview" => ("Daily review".into(), n.message.clone()),
         _ => (heading, n.message.clone()),
     };
     if let Some(t) = task {
         if n.category == "Waiting" && !t.reason.trim().is_empty() {
             body.push_str(&format!(" Waiting on: {}.", clean(&t.reason, 100)));
         }
+        if !t.project.trim().is_empty() {
+            body.push_str(&format!(" Project: {}.", clean(&t.project, 70)));
+        }
+        if t.priority == 3 {
+            body.push_str(" High priority.");
+        }
         if n.category != "Deadline" {
             if let Some(at) = t.due_at {
-                body.push_str(&format!(" Deadline: {}.", date(at)));
+                body.push_str(&format!(" Due: {}.", date(at)));
             }
         }
     }
-    Content { title, body }
+    Content {
+        title,
+        body: clean(&body, 420),
+    }
 }
+
 fn escape(value: &str) -> String {
     value.chars().filter(|c|matches!(*c, '\u{9}' | '\u{a}' | '\u{d}' | '\u{20}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..='\u{10ffff}')).collect::<String>()
         .replace('&', "&amp;")
@@ -313,9 +401,9 @@ mod tests {
         for (c, heading) in [
             ("Scheduled", "Time to start"),
             ("Snoozed", "Snooze ended"),
-            ("Settled", "Ready to revisit"),
+            ("Settled", "Paused task returned"),
             ("Waiting", "Follow up"),
-            ("Deadline", "Deadline to review"),
+            ("Deadline", "Overdue"),
         ] {
             let v = content(&[notice(c)], &[]);
             assert!(v.title.starts_with(heading));
@@ -341,6 +429,30 @@ mod tests {
         assert!(v.body.contains("Follow-up: Review the garden plan"));
         assert!(v.body.contains("And 1 more"));
         assert!(!v.body.contains("needs attention"));
+    }
+    #[test]
+    fn reminder_context_changes_with_deadline_project_priority_and_dependency() {
+        let mut t = Task::new("Review the garden plan".into(), 100);
+        t.id = "task".into();
+        t.project = "Garden".into();
+        t.priority = 3;
+        t.reason = "Permit approval".into();
+        t.due_at = Some(200);
+        let waiting = content_at(&[notice("Waiting")], std::slice::from_ref(&t), 100);
+        assert!(waiting.body.contains("Permit approval"));
+        assert!(waiting.body.contains("Project: Garden"));
+        assert!(waiting.body.contains("High priority"));
+        assert!(waiting.body.contains("Due:"));
+        let due = content_at(&[notice("Deadline")], std::slice::from_ref(&t), 100);
+        assert!(due.title.starts_with("Due now:"));
+        let overdue = content_at(&[notice("Deadline")], &[t], 7300);
+        assert!(overdue.title.starts_with("Overdue:"));
+        assert!(overdue.body.contains("2 hr overdue"));
+        let grouped = content_at(&[notice("Waiting"), notice("Waiting")], &[], 100);
+        assert_eq!(grouped.title, "2 follow-ups are due");
+        let mixed = content_at(&[notice("Waiting"), notice("Deadline")], &[], 100);
+        assert!(mixed.title.contains("1 deadline"));
+        assert!(mixed.title.contains("1 follow-up"));
     }
     #[test]
     fn xml_escapes_task_text_and_titles_are_bounded() {

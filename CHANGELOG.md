@@ -1,25 +1,53 @@
 # Reprise changelog
 
+Published Stable notes through 3.4.3. The installed app reads `src/changelog.ts`. GitHub descriptions are the version files in `docs/releases/`. Installer checksums are in [docs/RELEASE-HISTORY.md](docs/RELEASE-HISTORY.md).
+
+## 3.4.3 / 3.4.3-nightly.20261115.1 - November 15, 2026
+
+- Move task status actions into Status and timing. Start now replaces Make current, with guidance for each action and a note that edits are saved.
+- Remove the Tags field and the Organization heading. Existing tag data is preserved.
+- Explain that projects appear on task cards and are included in search.
+
 ## 3.4.2 / 3.4.2-nightly.20261115.1 - November 15, 2026
 
-- Replace avatar crop sliders with dragging, wheel/button zoom, keyboard panning and reset.
-- Enlarge the circular crop preview while preserving explicit Save/Cancel behavior.
+- Replace avatar crop sliders with direct dragging, mouse-wheel zoom, and compact zoom buttons.
+- Enlarge the circular crop preview, and add arrow-key panning and Reset crop.
+- Save avatar and Cancel crop stay explicit.
 
 ## 3.4.1 - November 15, 2026
 
-- Add Peach with Light, Dark and System appearances and a warm default accent.
-- Match the Nightly header sky to Peach while retaining the original blue sky for other themes.
+- Add Peach, with Light, Dark, and System appearances and a warm default accent.
+- Match the Nightly header sky to Peach. Other themes keep the original blue sky.
 - Clarify appearance settings and keyboard shortcut guidance.
 
-## 3.4.0 / 3.4.0-nightly.20261113.1 - Development candidate, not published
+## 3.4.0 - November 13, 2026
 
-- Combine the existing hidden/minimized refresh suspension and lightweight Quick Capture work with the Issue #2 UI overhaul.
-- Rename navigation to Hub, Ongoing and Archive, and display Do Now as Current without migrating task states.
-- Add custom selection and date/time controls, inline capture validation and configurable command palette shortcuts.
-- Reorganize Settings into tabs with atomic section saves; simplify task editing and collapse destination-colored history.
-- Simplify notifications and repeated copy, remove Space name from the UI, standardize Avatar terminology, and refine Compact spacing, tooltips and greetings.
-- Keep release history within its installed channel.
-- Native Windows acceptance and signed installer evaluation remain pending. See [3.4.0 verification](docs/qa/uiux-3.4.0.md).
+Published Stable. Nightly `3.4.0-nightly.20261113.1` carried the same interface changes.
+
+### Added
+
+- Custom date and time pickers, keyboard-friendly dropdowns, and a recorder for the command palette shortcut, with conflict checks and a reset.
+- Explanatory navigation tooltips and greetings that change through the day.
+
+### Changed
+
+- Hub, Ongoing, and Archive organize the sidebar. Do Now is shown as Current, and the redundant All Tasks destination is gone. Saved task states are unchanged.
+- Settings use Profile, Appearance, Reminders, Keyboard, and About tabs, with section Save and Discard. Avatar and appearance changes still save immediately.
+- Task editing groups status, timing, and organization. History stays collapsed until opened and uses the color of the recorded destination.
+- Quick Capture fits its content. The decorative plus is gone, and validation sits under the input.
+- Hidden and minimized windows skip full presentation snapshots. Returning to the window refreshes tasks and countdowns. Reminders keep running in the tray. Quick Capture reads only the settings it needs.
+- Compact spacing, typography, control alignment, Snooze iconography, and onboarding colors are tighter. Native Clear Glass and Acrylic stay available.
+- The profile menu is shorter. Redundant Space name fields and the duplicate What's New control are gone. Saved profile data remains.
+
+### Fixed
+
+- Release history stays inside the installed Stable or Nightly channel.
+- Notification filters keep the selected category when its last matching reminder disappears.
+- The notification panel stays open while a nested dropdown or picker is in use. Keyboard dismissal and pinning still work.
+- Quick Capture validation no longer overlaps the field. Clock buttons, select arrows, and date text sit in their controls.
+- Hiding or restoring the window keeps unsaved task and Settings drafts. A conflicting task save is still rejected.
+- A section save leaves unrelated preferences alone, and the 3.3.3 Save, Discard, or Keep editing protection still applies.
+- The Windows notification test can proceed when Windows has no permission record yet. Explicit blocks and other errors stay visible.
 
 ## 3.3.3 - November 12, 2026 - Hotfix
 
@@ -113,4 +141,4 @@ This is the complete Stable change record since 3.2.0, bringing the selected Nig
 
 ## Earlier releases
 
-See [GitHub releases](https://github.com/Ninefarer/Reprise/releases) and Settings → Release Notes history for the existing 3.2.0, 3.1.x, and early release records. Their notes are preserved rather than rewritten as part of 3.3.0.
+Stable 3.2.0, 3.1.x, and the first local builds keep their original notes in Settings → Release Notes history. 3.2.0 is also on [GitHub](https://github.com/Ninefarer/Reprise/releases). Installer checksums from 3.2.0 through 3.4.3 are in [docs/RELEASE-HISTORY.md](docs/RELEASE-HISTORY.md).

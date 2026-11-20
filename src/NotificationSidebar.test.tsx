@@ -151,7 +151,7 @@ describe("notification management", () => {
     await user.click(
       screen.getByRole("button", { name: "Clear notifications" }),
     );
-    await screen.findByText("Nothing waiting here.");
+    await screen.findByText("No notifications yet.");
     expect(manage).toHaveBeenLastCalledWith("clear_all", [
       "read",
       "daily",
@@ -209,4 +209,61 @@ describe("category labels", () => {
     expect(filterNotices([n], "All", false, "daily review")).toEqual([n]);
     expect(n.category).toBe("DailyReview");
   });
+});
+
+it("reveals a manual update result even when existing filters hide updates, without stealing focus on refresh", async () => {
+  const user = userEvent.setup();
+  const update = {
+    ...fixture("update-result", true, "Updates"),
+    title: "You are up to date",
+  };
+  const props = {
+    open: true,
+    pinned: false,
+    onOpenChange: () => {},
+    onPin: async () => true,
+    busy: false,
+    notices: [fixture("reminder"), update],
+    tasks: [],
+    onRead: () => {},
+    onTask: () => {},
+    onReview: () => {},
+    onManage: async () => true,
+    onUpdate: async () => {},
+    updateActivity: null,
+  };
+  const { rerender } = render(<NotificationSidebar {...props} />);
+  await user.type(
+    screen.getByLabelText("Search notifications"),
+    "nothing matches",
+  );
+  await user.click(screen.getByLabelText("Unread only"));
+  const revealRequest = { id: update.id, sequence: 1 };
+  rerender(<NotificationSidebar {...props} revealRequest={revealRequest} />);
+  await screen.findByText(update.title);
+  expect(
+    (screen.getByLabelText("Search notifications") as HTMLInputElement).value,
+  ).toBe("");
+  expect(
+    (screen.getByLabelText("Unread only") as HTMLInputElement).checked,
+  ).toBe(false);
+  expect(
+    screen.getByRole("combobox", { name: "Category" }).textContent,
+  ).toContain("Updates");
+  await waitFor(() =>
+    expect(document.activeElement?.getAttribute("data-notice-id")).toBe(
+      update.id,
+    ),
+  );
+  await user.click(screen.getByLabelText("Search notifications"));
+  rerender(
+    <NotificationSidebar
+      {...props}
+      notices={[...props.notices]}
+      revealRequest={revealRequest}
+    />,
+  );
+  expect(document.activeElement).toBe(
+    screen.getByLabelText("Search notifications"),
+  );
 });

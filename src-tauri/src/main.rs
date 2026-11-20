@@ -3,6 +3,7 @@ mod actions;
 mod deletion;
 mod diagnostics;
 mod domain;
+mod manual_updates;
 mod notifications;
 #[cfg(test)]
 mod performance_baseline;
@@ -222,12 +223,14 @@ fn save_settings(
     let d = db.lock().map_err(|e| e.to_string())?;
     let current = d.settings()?;
     settings.profile_image = current.profile_image;
+    settings.profile_card_finish = current.profile_card_finish;
     settings.sidebar_width = current.sidebar_width;
     settings.sidebar_collapsed = current.sidebar_collapsed;
     settings.sidebar_groups = current.sidebar_groups;
     settings.notification_panel_pinned = current.notification_panel_pinned;
     settings.accent = current.accent;
     settings.animation = current.animation;
+    settings.aesthetic = current.aesthetic;
     settings.desktop_glass = current.desktop_glass;
     settings.desktop_material = current.desktop_material;
     settings.desktop_tint = current.desktop_tint;
@@ -294,6 +297,7 @@ fn main() {
             notifications::manage_notifications,
             visuals::native_glass,
             updates::check_updates,
+            manual_updates::check_updates_now,
             updates::install_update,
             notification_panel_preferences,
             snapshot,
@@ -301,6 +305,7 @@ fn main() {
             save_task,
             save_settings,
             save_preference_patch,
+            profile::profile_completion_count,
             task_history,
             read_notice,
             delete_task,

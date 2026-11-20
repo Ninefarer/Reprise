@@ -105,11 +105,7 @@ export function UndoToast({
         >
           &times;
         </button>
-        <small>
-          {deletion
-            ? "Click undo to revert the deletion."
-            : "Notifications already submitted to Windows are not recalled."}
-        </small>
+        {deletion && <small>Click undo to revert the deletion.</small>}
         {deletion && (
           <div className="undo-drain" aria-hidden="true">
             <div

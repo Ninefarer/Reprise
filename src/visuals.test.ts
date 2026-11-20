@@ -7,6 +7,33 @@ import {
 } from "./visuals";
 import { releases, releaseFor } from "./changelog";
 describe("visual preferences", () => {
+  it("migrates legacy appearance independently of palette and motion", () => {
+    for (const theme_family of [
+      "classic",
+      "peach",
+      "pitch-black",
+      "ashen-white",
+    ] as const)
+      for (const desktop_glass of [true, false]) {
+        const v = visualPreferences({
+          theme_family,
+          desktop_glass,
+          animation: "expressive",
+          desktop_material: "acrylic",
+          desktop_tint: 90,
+        } as import("./model").Settings);
+        expect(v.aesthetic).toBe(desktop_glass ? "glass" : "solid");
+        expect(v.animation).toBe("expressive");
+        expect(v.desktop_material).toBe("acrylic");
+        expect(v.desktop_tint).toBe(90);
+      }
+    expect(
+      visualPreferences({
+        aesthetic: "solid",
+        desktop_glass: true,
+      } as import("./model").Settings).desktop_glass,
+    ).toBe(false);
+  });
   it("defaults to opaque Classic and preserves System as a separate preference", () => {
     const v = visualPreferences();
     expect(v).toMatchObject({

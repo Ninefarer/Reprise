@@ -1,0 +1,555 @@
+.task-dialog.profile-card-dialog {
+  width: 410px;
+  padding: 20px;
+  scrollbar-gutter: stable both-edges;
+  font-family:
+    "SF Pro Text",
+    "SF Pro",
+    -apple-system,
+    "Segoe UI Variable",
+    "Segoe UI",
+    sans-serif;
+}
+
+.profile-card-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-card-dialog-head h2 {
+  font-size: 19px;
+}
+
+.profile-card-stage {
+  width: min(100%, 276px);
+  margin: 20px auto 24px;
+  perspective: 760px;
+}
+
+:where(.profile-card, .profile-card-option i) {
+  --card-finish: linear-gradient(145deg, #3e574f, #233631 61%, #54594c);
+  --card-light: rgb(255 238 198 / 11%);
+}
+
+:is(.profile-card, .profile-card-option i)[data-finish="holographic"] {
+  --card-finish: linear-gradient(
+    140deg,
+    #4a3669,
+    #544e83 37%,
+    #3b6370 67%,
+    #544365
+  );
+  --card-light: #b88af65c;
+  --rim-light: #fff0ff;
+  --rim-mid: #bda2fd;
+  --rim-dark: #63579a;
+  --rim-glow: #b38eff9e;
+  --avatar-sheen: linear-gradient(
+    113deg,
+    transparent 24%,
+    #a094ff 41%,
+    #c5f9ff 48%,
+    #ffe0fa 57%,
+    transparent 73%
+  );
+  --foil-duration: 6s;
+}
+
+:is(.profile-card, .profile-card-option i)[data-finish="polychrome"] {
+  --card-finish: linear-gradient(145deg, #333a63, #42616d 46%, #52516e);
+  --card-light: #82dfed66;
+  --rim-light: #f5fffa;
+  --rim-mid: #91dcd3;
+  --rim-dark: #8268a1;
+  --rim-glow: #8beed29c;
+  --avatar-sheen: linear-gradient(
+    122deg,
+    transparent 17%,
+    #a994ff 34%,
+    #8af5e8 45%,
+    #fff4c5 56%,
+    #f6a4dc 66%,
+    transparent 82%
+  );
+  --foil-duration: 8s;
+}
+
+:is(.profile-card, .profile-card-option i)[data-finish="prismatic"] {
+  --card-finish: linear-gradient(
+    145deg,
+    #2c415e,
+    #536e91 46%,
+    #354966 79%,
+    #2f3f5b
+  );
+  --card-light: #a6ceff63;
+  --rim-light: #f4f9ff;
+  --rim-mid: #adc7f3;
+  --rim-dark: #6076ab;
+  --rim-glow: #8cbcffad;
+  --avatar-sheen: linear-gradient(
+    115deg,
+    transparent 24%,
+    #7296ea 42%,
+    #e5f4ff 50%,
+    #a4c2ff 58%,
+    transparent 76%
+  );
+  --foil-duration: 7s;
+}
+
+.profile-card {
+  --light-x: 50%;
+  --light-y: 40%;
+  --rim-light: #bdd0bb;
+  --rim-mid: #7c9786;
+  --rim-dark: #435a50;
+  --rim-glow: transparent;
+  --panel-outline: color-mix(in srgb, var(--rim-mid) 56%, #151e25);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid var(--rim-mid);
+  border-radius: 18px;
+  background:
+    radial-gradient(
+      130% 95% at var(--light-x) var(--light-y),
+      var(--rim-light),
+      transparent 74%
+    ),
+    linear-gradient(
+      146deg,
+      var(--rim-light),
+      var(--rim-mid) 24%,
+      var(--rim-dark) 57%,
+      var(--rim-mid) 82%,
+      var(--rim-light)
+    );
+  color: #f9f5ef;
+  box-shadow:
+    inset 0 0 0 1px #ffffff8c,
+    0 0 16px -2px var(--rim-glow),
+    0 0 42px -16px var(--rim-glow),
+    0 12px 23px -8px #070e246e;
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  backface-visibility: hidden;
+  pointer-events: none;
+}
+
+.profile-card[data-finish="holographic"] {
+  --rainbow-aura: conic-gradient(
+    from -32deg,
+    #ce71ff,
+    #ed6d94 14%,
+    #ffb761 28%,
+    #92ed81 43%,
+    #61e1ff 60%,
+    #7b88ff 77%,
+    #ce71ff
+  );
+}
+
+.profile-card[data-finish="polychrome"] {
+  --rainbow-aura: conic-gradient(
+    from 18deg,
+    #a58cfa,
+    #71d7ff 19%,
+    #79e8b8 34%,
+    #ffe390 51%,
+    #f7a593 66%,
+    #e58dd1 83%,
+    #a58cfa
+  );
+}
+
+.profile-card:is([data-finish="holographic"], [data-finish="polychrome"])::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -3px;
+  border-radius: inherit;
+  background: var(--rainbow-aura);
+  filter: blur(14px);
+  opacity: 0.58;
+}
+
+/* The finish drifts independently of the card transform. Pointer tilt shifts
+   the light source and offsets this layer without restarting its animation. */
+.profile-card-foil {
+  position: absolute;
+  inset: -28%;
+  translate: var(--foil-x, 0px) var(--foil-y, 0px);
+  animation: profile-foil-drift var(--foil-duration) ease-in-out infinite
+    alternate;
+}
+
+.profile-card[data-finish="holographic"] .profile-card-foil {
+  background:
+    repeating-linear-gradient(
+      30deg,
+      transparent calc(50% - 12px) calc(50% - 1px),
+      #ffeaff54 calc(50% - 0.6px),
+      #e0c9ff5c 50%,
+      transparent calc(50% + 1px) calc(50% + 12px)
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent calc(50% - 12px) calc(50% - 1px),
+      #f7efff40 calc(50% - 0.5px),
+      #d4bfff4c 50%,
+      transparent calc(50% + 0.8px) calc(50% + 12px)
+    ),
+    repeating-linear-gradient(
+      150deg,
+      transparent calc(50% - 12px) calc(50% - 1px),
+      #ecfcff54 calc(50% - 0.6px),
+      #a5eef05c 50%,
+      transparent calc(50% + 1px) calc(50% + 12px)
+    ),
+    linear-gradient(
+      111deg,
+      transparent 22%,
+      #a37bffad 30%,
+      #f18beda8 36%,
+      #ff937fba 42%,
+      #ffe77bc9 48%,
+      #a4ef8ac1 53%,
+      #69e8eac5 58%,
+      #7facffb5 64%,
+      #c093ffa3 70%,
+      transparent 79%
+    );
+  mask-image: radial-gradient(
+    ellipse at 52% 50%,
+    #000 27%,
+    #000b 51%,
+    transparent 76%
+  );
+}
+
+.profile-card[data-finish="polychrome"] .profile-card-foil {
+  background:
+    radial-gradient(ellipse at 65% 42%, #f6f4ffa3, transparent 33%),
+    linear-gradient(
+      122deg,
+      transparent 17%,
+      #ad91f480 28%,
+      #a9b6ffb3 36%,
+      #72e0dfc2 45%,
+      #dff6d4bc 53%,
+      #f6c5a8a4 61%,
+      #ca8feb90 68%,
+      transparent 82%
+    );
+}
+
+.profile-card[data-finish="prismatic"] .profile-card-foil {
+  animation-name: profile-foil-orbit;
+  background:
+    conic-gradient(
+      from 36deg at 49% 51%,
+      transparent,
+      #a9d8ff1c 29deg,
+      #e9f6ff82 48deg,
+      #b7d5ff38 57deg,
+      transparent 79deg 165deg,
+      #b3c0ff32 191deg,
+      #e9f8ff74 207deg,
+      #9fd0ff39 219deg,
+      transparent 241deg
+    ),
+    linear-gradient(
+      126deg,
+      transparent 21%,
+      #b8d8ff38 39%,
+      #e5efff88 50%,
+      #bad0ff42 61%,
+      transparent 76%
+    );
+  mask-image: radial-gradient(
+    ellipse at 49% 51%,
+    #000 28%,
+    #000e 48%,
+    transparent 76%
+  );
+}
+
+/* Keep the fine diffraction marks round and visible only inside the glint. */
+.profile-card[data-finish="prismatic"] .profile-card-foil::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-radial-gradient(
+    circle at 49% 51%,
+    transparent 0 9px,
+    #e7f0ff48 10px,
+    transparent 11px 13px
+  );
+  mask-image:
+    radial-gradient(
+      circle at 49% 51%,
+      transparent 28px,
+      #000 51px 79px,
+      transparent 116px
+    ),
+    conic-gradient(
+      from 36deg at 49% 51%,
+      transparent 22deg,
+      #000 49deg,
+      transparent 78deg 169deg,
+      #000 207deg,
+      transparent 245deg
+    );
+  mask-composite: intersect;
+}
+
+@keyframes profile-foil-drift {
+  from {
+    transform: translate(-7%, -4%) rotate(-11deg);
+  }
+  to {
+    transform: translate(7%, 4%) rotate(11deg);
+  }
+}
+
+@keyframes profile-foil-orbit {
+  from {
+    transform: translate(-3%, -2%) rotate(-16deg);
+  }
+  to {
+    transform: translate(3%, 2%) rotate(22deg);
+  }
+}
+
+@media (forced-colors: active) {
+  .profile-card::before,
+  .profile-card-foil,
+  .profile-card-avatar-sheen {
+    display: none;
+  }
+}
+
+.profile-card-portrait {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 210px;
+  padding: 15px;
+  overflow: hidden;
+  border: 1px solid var(--panel-outline);
+  border-radius: 9px 9px 5px 5px;
+  background:
+    radial-gradient(
+      ellipse at var(--light-x) var(--light-y),
+      var(--card-light),
+      transparent 69%
+    ),
+    var(--card-finish);
+}
+
+.profile-card-avatar {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--rim-mid) 58%, transparent),
+    0 0 25px 3px var(--rim-glow);
+}
+
+.profile-card-avatar-sheen {
+  position: absolute;
+  inset: 2px;
+  border-radius: inherit;
+  background: var(--avatar-sheen) no-repeat;
+  background-size: 180% 145%;
+  background-position: var(--light-x) var(--light-y);
+  opacity: 0.22;
+  mix-blend-mode: screen;
+  animation: profile-avatar-sheen var(--foil-duration) ease-in-out infinite
+    alternate;
+}
+
+@keyframes profile-avatar-sheen {
+  from {
+    background-position-x: calc(var(--light-x) - 40%);
+  }
+  to {
+    background-position-x: calc(var(--light-x) + 40%);
+  }
+}
+
+.profile-card .avatar {
+  width: 96px;
+  height: 96px;
+  border: 2px solid var(--rim-light);
+  background: #202b31;
+  color: #faf4ea;
+  font-size: 35px;
+  font-weight: 600;
+}
+
+.profile-card-identity {
+  min-width: 0;
+  padding: 13px 13px 15px;
+  border: 1px solid var(--panel-outline);
+  border-radius: 5px 5px 9px 9px;
+  background: #151e25;
+}
+
+.profile-card-identity h3 {
+  margin: 0;
+  color: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.profile-card-details {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #ffffff30;
+}
+
+.profile-card-details dt {
+  margin-bottom: 3px;
+  color: #cad3d7;
+  font-size: 11px;
+}
+
+.profile-card-details dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-card-finishes {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.profile-card-finishes legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.profile-card-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.profile-card-option {
+  flex: 1 1 auto;
+  position: relative;
+  cursor: pointer;
+}
+
+.profile-card-option > span {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 7px 6px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 11px;
+}
+
+.profile-card-option i {
+  width: 22px;
+  height: 12px;
+  box-shadow: inset 0 0 0 1px #ffffff38;
+  border-radius: 3px;
+  background: var(--card-finish);
+}
+
+.profile-card-option i[data-finish="holographic"] {
+  background: linear-gradient(
+    110deg,
+    #7763b2,
+    #9cb7ca 46%,
+    #d9a8ba 68%,
+    #79639d
+  );
+}
+
+.profile-card-option i[data-finish="polychrome"] {
+  background: linear-gradient(
+    110deg,
+    #8f80ca,
+    #77b9c9 40%,
+    #badbbf 63%,
+    #b58aa9
+  );
+}
+
+.profile-card-option i[data-finish="prismatic"] {
+  background: linear-gradient(
+    110deg,
+    #4c6389,
+    #b4d0f4 46%,
+    #dde9ff 51%,
+    #5d759a 66%
+  );
+}
+
+.profile-card-dialog .profile-card-share {
+  width: 100%;
+  min-height: 32px;
+  margin-top: 10px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.profile-card-share[aria-disabled="true"] {
+  cursor: progress;
+}
+
+.profile-card-share-status {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.profile-card-option:hover > span {
+  background: var(--hover);
+}
+
+.profile-card-option input:checked + span {
+  border-color: var(--accent);
+  background: var(--selected);
+  font-weight: 650;
+}
+
+.profile-card-option input:focus-visible + span {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .profile-card-option input:checked + span {
+    border-color: Highlight;
+    color: HighlightText;
+    background: Highlight;
+    forced-color-adjust: none;
+  }
+}

@@ -1,124 +1,147 @@
-/* Native Clear/Acrylic remains the source of desktop visibility and blur.
-   These static materials tint it; no CSS filter simulates external composition. */
+/* DWM diffuses the desktop; DOM filters only sample in-app content. */
 :root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"]) {
   background: transparent;
-  --glass-pane-alpha: calc(var(--desktop-tint) * 0.58);
-  --glass-nav-alpha: calc(0.58 + var(--desktop-tint) * 0.2);
-  --glass-card-alpha: calc(0.8 + var(--desktop-tint) * 0.12);
-  --glass-dense-alpha: 0.95;
-  --glass-edge-alpha: calc(0.24 - var(--desktop-tint) * 0.1);
-  --glass-reflection-alpha: calc(0.08 - var(--desktop-tint) * 0.05);
-  --glass-edge: rgba(255, 255, 255, var(--glass-edge-alpha));
-  --glass-reflection: rgba(255, 255, 255, var(--glass-reflection-alpha));
-  --glass-shadow: 0 5px 16px #00000024;
-  --glass-inner: inset 0 1px 0 #ffffff17;
-}
-:root[data-theme="light"]:is(
-    [data-desktop-glass="clear"],
-    [data-desktop-glass="acrylic"]
-  ) {
-  --glass-pane-alpha: calc(var(--desktop-tint) * 0.48);
-  --glass-nav-alpha: calc(0.4 + var(--desktop-tint) * 0.26);
-  --glass-card-alpha: calc(0.88 + var(--desktop-tint) * 0.08);
-  --glass-dense-alpha: 0.97;
-  --glass-edge: #ffffffb3;
-  --glass-reflection: rgba(
-    255,
-    255,
-    255,
-    calc(0.18 - var(--desktop-tint) * 0.1)
+  --glass-tint-progress: clamp(0, calc((var(--desktop-tint) - 0.35) / 0.55), 1);
+  --glass-contrast-floor: 0.66;
+  --glass-content-alpha: calc(
+    var(--glass-contrast-floor) + var(--glass-tint-progress) * 0.08
   );
-  --glass-shadow: 0 4px 14px #161a2512;
-  --glass-inner: inset 0 1px 0 #ffffffcc;
+  --glass-nav-alpha: var(--glass-content-alpha);
+  --glass-pane-alpha: var(--glass-content-alpha);
+}
+/* Dark colored families need a little more body than neutral Pitch Black to
+   retain text contrast over a bright desktop. Fixed themes keep their own RGB. */
+:root[data-family="classic"][data-theme="dark"] {
+  --glass-contrast-floor: 0.76;
+}
+:root[data-family="peach"][data-theme="dark"] {
+  --glass-contrast-floor: 0.78;
+}
+:root[data-glass-variant="regular"] {
+  --glass-content-alpha: min(
+    0.9,
+    calc(var(--glass-contrast-floor) + 0.1 + var(--glass-tint-progress) * 0.06)
+  );
+}
+/* Tinted adds body without modifying Clear or Regular's contrast/tint recipes. */
+:root[data-glass-variant="tinted"] {
+  --glass-content-alpha: min(
+    0.95,
+    calc(var(--glass-contrast-floor) + 0.18 + var(--glass-tint-progress) * 0.06)
+  );
 }
 :root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"]) body {
   background: transparent;
 }
-:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
-  :is(.app, .quick) {
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"]) .quick {
   background:
-    linear-gradient(125deg, var(--glass-reflection), transparent 42%),
+    linear-gradient(135deg, #ffffff0a, transparent 45%),
     rgba(var(--surface-rgb), var(--glass-pane-alpha));
+  box-shadow: var(--material-inner);
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"]) .app {
+  /* Each region owns its material. A second pane tint underneath navigation
+     compounded Clear to >96% opacity and erased its distinction from Regular. */
+  background: transparent;
+  box-shadow: var(--material-inner);
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  .content {
+  /* One translucent canvas, not a fixed 98% mask over the native backdrop. */
+  background: rgba(var(--surface-rgb), var(--glass-content-alpha));
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  :is(.sidebar, .notification-dock) {
+  background:
+    linear-gradient(135deg, #ffffff0a, transparent 45%),
+    rgba(var(--surface-rgb), var(--glass-nav-alpha));
+  border-color: var(--material-edge);
+  box-shadow: var(--material-inner);
 }
 :root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
   .sidebar {
+  /* Small navigation labels need the same contrast floor as other text over
+     unknown desktop content. Hierarchy comes from size/spacing, not faint ink. */
+  --muted: var(--text);
+  --subtle: var(--text);
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  :is(.empty, .empty p, .group-empty, .section-heading p, .topbar) {
+  /* Exposed text uses the contrast-tested primary ink. Dense reading surfaces
+     below retain their own background and secondary-text hierarchy. */
+  color: var(--text);
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  :is(.task-card, .overview button, .settings-section, .capture, .notice) {
+  background: var(--surface);
+}
+:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+  :is(.material-menu, .material-floating):not(.profile-card-dialog) {
+  --material-coverage: 0.94;
   background:
-    linear-gradient(110deg, var(--glass-reflection), transparent 65%),
-    rgba(var(--surface-rgb), var(--glass-nav-alpha));
-  border-color: var(--glass-edge);
-  box-shadow: inset -1px 0 0 #ffffff08;
+    linear-gradient(145deg, var(--material-light), transparent 42%),
+    rgba(var(--surface-rgb), var(--material-coverage));
+  border-color: var(--material-edge);
+  box-shadow: var(--material-inner), var(--material-shadow);
 }
-:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
-  :is(.task-card, .overview button) {
-  background:
-    linear-gradient(155deg, var(--glass-reflection), transparent 45%),
-    rgba(var(--surface-rgb), var(--glass-card-alpha));
-  border-color: var(--glass-edge);
-  box-shadow: var(--glass-inner), var(--glass-shadow);
-}
-/* Keep lifecycle edges distinct from the neutral illuminated perimeter. */
-:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
-  .task-card[data-status] {
-  border-inline-start-color: var(--task-accent);
-}
-:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
-  :is(.settings-section, .capture) {
-  background:
-    linear-gradient(160deg, var(--glass-reflection), transparent 35%),
-    rgba(var(--surface-rgb), var(--glass-dense-alpha));
-  border-color: var(--glass-edge);
-  box-shadow: var(--glass-inner), var(--glass-shadow);
-}
-:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
-  :is(input, select, textarea, .select-trigger) {
-  background-color: rgba(var(--surface-rgb), var(--glass-dense-alpha));
-}
-:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
-  :is(
-    .task-dialog,
-    .context-menu,
-    .control-popup,
-    .profile-footer [role="menu"]
-  ) {
-  border-color: var(--glass-edge);
-  box-shadow: var(--glass-inner), var(--glass-shadow);
-}
-:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
-  .task-card:hover {
-  background-color: rgba(var(--surface-rgb), var(--glass-dense-alpha));
-}
-/* Do not weaken focus, accent selection or native high-contrast control colors. */
-@media (forced-colors: active),
-  (prefers-reduced-transparency: reduce),
-  (prefers-contrast: more) {
-  :root body,
-  :root .app,
-  :root .quick {
-    background: var(--bg) !important;
+@supports (backdrop-filter: blur(1px)) {
+  :root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+    .notification-dock {
+    /* One bounded pass prevents underlying labels bleeding through. */
+    backdrop-filter: blur(24px);
+    background-color: rgba(var(--surface-rgb), 0.96);
   }
-  :root .sidebar {
-    background: var(--sidebar) !important;
-    box-shadow: none !important;
-  }
-  :root
-    :is(
-      .task-card,
-      .overview button,
-      .notice,
-      .settings-section,
-      .capture,
-      input,
-      select,
-      textarea
-    ) {
-    background: var(--surface) !important;
-    box-shadow: none !important;
+  :root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
+    .material-menu {
+    backdrop-filter: blur(var(--material-diffusion));
   }
 }
-
-/* Capture is one surface; its text field must not become a nested glass box. */
 :root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
   .capture
   input {
   background: transparent;
+}
+:root[data-window-active="false"] {
+  /* Recede without replacing Clear with an opaque CSS curtain. Windows may
+     independently alter Acrylic when inactive; that policy remains native. */
+  --glass-content-alpha: min(0.88, calc(var(--glass-contrast-floor) + 0.12));
+}
+:root[data-window-active="false"][data-glass-variant="tinted"] {
+  --glass-content-alpha: min(0.95, calc(var(--glass-contrast-floor) + 0.2));
+}
+@media (forced-colors: active),
+  (prefers-reduced-transparency: reduce),
+  (prefers-contrast: more) {
+  :root,
+  :root body,
+  :root :is(.app, .quick, .content) {
+    background: var(--bg) !important;
+  }
+  :root :is(.sidebar, .notification-dock) {
+    background: var(--sidebar) !important;
+  }
+  :root :is(.material-menu, .material-floating, .capture, .notice) {
+    background: var(--surface) !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+}
+@media (forced-colors: active) {
+  :root,
+  :root body,
+  :root
+    :is(
+      .app,
+      .quick,
+      .content,
+      .sidebar,
+      .notification-dock,
+      .material-menu,
+      .material-floating,
+      .capture,
+      .notice
+    ) {
+    background: Canvas !important;
+    color: CanvasText !important;
+  }
 }

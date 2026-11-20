@@ -70,12 +70,7 @@ After activation, use a report whose batch is **Integration test — GitHub App
 reporting**. State that the comment is a clearly labeled integration test and that
 it makes no claim about completion of the UI overhaul. Dispatch once to Issue #2.
 
-The prepared test body can be previewed or submitted with:
-
-```powershell
-node scripts/github/issue-report.mjs --report scripts/github/integration-test-report.json
-node scripts/github/issue-report.mjs --report scripts/github/integration-test-report.json --dispatch
-```
+The one-time JSON body used for that dispatch is not kept in the repository. Preview or submit a new report with the commands above.
 
 Inspect the run and its summary. Success requires the App-token step to complete,
 the API comment to succeed, and its author to have type `Bot` and login matching

@@ -72,15 +72,6 @@
   margin: 4px 6px;
   background: var(--border);
 }
-.menu-shield[data-closing] .context-menu {
-  animation: context-leave 90ms ease-in both;
-}
-@keyframes context-leave {
-  to {
-    opacity: 0;
-    scale: 0.985;
-  }
-}
 .text-menu-error {
   position: fixed;
   bottom: 12px;

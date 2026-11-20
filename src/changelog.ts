@@ -192,6 +192,37 @@ const taskEditorCleanup: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "3.4.5-nightly.20261119.1",
+    date: "2026-11-19",
+    title: "Notification and settings polish",
+    sections: [
+      {
+        heading: "CHANGES",
+        accent: "little",
+        entries: [
+          {
+            text: "Softer corners and settings tabs, with compact Inbox rows and overview tiles. Save and Discard stay above the active settings section.",
+          },
+          {
+            text: "The notification panel follows the current theme and native glass, with scrolling kept inside the task area.",
+          },
+          {
+            text: "Manual update checks show and focus their result, even after filtering or clearing an earlier update offer.",
+          },
+          {
+            text: "Windows reminders include project, priority, deadline and waiting details. Grouped reminders describe what is due.",
+          },
+          {
+            text: "More greetings for each time of day, shorter placeholders, and Namecards as the visible card feature name.",
+          },
+          {
+            text: "Inbox now belongs to Hub. Removed the colored edge markers and the Windows notification disclaimer from task action notices.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.4.4-nightly.20261116.1",
     date: "2026-11-16",
     title: "All-users installation",

@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { motionAllowed, observeMotionPolicy } from "./motion";
 export const NOTICE_MOTION_MS = 320;
 export function SlideSlot({
   children,
@@ -50,7 +51,7 @@ export function useNoticePresence<T extends { id: string }>(
         item,
         leaving: false,
       }));
-      if (!reset) {
+      if (!reset && motionAllowed()) {
         current.forEach((entry, index) => {
           if (!items.some((item) => item.id === entry.key))
             next.splice(Math.min(index, next.length), 0, {
@@ -93,6 +94,15 @@ export function useNoticePresence<T extends { id: string }>(
     () => () => {
       for (const timer of timers.current.values()) clearTimeout(timer);
     },
+    [],
+  );
+  useEffect(
+    () =>
+      observeMotionPolicy(() => {
+        for (const timer of timers.current.values()) clearTimeout(timer);
+        timers.current.clear();
+        setEntries((current) => current.filter((entry) => !entry.leaving));
+      }),
     [],
   );
   return entries;

@@ -37,8 +37,10 @@ export function Preferences({
   settings,
   onSave,
   onRedoOnboarding,
+  onOpenProfileCard,
   onVisual,
   system,
+  surfaceFallback,
   version,
   onReleaseNotes,
   avatar,
@@ -50,11 +52,13 @@ export function Preferences({
 }: {
   settings: Settings;
   onRedoOnboarding: () => void;
+  onOpenProfileCard: () => void;
   avatar?: string | null;
   onRefresh?: () => Promise<void>;
   onSave: (s: Partial<Settings>) => Promise<boolean>;
   onVisual: (patch: Partial<VisualPreferences>) => Promise<void>;
   system?: Snapshot["system_visuals"];
+  surfaceFallback?: string;
   version: string;
   onReleaseNotes: (mode: "new" | "history") => void;
   onCheckUpdates: () => Promise<void>;
@@ -231,6 +235,36 @@ export function Preferences({
           ))}
         </div>
       </div>
+      {sections[section].some(
+        (key) => JSON.stringify(draft[key]) !== JSON.stringify(baseline[key]),
+      ) && (
+        <div
+          className="save-bar settings-save-bar"
+          role="group"
+          aria-label={`${section} changes`}
+        >
+          <button className="primary" disabled={busy}>
+            Save preferences
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              const values = Object.fromEntries(
+                sections[section].map((key) => [key, settings[key]]),
+              );
+              setDraft((previous) => ({ ...previous, ...values }));
+              setBaseline((previous) => ({ ...previous, ...values }));
+              setSaved(false);
+            }}
+          >
+            Discard changes
+          </button>
+          <span role="status">{busy ? "Saving…" : "Unsaved changes"}</span>
+        </div>
+      )}
+      {saved && <p role="status">Preferences saved.</p>}
+      {saveError && <p role="alert">{saveError}</p>}
       <div
         role="tabpanel"
         data-settings-panel="Profile"
@@ -253,6 +287,9 @@ export function Preferences({
               onChange={(event) => set("name", event.target.value)}
             />
           </label>
+          <button type="button" onClick={onOpenProfileCard}>
+            Namecards
+          </button>
         </section>
         <section className="settings-section setup-row">
           <h2>Setup</h2>
@@ -271,6 +308,7 @@ export function Preferences({
         <AppearanceSettings
           settings={settings}
           system={system}
+          surfaceFallback={surfaceFallback}
           onChange={onVisual}
         />
       </div>
@@ -401,32 +439,6 @@ export function Preferences({
           />
         </section>
       </div>
-      {sections[section].some(
-        (key) => JSON.stringify(draft[key]) !== JSON.stringify(baseline[key]),
-      ) && (
-        <div className="save-bar settings-save-bar">
-          <button className="primary" disabled={busy}>
-            Save preferences
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              const values = Object.fromEntries(
-                sections[section].map((key) => [key, settings[key]]),
-              );
-              setDraft((previous) => ({ ...previous, ...values }));
-              setBaseline((previous) => ({ ...previous, ...values }));
-              setSaved(false);
-            }}
-          >
-            Discard changes
-          </button>
-          <span role="status">{busy ? "Saving…" : "Unsaved changes"}</span>
-        </div>
-      )}
-      {saved && <p role="status">Preferences saved.</p>}
-      {saveError && <p role="alert">{saveError}</p>}
       <div
         role="tabpanel"
         data-settings-panel="About"

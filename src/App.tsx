@@ -6,6 +6,9 @@ import { trace, traceSnapshot, traceStart } from "./performance";
 import { isNightly, NightlyDisclosure } from "./Nightly";
 import { Onboarding, RedoOnboardingDialog } from "./Onboarding";
 import { QuickCapture } from "./QuickCapture";
+import { useTactileControls } from "./useMotion";
+import { hideQuickCapture } from "./captureMotion";
+import { useTaskLayout } from "./LayoutMotion";
 import {
   useCallback,
   useEffect,
@@ -36,6 +39,7 @@ import {
 import { Icon } from "./navigation";
 import { TaskDialog, type TaskIntent } from "./TaskDialog";
 import { Preferences, type SettingsEditor } from "./Preferences";
+import { ProfileCardDialog } from "./ProfileCard";
 import { UnsavedSettingsDialog } from "./UnsavedSettingsDialog";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { Sidebar } from "./Sidebar";
@@ -54,15 +58,19 @@ import "./notification-sidebar.css";
 import "./accents.css";
 import "./motion.css";
 import "./desktop-glass.css";
+import "./glass-material.css";
 import "./density.css";
 import "./context-menu.css";
+import "./presentation.css";
 import { taskCategory, reviewCategory } from "./taskColors";
-import type { UpdateActivity } from "./updates";
+import { friendlyUpdateError, type UpdateActivity } from "./updates";
 const captureWindowMode = new URLSearchParams(location.search).has("capture");
 function Application({
   captureMode = captureWindowMode,
 }: { captureMode?: boolean } = {}) {
   const quick = captureMode;
+  useTactileControls();
+  const content = useRef<HTMLElement>(null);
   const snapshotStarted = useRef<number | null>(null);
   const searchStarted = useRef<number | null>(null);
   const firstRender = useRef(traceStart());
@@ -89,8 +97,13 @@ function Application({
     ),
     [now, setNow] = useState(Math.floor(Date.now() / 1000)),
     [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationRequest, setNotificationRequest] = useState<{
+    id: string;
+    sequence: number;
+  } | null>(null);
   const [replayingSetup, setReplayingSetup] = useState(false);
   const [confirmSetup, setConfirmSetup] = useState(false);
+  const [profileCardOpen, setProfileCardOpen] = useState(false);
   const settingsEditor = useRef<SettingsEditor | null>(null);
   const registerSettingsEditor = useCallback(
     (editor: SettingsEditor | null) => {
@@ -107,12 +120,15 @@ function Application({
   const [checkingUpdates, setCheckingUpdates] = useState(false),
     [updateActivity, setUpdateActivity] = useState<UpdateActivity | null>(null);
   const updateOperation = useRef(false);
+  const automaticCheckRunning = useRef(false);
+  const manualCheckPending = useRef(false);
   const [completionFeedback, setCompletionFeedback] = useState<
       { task: Task; view: View; until: number }[]
     >([]),
     [returnHighlights, setReturnHighlights] = useState<Record<string, number>>(
       {},
     );
+  useTaskLayout(content, `${view}:${query}`, data?.tasks, completionFeedback);
   const reviewSeen = useRef<Map<string, number | null>>(new Map()),
     fetchedOnce = useRef(false);
   useEffect(() => {
@@ -152,7 +168,12 @@ function Application({
     legacy = useRef(new Map<string, number>());
   const suspended = useRef(false),
     mounted = useRef(true);
-  const themeReady = useTheme(data?.settings, data?.system_visuals);
+  const [surfaceFallback, setSurfaceFallback] = useState("");
+  const themeReady = useTheme(
+    data?.settings,
+    data?.system_visuals,
+    setSurfaceFallback,
+  );
   useScrollActivity();
   const windowShown = useRef(false),
     lastActivity = useRef(Date.now());
@@ -181,9 +202,10 @@ function Application({
         Number(!!deleting) +
         Number(palette) +
         Number(!!releaseDialog) +
-        Number(confirmSetup),
+        Number(confirmSetup) +
+        Number(profileCardOpen),
     );
-  }, [editor, deleting, palette, releaseDialog, confirmSetup]);
+  }, [editor, deleting, palette, releaseDialog, confirmSetup, profileCardOpen]);
   useEffect(() => {
     if (
       quick ||
@@ -245,6 +267,7 @@ function Application({
       !data ||
       !themeReady ||
       !isNightly(data.release?.version) ||
+      profileCardOpen ||
       editor ||
       deleting ||
       palette ||
@@ -261,6 +284,7 @@ function Application({
     setupActive,
     data,
     themeReady,
+    profileCardOpen,
     editor,
     deleting,
     palette,
@@ -354,7 +378,9 @@ function Application({
     const timer = setInterval(() => {
       if (!dead) void load("timer");
     }, 15000);
-    let off: (() => void) | undefined, offResize: (() => void) | undefined;
+    let off: (() => void) | undefined,
+      offVisual: (() => void) | undefined,
+      offResize: (() => void) | undefined;
     let dead = false;
     void listen("refresh", () => {
       if (!dead) void load("event");
@@ -366,6 +392,17 @@ function Application({
       .catch((error) => {
         if (!dead) setError(String(error));
       });
+    if (quick)
+      void listen("visual-refresh", () => {
+        if (!dead) void load("appearance");
+      })
+        .then((f) => {
+          if (dead) f();
+          else offVisual = f;
+        })
+        .catch((error) => {
+          if (!dead) setError(String(error));
+        });
     const focus = () => {
       void load("focus").then(() => {
         if (!dead && quick) captureRef.current?.focus();
@@ -387,6 +424,7 @@ function Application({
       dead = true;
       mounted.current = false;
       off?.();
+      offVisual?.();
       offResize?.();
       clearInterval(timer);
       window.removeEventListener("focus", focus);
@@ -398,22 +436,30 @@ function Application({
     const check = async () => {
       if (updateOperation.current) return;
       updateOperation.current = true;
+      automaticCheckRunning.current = true;
       try {
         const result = await invoke<{
           notice_id: string | null;
           message?: string;
         }>("check_updates", { automatic: true });
         if (!disposed) {
-          if (result?.message) setUpdateCheckMessage(result.message);
+          if (result?.message)
+            setUpdateCheckMessage(
+              /couldn't|failed|error|not configured/i.test(result.message)
+                ? friendlyUpdateError(result.message)
+                : result.message,
+            );
           if (result?.notice_id) await load("event");
         }
       } catch (error) {
-        if (!disposed)
-          setUpdateCheckMessage(
-            `Automatic update check couldn't finish: ${String(error)}`,
-          );
+        if (!disposed) setUpdateCheckMessage(friendlyUpdateError(error));
       } finally {
         updateOperation.current = false;
+        automaticCheckRunning.current = false;
+        if (!disposed && manualCheckPending.current) {
+          manualCheckPending.current = false;
+          void checkUpdates();
+        }
       }
     };
     const first = setTimeout(() => void check(), 30000);
@@ -466,6 +512,7 @@ function Application({
       (event) => {
         if (event.payload.review) {
           setNativeTaskId(null);
+          setProfileCardOpen(false);
           setView("Daily Review");
           setQuery("");
         } else if (event.payload.task_id)
@@ -497,6 +544,7 @@ function Application({
     if (
       setupActive ||
       !nativeTaskId ||
+      profileCardOpen ||
       editor ||
       deleting ||
       palette ||
@@ -527,6 +575,7 @@ function Application({
   }, [
     setupActive,
     nativeTaskId,
+    profileCardOpen,
     editor,
     deleting,
     palette,
@@ -534,20 +583,39 @@ function Application({
     busy,
   ]);
   async function checkUpdates() {
-    if (setupActive || updateOperation.current) return;
+    if (setupActive) return;
+    if (updateOperation.current) {
+      if (automaticCheckRunning.current) {
+        manualCheckPending.current = true;
+        setCheckingUpdates(true);
+        setUpdateCheckMessage("Finishing the background check first...");
+      } else
+        setUpdateCheckMessage(
+          "An update is already running. Wait for it to finish.",
+        );
+      return;
+    }
     updateOperation.current = true;
     setCheckingUpdates(true);
+    setUpdateCheckMessage("");
     setUpdateActivity(null);
     try {
       const result = await invoke<{
         notice_id: string | null;
         message?: string;
-      }>("check_updates");
+      }>("check_updates_now");
       setUpdateCheckMessage(result?.message ?? "");
       await load();
-      if (result?.notice_id) setNotificationsOpen(true);
+      setNotificationsOpen(true);
+      if (result?.notice_id)
+        setNotificationRequest((previous) => ({
+          id: result.notice_id!,
+          sequence: (previous?.sequence ?? 0) + 1,
+        }));
     } catch (error) {
-      setError(String(error));
+      const message = friendlyUpdateError(error);
+      setUpdateCheckMessage(message);
+      setError(message);
     } finally {
       updateOperation.current = false;
       setCheckingUpdates(false);
@@ -570,7 +638,7 @@ function Application({
         stage: "error",
         downloaded: 0,
         total: null,
-        message: String(error),
+        message: friendlyUpdateError(error, "install"),
       });
     } finally {
       updateOperation.current = false;
@@ -583,6 +651,7 @@ function Application({
       if (
         !quick &&
         !setupActive &&
+        !profileCardOpen &&
         !(
           e.target instanceof Element &&
           e.target.closest("[data-shortcut-recorder]")
@@ -593,13 +662,11 @@ function Application({
         setPalette((p) => !p);
       }
       if (quick && e.key === "Escape" && !captureSaving.current)
-        void getCurrentWindow()
-          .hide()
-          .catch((error) => setError(String(error)));
+        void hideQuickCapture().catch((error) => setError(String(error)));
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [data?.settings.command_shortcut, setupActive]);
+  }, [data?.settings.command_shortcut, setupActive, profileCardOpen]);
   function setUndo(notice: Omit<UndoNotice, "key">) {
     setUndoNotices((current) => [
       ...current,
@@ -682,7 +749,7 @@ function Application({
       });
       if (ok) {
         setTitle("");
-        if (quick) await getCurrentWindow().hide();
+        if (quick) await hideQuickCapture();
         trace("capture.submit-to-complete", started);
       }
     } catch (error) {
@@ -831,7 +898,7 @@ function Application({
           aria-invalid={!!captureError}
           aria-describedby={captureError ? "capture-error" : undefined}
           aria-label="Capture a task"
-          placeholder="What would you like to come back to?"
+          placeholder="Task title"
           value={title}
           onChange={(e) => {
             setTitle(e.target.value);
@@ -894,6 +961,7 @@ function Application({
         <article
           key={t.id}
           className="task-card completion-feedback"
+          data-motion-task={t.id}
           role="status"
           aria-label={`Finished ${t.title}`}
         >
@@ -911,6 +979,7 @@ function Application({
       <article
         className={`task-card${returnHighlights[t.id] && t.review_at !== null ? " newly-resurfaced" : ""}`}
         data-status={t.status}
+        data-motion-task={t.id}
         key={t.id}
         tabIndex={0}
         onKeyDown={(e) => {
@@ -1116,7 +1185,7 @@ function Application({
           );
         }}
       />
-      <main className="content" tabIndex={-1}>
+      <main ref={content} className="content" tabIndex={-1}>
         {view !== "Settings" && view !== "Notification History" && (
           <header className="topbar">
             <div className="search">
@@ -1164,6 +1233,7 @@ function Application({
               settings={settings}
               avatar={data.avatar}
               onRefresh={load}
+              onOpenProfileCard={() => setProfileCardOpen(true)}
               onRedoOnboarding={() =>
                 afterSettings(() => setConfirmSetup(true))
               }
@@ -1171,6 +1241,7 @@ function Application({
               onSave={preferences}
               onVisual={visual}
               system={data.system_visuals}
+              surfaceFallback={surfaceFallback}
               version={data.release?.version ?? releases[0].version}
               onReleaseNotes={setReleaseDialog}
               updateCheckMessage={updateCheckMessage}
@@ -1268,6 +1339,22 @@ function Application({
           )}
         </>
       </main>
+      {profileCardOpen && (
+        <ProfileCardDialog
+          name={settings.name}
+          avatar={data.avatar}
+          finish={settings.profile_card_finish ?? "holographic"}
+          now={now}
+          motionEnabled={
+            settings.animation !== "off" &&
+            data.system_visuals?.animations_enabled !== false
+          }
+          onFinishChange={(finish) =>
+            preferences({ profile_card_finish: finish })
+          }
+          onClose={() => setProfileCardOpen(false)}
+        />
+      )}
       {settingsLeave && (
         <UnsavedSettingsDialog
           onStay={() => setSettingsLeave(null)}
@@ -1328,6 +1415,7 @@ function Application({
           open={notificationsOpen}
           pinned={!!settings.notification_panel_pinned}
           notices={notifications}
+          revealRequest={notificationRequest}
           tasks={tasks}
           busy={busy}
           onOpenChange={setNotificationsOpen}
