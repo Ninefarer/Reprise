@@ -1,4 +1,5 @@
 import { selectOption } from "./testControls";
+import { mockMotion } from "./testMotion";
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -2245,17 +2246,30 @@ describe("right notification panel", () => {
     ).toBeTruthy();
   });
   it("finishes exit motion before unmounting and cancels it safely when reopened", async () => {
+    const motion = mockMotion();
     const focused = vi.spyOn(document, "hasFocus").mockReturnValue(true);
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("navigation");
     await openNotifications(user);
+    const opening = motion.animations
+      .filter((animation) =>
+        animation.element.classList.contains("notification-dock"),
+      )
+      .at(-1)!;
+    opening.currentTime = 80;
     await user.keyboard("{Escape}");
+    const stale = motion.animations
+      .filter((animation) =>
+        animation.element.classList.contains("notification-dock"),
+      )
+      .at(-1)!.onfinish;
     const exiting = document.querySelector(".notification-dock")!;
     expect(exiting.getAttribute("data-exiting")).toBe("true");
     expect(exiting.hasAttribute("inert")).toBe(true);
     expect(document.activeElement?.tagName).toBe("MAIN");
     await openNotifications(user);
+    act(() => stale?.());
     expect(
       screen
         .getByRole("complementary", { name: "Notifications" })
@@ -2266,10 +2280,19 @@ describe("right notification panel", () => {
       screen.getByRole("complementary", { name: "Notifications" }),
     ).toBeTruthy();
     await user.keyboard("{Escape}");
+    act(() =>
+      motion.animations
+        .filter((animation) =>
+          animation.element.classList.contains("notification-dock"),
+        )
+        .at(-1)!
+        .onfinish?.(),
+    );
     await waitFor(() =>
       expect(document.querySelector(".notification-dock")).toBeNull(),
     );
     focused.mockRestore();
+    motion.restore();
   });
   it("closes immediately with decorative motion disabled", async () => {
     data.settings.animation = "off";

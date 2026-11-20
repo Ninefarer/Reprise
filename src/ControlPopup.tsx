@@ -1,19 +1,16 @@
-import {
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import { useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
+import { useSurfacePresence } from "./useMotion";
 
 /** A selection surface, including inside native modal dialogs. */
 export function ControlPopup({
   anchor,
+  open = true,
   onClose,
   children,
 }: {
   anchor: RefObject<HTMLElement | null>;
+  open?: boolean;
   onClose: () => void;
   children: ReactNode;
 }) {
@@ -21,11 +18,11 @@ export function ControlPopup({
     panel = useRef<HTMLDivElement>(null);
   const callback = useRef(onClose);
   callback.current = onClose;
-  const [host] = useState(
-    () =>
-      anchor.current?.closest("dialog[open], .setup-screen") ?? document.body,
-  );
+  const present = useSurfacePresence(open, panel);
+  const host =
+    anchor.current?.closest("dialog[open], .setup-screen") ?? document.body;
   useLayoutEffect(() => {
+    if (!present) return;
     const surface = layer.current!,
       box = panel.current!;
     surface.showPopover?.();
@@ -55,7 +52,18 @@ export function ControlPopup({
       if (box.contains(document.activeElement))
         anchor.current?.focus({ preventScroll: true });
     };
-  }, [anchor]);
+  }, [anchor, present]);
+  useLayoutEffect(() => {
+    if (!present) return;
+    const box = panel.current!;
+    if (!open && box.contains(document.activeElement))
+      anchor.current?.focus({ preventScroll: true });
+    if (open && !box.contains(document.activeElement))
+      box
+        .querySelector<HTMLElement>("button:not(:disabled), input")
+        ?.focus({ preventScroll: true });
+  }, [open, present, anchor]);
+  if (!present) return null;
   return createPortal(
     <div
       ref={layer}
@@ -65,6 +73,9 @@ export function ControlPopup({
           : undefined
       }
       className="control-shield"
+      data-closing={!open || undefined}
+      inert={!open}
+      aria-hidden={!open || undefined}
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) {
           anchor.current?.focus();
@@ -95,6 +106,7 @@ export function ControlPopup({
         ref={panel}
         className="control-popup material-menu glass-surface"
         data-control-popup
+        data-spring-surface
       >
         {children}
       </div>

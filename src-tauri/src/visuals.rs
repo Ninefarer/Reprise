@@ -154,6 +154,9 @@ pub fn window_ready(window: tauri::WebviewWindow, app: tauri::AppHandle) -> Resu
     if show {
         window.show().map_err(|e| e.to_string())?;
         window.set_focus().map_err(|e| e.to_string())?;
+        if window.label() == "capture" {
+            let _ = window.emit("capture-shown", ());
+        }
     }
     Ok(())
 }
@@ -168,6 +171,7 @@ pub fn request_capture(app: &tauri::AppHandle) {
     if let Some(w) = app.get_webview_window("capture") {
         let _ = w.show();
         let _ = w.set_focus();
+        let _ = w.emit("capture-shown", ());
     }
 }
 pub fn request_dashboard(app: &tauri::AppHandle) {

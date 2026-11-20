@@ -6,6 +6,9 @@ import { trace, traceSnapshot, traceStart } from "./performance";
 import { isNightly, NightlyDisclosure } from "./Nightly";
 import { Onboarding, RedoOnboardingDialog } from "./Onboarding";
 import { QuickCapture } from "./QuickCapture";
+import { useTactileControls } from "./useMotion";
+import { hideQuickCapture } from "./captureMotion";
+import { useTaskLayout } from "./LayoutMotion";
 import {
   useCallback,
   useEffect,
@@ -66,6 +69,8 @@ function Application({
   captureMode = captureWindowMode,
 }: { captureMode?: boolean } = {}) {
   const quick = captureMode;
+  useTactileControls();
+  const content = useRef<HTMLElement>(null);
   const snapshotStarted = useRef<number | null>(null);
   const searchStarted = useRef<number | null>(null);
   const firstRender = useRef(traceStart());
@@ -112,6 +117,7 @@ function Application({
   const [nightlySeen, setNightlySeen] = useState(false);
   const [updateCheckMessage, setUpdateCheckMessage] = useState("");
   const [nativeTaskId, setNativeTaskId] = useState<string | null>(null);
+  useTaskLayout(content, `${view}:${query}`);
   const [checkingUpdates, setCheckingUpdates] = useState(false),
     [updateActivity, setUpdateActivity] = useState<UpdateActivity | null>(null);
   const updateOperation = useRef(false);
@@ -637,8 +643,7 @@ function Application({
         setPalette((p) => !p);
       }
       if (quick && e.key === "Escape" && !captureSaving.current)
-        void getCurrentWindow()
-          .hide()
+        void hideQuickCapture()
           .catch((error) => setError(String(error)));
     };
     window.addEventListener("keydown", key);
@@ -726,7 +731,7 @@ function Application({
       });
       if (ok) {
         setTitle("");
-        if (quick) await getCurrentWindow().hide();
+        if (quick) await hideQuickCapture();
         trace("capture.submit-to-complete", started);
       }
     } catch (error) {
@@ -938,6 +943,7 @@ function Application({
         <article
           key={t.id}
           className="task-card completion-feedback"
+          data-motion-task={t.id}
           role="status"
           aria-label={`Finished ${t.title}`}
         >
@@ -955,6 +961,7 @@ function Application({
       <article
         className={`task-card${returnHighlights[t.id] && t.review_at !== null ? " newly-resurfaced" : ""}`}
         data-status={t.status}
+        data-motion-task={t.id}
         key={t.id}
         tabIndex={0}
         onKeyDown={(e) => {
@@ -1160,7 +1167,7 @@ function Application({
           );
         }}
       />
-      <main className="content" tabIndex={-1}>
+      <main ref={content} className="content" tabIndex={-1}>
         {view !== "Settings" && view !== "Notification History" && (
           <header className="topbar">
             <div className="search">

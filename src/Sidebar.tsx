@@ -13,6 +13,7 @@ import { Avatar } from "./Profile";
 import { createPortal } from "react-dom";
 import { taskCategory } from "./taskColors";
 import { PopupMenu, type MenuAction } from "./PopupMenu";
+import { NavigationSelection } from "./LayoutMotion";
 export function Sidebar({
   settings,
   version,
@@ -48,6 +49,7 @@ export function Sidebar({
     y: number;
   } | null>(null);
   const draggingRef = useRef(false);
+  const nav = useRef<HTMLElement>(null);
   const collapsed = settings.sidebar_collapsed ?? false;
   useEffect(() => setTooltip(null), [collapsed]);
   useEffect(() => {
@@ -149,7 +151,12 @@ export function Sidebar({
           <NightlyBadge version={version!} />
         </div>
       )}
-      <nav aria-label="Main navigation" tabIndex={0}>
+      <nav ref={nav} aria-label="Main navigation" tabIndex={0}>
+        <NavigationSelection
+          container={nav}
+          selection={view}
+          layout={`${collapsed}:${width}:${JSON.stringify(settings.sidebar_groups)}`}
+        />
         {navigation.map((g) => (
           <section className="nav-group" key={g.id}>
             <div className="nav-group-heading">

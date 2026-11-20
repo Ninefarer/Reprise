@@ -1,8 +1,13 @@
-param([Parameter(Mandatory=$true)][string]$Label, [int]$Seconds=10)
+param([Parameter(Mandatory=$true)][string]$Label, [int]$Seconds=10, [int]$RootProcessId=0)
 $ErrorActionPreference='Stop'
 if ($Label -notmatch '^[a-z0-9-]+$' -or $Seconds -lt 2 -or $Seconds -gt 30) { throw 'Invalid sample arguments' }
-$root = @(Get-Process reprise | Where-Object { $_.MainWindowTitle -eq 'Reprise Glass QA' })
-if ($root.Count -ne 1) { throw 'Expected exactly one isolated Reprise Glass QA process' }
+if ($RootProcessId) {
+  $root = @(Get-Process -Id $RootProcessId | Where-Object { $_.Path -eq 'C:\Program Files\Reprise Nightly\reprise.exe' })
+  if ($root.Count -ne 1) { throw 'Explicit PID must be the installed Reprise Nightly executable' }
+} else {
+  $root = @(Get-Process reprise | Where-Object { $_.MainWindowTitle -eq 'Reprise Glass QA' })
+  if ($root.Count -ne 1) { throw 'Expected exactly one isolated Reprise Glass QA process' }
+}
 $processes = @(Get-CimInstance Win32_Process)
 $ids = @([int]$root[0].Id)
 do {

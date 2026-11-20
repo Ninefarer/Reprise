@@ -39,9 +39,8 @@
 }
 .glass-scope .glass-control {
   transition:
-    box-shadow 150ms var(--motion-ease),
-    border-color 150ms var(--motion-ease),
-    scale 110ms var(--motion-ease);
+    box-shadow var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease);
 }
 .glass-scope .glass-control:where(:hover, :focus-visible):not(:disabled) {
   border-color: color-mix(in srgb, var(--text) 38%, transparent);
@@ -51,7 +50,6 @@
     inset 0 0 18px #ffffff16;
 }
 .glass-scope .glass-control:active:not(:disabled) {
-  scale: calc(1 - 0.012 * var(--material-response));
   box-shadow:
     inset 0 1px 3px #00000020,
     inset 0 -1px 0 #ffffff55;

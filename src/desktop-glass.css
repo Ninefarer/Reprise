@@ -90,11 +90,6 @@
   }
 }
 :root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
-  .control-popup {
-  transform-origin: var(--popup-origin, top left);
-  animation: menu-enter 240ms var(--motion-ease);
-}
-:root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"])
   .capture
   input {
   background: transparent;

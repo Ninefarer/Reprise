@@ -6,6 +6,9 @@ const windowMock = vi.hoisted(() => ({ setSize: vi.fn() }));
 vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => windowMock,
 }));
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: vi.fn(async () => vi.fn()),
+}));
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -25,8 +28,8 @@ it("fits capture content, grows for errors and disconnects its observer on unmou
     },
   );
   let height = 102;
-  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
-    () => ({ height }) as DOMRect,
+  vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(
+    () => height,
   );
   windowMock.setSize.mockResolvedValue(undefined);
   const onError = vi.fn();

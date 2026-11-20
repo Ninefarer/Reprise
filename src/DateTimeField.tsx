@@ -118,23 +118,21 @@ export function DateTimeField({
           {error}
         </span>
       )}
-      {open && (
-        <ControlPopup anchor={trigger} onClose={() => setOpen(false)}>
-          <DateTimePicker
-            type={type}
-            value={value}
-            min={min}
-            required={required}
-            onCancel={() => setOpen(false)}
-            onApply={(next) => {
-              setText(displayDateInput(next, type));
-              onChange({ target: { value: next } });
-              setOpen(false);
-              trigger.current?.focus();
-            }}
-          />
-        </ControlPopup>
-      )}
+      <ControlPopup open={open} anchor={trigger} onClose={() => setOpen(false)}>
+        <DateTimePicker
+          type={type}
+          value={value}
+          min={min}
+          required={required}
+          onCancel={() => setOpen(false)}
+          onApply={(next) => {
+            setText(displayDateInput(next, type));
+            onChange({ target: { value: next } });
+            setOpen(false);
+            trigger.current?.focus();
+          }}
+        />
+      </ControlPopup>
     </span>
   );
 }

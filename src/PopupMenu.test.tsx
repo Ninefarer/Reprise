@@ -11,6 +11,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { PopupMenu } from "./PopupMenu";
+import { mockMotion } from "./testMotion";
 import { TextContextMenus } from "./TextContextMenu";
 const clipboard = vi.hoisted(() => ({ readText: vi.fn(), writeText: vi.fn() }));
 vi.mock("@tauri-apps/plugin-clipboard-manager", () => clipboard);
@@ -53,6 +54,7 @@ describe("shared context menus", () => {
     expect(close).toHaveBeenCalledOnce();
   });
   it("cancels a pending exit when rapidly reopening at the same position", async () => {
+    const motion = mockMotion();
     const close = vi.fn();
     const props = {
       label: "Reopen",
@@ -62,13 +64,18 @@ describe("shared context menus", () => {
       actions: [{ id: "copy", label: "Copy", onSelect: vi.fn() }],
     };
     const app = render(<PopupMenu {...props} request={{}} />);
+    motion.animations.at(-1)!.currentTime = 80;
     fireEvent.keyDown(screen.getByRole("menuitem"), { key: "Escape" });
+    const staleFinish = motion.animations.at(-1)!.onfinish;
     expect(screen.queryByRole("menu")).toBeNull();
     app.rerender(<PopupMenu {...props} request={{}} />);
+    staleFinish?.();
     expect(screen.getByRole("menu")).toBeTruthy();
     await new Promise((resolve) => setTimeout(resolve, 120));
     expect(close).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(screen.getByRole("menuitem"));
+    app.unmount();
+    motion.restore();
   });
   it("skips disabled entries, supports Home/End and restores focus on Escape", async () => {
     const before = document.createElement("button");
