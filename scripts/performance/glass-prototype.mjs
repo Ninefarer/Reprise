@@ -111,9 +111,7 @@ try {
         blur: getComputedStyle(control).backdropFilter,
       };
       root.dataset.motion = "off";
-      result.offResponse = getComputedStyle(root)
-        .getPropertyValue("--material-response")
-        .trim();
+      result.offTransition = getComputedStyle(control).transitionDuration;
       root.dataset.effects = "reduced";
       result.reducedBlur = getComputedStyle(control).backdropFilter;
       root.dataset.windowActive = "false";
@@ -133,7 +131,7 @@ try {
   assert.match(materialChecks.sidebar, /, 0\.66\)$/);
   assert.match(materialChecks.content, /, 0\.66\)$/);
   assert.notEqual(materialChecks.blur, "none");
-  assert.equal(materialChecks.offResponse, "0");
+  assert.equal(materialChecks.offTransition, "0s");
   assert.equal(materialChecks.reducedBlur, "none");
   assert.equal(materialChecks.inactiveCoverage, "0.96");
   const matrix = await page.evaluate(() => {

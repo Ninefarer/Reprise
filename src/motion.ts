@@ -47,7 +47,8 @@ export function motionAllowed() {
     root.dataset.motion !== "off" &&
     root.dataset.windowActive !== "false" &&
     document.visibilityState !== "hidden" &&
-    !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches &&
+    !window.matchMedia?.("(forced-colors: active)").matches
   );
 }
 
@@ -57,21 +58,45 @@ let removePolicyListeners: (() => void) | undefined;
 export function observeMotionPolicy(callback: () => void) {
   policyListeners.add(callback);
   if (!removePolicyListeners) {
-    const notify = () => {
-      if (!motionAllowed()) [...policyListeners].forEach((fn) => fn());
-    };
-    const observer = new MutationObserver(notify);
+    const settle = () => [...policyListeners].forEach((fn) => fn());
+    const observer = new MutationObserver((records) => {
+      if (
+        !motionAllowed() ||
+        records.some(
+          (record) =>
+            record.oldValue !==
+            document.documentElement.getAttribute(record.attributeName!),
+        )
+      )
+        settle();
+    });
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["data-motion", "data-window-active"],
+      attributeOldValue: true,
+      attributeFilter: [
+        "data-motion",
+        "data-window-active",
+        "data-family",
+        "data-theme",
+        "data-effects",
+        "data-glass-variant",
+        "data-desktop-glass",
+        "class",
+        "style",
+      ],
     });
-    const media = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    media?.addEventListener?.("change", notify);
-    document.addEventListener("visibilitychange", notify);
+    const media = [
+      "(prefers-reduced-motion: reduce)",
+      "(forced-colors: active)",
+      "(prefers-reduced-transparency: reduce)",
+      "(prefers-contrast: more)",
+    ].map((query) => window.matchMedia?.(query));
+    media.forEach((query) => query?.addEventListener?.("change", settle));
+    document.addEventListener("visibilitychange", settle);
     removePolicyListeners = () => {
       observer.disconnect();
-      media?.removeEventListener?.("change", notify);
-      document.removeEventListener("visibilitychange", notify);
+      media.forEach((query) => query?.removeEventListener?.("change", settle));
+      document.removeEventListener("visibilitychange", settle);
     };
   }
   return () => {

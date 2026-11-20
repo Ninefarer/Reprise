@@ -117,7 +117,6 @@ function Application({
   const [nightlySeen, setNightlySeen] = useState(false);
   const [updateCheckMessage, setUpdateCheckMessage] = useState("");
   const [nativeTaskId, setNativeTaskId] = useState<string | null>(null);
-  useTaskLayout(content, `${view}:${query}`);
   const [checkingUpdates, setCheckingUpdates] = useState(false),
     [updateActivity, setUpdateActivity] = useState<UpdateActivity | null>(null);
   const updateOperation = useRef(false);
@@ -129,6 +128,7 @@ function Application({
     [returnHighlights, setReturnHighlights] = useState<Record<string, number>>(
       {},
     );
+  useTaskLayout(content, `${view}:${query}`, data?.tasks, completionFeedback);
   const reviewSeen = useRef<Map<string, number | null>>(new Map()),
     fetchedOnce = useRef(false);
   useEffect(() => {
@@ -373,7 +373,9 @@ function Application({
     const timer = setInterval(() => {
       if (!dead) void load("timer");
     }, 15000);
-    let off: (() => void) | undefined, offResize: (() => void) | undefined;
+    let off: (() => void) | undefined,
+      offVisual: (() => void) | undefined,
+      offResize: (() => void) | undefined;
     let dead = false;
     void listen("refresh", () => {
       if (!dead) void load("event");
@@ -385,6 +387,17 @@ function Application({
       .catch((error) => {
         if (!dead) setError(String(error));
       });
+    if (quick)
+      void listen("visual-refresh", () => {
+        if (!dead) void load("appearance");
+      })
+        .then((f) => {
+          if (dead) f();
+          else offVisual = f;
+        })
+        .catch((error) => {
+          if (!dead) setError(String(error));
+        });
     const focus = () => {
       void load("focus").then(() => {
         if (!dead && quick) captureRef.current?.focus();
@@ -406,6 +419,7 @@ function Application({
       dead = true;
       mounted.current = false;
       off?.();
+      offVisual?.();
       offResize?.();
       clearInterval(timer);
       window.removeEventListener("focus", focus);
@@ -643,8 +657,7 @@ function Application({
         setPalette((p) => !p);
       }
       if (quick && e.key === "Escape" && !captureSaving.current)
-        void hideQuickCapture()
-          .catch((error) => setError(String(error)));
+        void hideQuickCapture().catch((error) => setError(String(error)));
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);

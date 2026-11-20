@@ -89,6 +89,8 @@ export function NavigationSelection({
 export function useTaskLayout(
   container: RefObject<HTMLElement | null>,
   scope: string,
+  revision: unknown,
+  feedback?: unknown,
 ) {
   const previous = useRef(
     new Map<
@@ -218,12 +220,17 @@ export function useTaskLayout(
       }
     }
     previous.current = next;
-  });
+  }, [container, scope, revision, feedback]);
   useLayoutEffect(() => {
     const settleGhosts = () =>
       [...ghosts.current.values()].forEach((motion) => motion.finish());
+    const resize = () => {
+      settleGhosts();
+      [...animations.current.values()].forEach((motion) => motion.finish());
+      previous.current.clear();
+    };
     window.addEventListener("scroll", settleGhosts, true);
-    window.addEventListener("resize", settleGhosts);
+    window.addEventListener("resize", resize);
     return () => {
       animations.current.forEach((motion) => motion.dispose());
       animations.current.clear();
@@ -233,7 +240,7 @@ export function useTaskLayout(
       });
       ghosts.current.clear();
       window.removeEventListener("scroll", settleGhosts, true);
-      window.removeEventListener("resize", settleGhosts);
+      window.removeEventListener("resize", resize);
     };
   }, []);
 }

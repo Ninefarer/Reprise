@@ -59,8 +59,11 @@ export function morphSurface(
   source: () => SurfaceRect,
 ): SpringMotion {
   let controller: SpringMotion | undefined, shell: HTMLDivElement | undefined;
+  let resizeObserver: ResizeObserver | undefined;
   let current = 0;
   const restore = () => {
+    resizeObserver?.disconnect();
+    resizeObserver = undefined;
     panel.removeAttribute("data-morphing");
     panel.style.removeProperty("clip-path");
     panel.style.removeProperty("opacity");
@@ -124,6 +127,15 @@ export function morphSurface(
         },
       ],
     );
+    if (typeof ResizeObserver !== "undefined") {
+      const width = panel.offsetWidth,
+        height = panel.offsetHeight;
+      resizeObserver = new ResizeObserver(() => {
+        if (panel.offsetWidth !== width || panel.offsetHeight !== height)
+          controller?.finish();
+      });
+      resizeObserver.observe(panel);
+    }
   };
   return {
     to(target, onRest) {
@@ -145,6 +157,8 @@ export function morphSurface(
       shell!.hidden = false;
       controller!.to(target, () => {
         current = target;
+        controller?.dispose();
+        controller = undefined;
         restore();
         if (!target) panel.style.opacity = "0";
         onRest?.();

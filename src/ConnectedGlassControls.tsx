@@ -1,6 +1,11 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { connectedControlPath } from "./glassMotion";
-import { motionAllowed, springMotion, type SpringMotion } from "./motion";
+import {
+  motionAllowed,
+  observeMotionPolicy,
+  springMotion,
+  type SpringMotion,
+} from "./motion";
 
 /** A transient shared rim for related presets, never a global merging filter. */
 export function ConnectedGlassControls({
@@ -96,14 +101,20 @@ export function ConnectedGlassControls({
     document.addEventListener("pointercancel", release);
     document.addEventListener("keyup", keyUp);
     window.addEventListener("blur", release);
+    window.addEventListener("resize", clear);
+    window.addEventListener("scroll", clear, true);
+    const stopPolicy = observeMotionPolicy(clear);
     return () => {
       clear();
+      stopPolicy();
       root.removeEventListener("pointerdown", press);
       root.removeEventListener("keydown", press);
       document.removeEventListener("pointerup", release);
       document.removeEventListener("pointercancel", release);
       document.removeEventListener("keyup", keyUp);
       window.removeEventListener("blur", release);
+      window.removeEventListener("resize", clear);
+      window.removeEventListener("scroll", clear, true);
     };
   }, []);
   return (

@@ -30,6 +30,9 @@ const restore = Object.fromEntries(fields.map((k) => [k, original[k]]));
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
 const rows = [];
+const stressCycles = mode === "stress" ? 120 : 5;
+const cdp = await page.context().newCDPSession(page);
+await cdp.send("Performance.enable");
 await mkdir("artifacts/motion", { recursive: true });
 try {
   await page.bringToFront();
@@ -52,6 +55,23 @@ try {
     await ipc("quit_app");
     process.exit(0);
   }
+  if (mode === "stress") {
+    await ipc("visual_preferences", {
+      patch: {
+        desktop_glass: true,
+        desktop_material: "clear",
+        desktop_tint: 90,
+        theme_family: "pitch-black",
+        theme: "dark",
+        animation: "expressive",
+      },
+    });
+    await page
+      .getByRole("navigation")
+      .getByRole("button", { name: "Home", exact: true })
+      .click();
+    await page.waitForTimeout(1000);
+  }
   if (await page.locator(".notification-dock").count()) {
     await page.locator(".notification-dock").focus();
     await page.keyboard.press("Escape");
@@ -73,7 +93,8 @@ try {
     q.count = () => q.events++;
     document.addEventListener("pointerdown", q.count, true);
   });
-  for (let i = 0; i < 5; i++) {
+  const startedAt = new Date().toISOString();
+  for (let i = 0; i < stressCycles; i++) {
     const category = page.getByRole("combobox", {
       name: "Category",
       exact: true,
@@ -81,7 +102,23 @@ try {
     if (!(await category.count())) await page.keyboard.press("Control+Shift+n");
     await category.waitFor();
     await category.click();
+    if (mode === "stress") await page.waitForTimeout(40);
     await page.keyboard.press("Escape");
+    if (mode === "stress" && (i + 1) % 20 === 0) {
+      const metrics = await cdp.send("Performance.getMetrics");
+      rows.push({
+        completedCycles: i + 1,
+        at: new Date().toISOString(),
+        heapBytes: metrics.metrics.find((m) => m.name === "JSHeapUsedSize")
+          ?.value,
+        transientNodes: await page
+          .locator(
+            ".glass-morph-shell,.glass-press-surface,[data-motion-ghost]",
+          )
+          .count(),
+      });
+      console.log(`Completed ${i + 1}/${stressCycles} cycles`);
+    }
     await category.click();
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
@@ -98,7 +135,7 @@ try {
   }
   await page.waitForTimeout(650);
   rows.push({
-    interactionCycles: 5,
+    interactionCycles: stressCycles,
     remainingAnimations: await page.evaluate(
       () => document.getAnimations().length,
     ),
@@ -144,6 +181,20 @@ try {
                 };
               }, tint),
             );
+            const actual = rows.at(-1);
+            assert.equal(actual.family, family);
+            assert.equal(
+              actual.theme,
+              family === "pitch-black"
+                ? "dark"
+                : family === "ashen-white"
+                  ? "light"
+                  : theme,
+            );
+            assert.equal(
+              actual.material,
+              material === "clear" ? "clear" : "regular",
+            );
             await page.keyboard.press("Escape");
             await page.keyboard.press("Escape");
           }
@@ -187,6 +238,9 @@ try {
         label,
         rows,
         metrics,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+        runtime: await browser.version(),
         errors,
         notes:
           "Frame intervals measure renderer scheduling, not presented frames.",

@@ -28,13 +28,11 @@ vi.mock("@tauri-apps/api/event", () => ({
 let mock: ReturnType<typeof mockMotion>;
 beforeEach(() => {
   document.documentElement.dataset.motion = "expressive";
-  window.matchMedia = vi
-    .fn()
-    .mockReturnValue({
-      matches: false,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    });
+  window.matchMedia = vi.fn().mockReturnValue({
+    matches: false,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  });
   mock = mockMotion();
   vi.clearAllMocks();
 });
@@ -98,6 +96,26 @@ it("settles an active animation when reduced motion is enabled", async () => {
   expect(rest).toHaveBeenCalledOnce();
   expect(element.style.opacity).toBe("1");
   spring.dispose();
+});
+it("settles material snapshots when theme or contrast policy changes", async () => {
+  const element = document.createElement("div"),
+    done = vi.fn(),
+    spring = springMotion(element, (p) => ({ opacity: String(p) }));
+  spring.to(1, done);
+  document.documentElement.dataset.theme = "light";
+  await act(async () => {});
+  expect(done).toHaveBeenCalledOnce();
+  expect(element.style.opacity).toBe("1");
+  spring.dispose();
+  delete document.documentElement.dataset.theme;
+  window.matchMedia = vi
+    .fn()
+    .mockImplementation((query) => ({
+      matches: query === "(forced-colors: active)",
+    }));
+  const count = mock.animations.length;
+  springMotion(element, (p) => ({ opacity: String(p) })).to(1);
+  expect(mock.animations).toHaveLength(count);
 });
 it("retains only an inert popup during close, restores focus immediately, and cancels stale removal", () => {
   const view = render(

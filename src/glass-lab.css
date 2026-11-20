@@ -78,7 +78,7 @@
 /* Popup is portaled; harness root state supplies the fallback preferences. */
 :root:has(.glass-lab) .control-popup {
   transform-origin: var(--popup-origin, top left);
-  animation: menu-enter 240ms var(--motion-ease);
+  animation: menu-enter var(--motion-popover) var(--motion-ease);
 }
 @media (max-width: 620px) {
   .lab-stress {

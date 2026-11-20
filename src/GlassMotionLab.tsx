@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { Select } from "./Select";
+import { DateTimeField } from "./DateTimeField";
 import { PopupMenu } from "./PopupMenu";
 import "./context-menu.css";
 import { useTactileControls } from "./useMotion";
@@ -20,6 +21,7 @@ export function GlassMotionLab() {
     [selection, setSelection] = useState("today");
   const path = useRef<SVGPathElement>(null);
   const [context, setContext] = useState<{ x: number; y: number } | null>(null);
+  const [reviewTime,setReviewTime]=useState("2026-02-15T09:00");
   useTactileControls();
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -128,6 +130,7 @@ export function GlassMotionLab() {
           />
         )}
       </section>
+      <section className="motion-sample"><h2>Picker lifecycle</h2><DateTimeField aria-label="Review time" type="datetime-local" value={reviewTime} onChange={event=>setReviewTime(event.target.value)}/></section>
     </main>
   );
 }

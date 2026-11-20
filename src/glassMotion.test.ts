@@ -86,6 +86,33 @@ it("settles the entire coordinated surface group under reduced motion", () => {
   expect(mock.animations).toHaveLength(0);
   expect(document.querySelector(".glass-morph-shell")).toBeNull();
 });
+it("refreshes settled popup geometry and material before its exit", () => {
+  vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(240);
+  const panel = document.createElement("div");
+  panel.style.background = "rgb(20, 20, 20)";
+  document.body.append(panel);
+  let height = 180;
+  panel.getBoundingClientRect = () =>
+    ({ left: 40, top: 60, width: 240, height }) as DOMRect;
+  const motion = morphSurface(panel, () => ({
+    left: 40,
+    top: 24,
+    width: 80,
+    height: 32,
+    radius: 6,
+  }));
+  motion.to(1);
+  mock.animations[0].onfinish?.();
+  height = 270;
+  panel.style.background = "rgb(240, 240, 240)";
+  motion.to(0);
+  expect(mock.animations.at(-2)!.frames[0].height).toBe("270px");
+  expect(
+    (document.querySelector(".glass-morph-shell") as HTMLElement).style
+      .background,
+  ).toBe("rgb(240, 240, 240)");
+  motion.dispose();
+});
 it("connects and separates one path with stable topology, while flexing only a surface", () => {
   const separated = connectedControlPath(80, 8, 32, 0),
     joined = connectedControlPath(80, 8, 32, 1);

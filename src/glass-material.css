@@ -6,7 +6,6 @@
   --material-light: #ffffff24;
   --material-shadow: 0 8px 24px #00000024;
   --material-inner: inset 0 1px 0 #ffffff70, inset 0 -1px 0 #00000012;
-  --material-response: 1;
 }
 .glass-scope[data-glass-variant="clear"] {
   --material-coverage: 0.74;
@@ -79,7 +78,6 @@
 :root[data-window-active="false"] .glass-scope {
   --material-coverage: 0.96;
   --material-light: #ffffff0c;
-  --material-response: 0;
 }
 .glass-scope[data-glass-motion="off"] *,
 .glass-scope[data-glass-motion="off"] *::before,
@@ -87,15 +85,6 @@
   transition: none !important;
   animation: none !important;
   scale: none !important;
-}
-:root[data-motion="off"].glass-scope,
-:root[data-motion="off"] .glass-scope {
-  --material-response: 0;
-}
-@media (prefers-reduced-motion: reduce) {
-  .glass-scope {
-    --material-response: 0;
-  }
 }
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   .glass-scope .glass-surface {

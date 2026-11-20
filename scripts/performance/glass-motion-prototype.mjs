@@ -38,7 +38,7 @@ try {
   const geometry = await page.evaluate(() => {
     const shell = document.querySelector(".glass-morph-shell"),
       panel = document.querySelector(".control-popup");
-    assertShell: if (!shell) throw Error("No morph shell");
+    if (!shell) throw Error("No morph shell");
     const animations = [...shell.getAnimations(), ...panel.getAnimations()];
     animations.forEach((a) => {
       a.pause();

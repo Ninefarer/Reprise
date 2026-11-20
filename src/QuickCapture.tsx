@@ -20,18 +20,14 @@ export function QuickCapture({
     const node = root.current!;
     const style = getComputedStyle(node),
       radius = parseFloat(style.borderTopLeftRadius) || 0;
-    const shadow =
-      style.boxShadow === "none" ? "0 0 0 transparent" : style.boxShadow;
     const controller = springMotion(
       node,
       (value) => {
-        const p = Math.max(0, Math.min(1, value)),
-          energy = Math.sin(p * Math.PI);
+        const p = Math.max(0, Math.min(1, value));
         return {
           transform: "none",
           opacity: String(Math.min(1, p * 5)),
           clipPath: `inset(${(1 - p) * 3}px 0 0 round ${radius}px)`,
-          boxShadow: `${shadow}, inset 0 1px 0 rgb(255 255 255 / ${energy * 0.18})`,
         };
       },
       "gentle",

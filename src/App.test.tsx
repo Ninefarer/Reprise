@@ -165,6 +165,25 @@ async function openNotifications(user: ReturnType<typeof userEvent.setup>) {
   return panel;
 }
 describe("native-window snapshot suspension", () => {
+  it("refreshes hidden Capture appearance without lifting the worker refresh gate", async () => {
+    const suspend = suspendSnapshots();
+    const app = render(<App captureMode />);
+    await screen.findByRole("main", { name: "Quick Capture" });
+    suspend(true);
+    data.settings.theme_family = "ashen-white";
+    await act(async () => {
+      mocks.listeners.get("refresh")!({ payload: null });
+    });
+    expect(document.documentElement.dataset.family).not.toBe("ashen-white");
+    mocks.invoke.mockClear();
+    await act(async () => {
+      mocks.listeners.get("visual-refresh")!({ payload: null });
+    });
+    expect(mocks.invoke).toHaveBeenCalledWith("snapshot");
+    expect(document.documentElement.dataset.family).toBe("ashen-white");
+    app.unmount();
+    expect(mocks.listeners.has("visual-refresh")).toBe(false);
+  });
   function suspendSnapshots() {
     let suspended = false;
     const original = mocks.invoke.getMockImplementation()!;

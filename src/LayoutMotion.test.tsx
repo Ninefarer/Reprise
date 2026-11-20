@@ -7,7 +7,7 @@ import { mockMotion } from "./testMotion";
 let motion: ReturnType<typeof mockMotion>;
 function List({ ids, scope = "Inbox" }: { ids: string[]; scope?: string }) {
   const root = useRef<HTMLElement>(null);
-  useTaskLayout(root, scope);
+  useTaskLayout(root, scope, ids);
   return (
     <main ref={root}>
       {ids.map((id, index) => (
@@ -33,6 +33,16 @@ afterEach(() => {
   motion.restore();
   vi.restoreAllMocks();
   delete document.documentElement.dataset.motion;
+});
+it("does not remeasure task rows for unrelated renders", () => {
+  const read = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect");
+  const ids = ["a", "b"],
+    view = render(<List ids={ids} />);
+  const count = read.mock.calls.length;
+  view.rerender(<List ids={ids} />);
+  expect(read).toHaveBeenCalledTimes(count);
+  view.rerender(<List ids={[...ids]} />);
+  expect(read.mock.calls.length).toBeGreaterThan(count);
 });
 it("moves remaining rows immediately and retains only an inert exit snapshot", () => {
   const view = render(<List ids={["a", "b"]} />);

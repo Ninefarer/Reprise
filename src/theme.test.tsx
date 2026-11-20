@@ -11,6 +11,48 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
 vi.mock("@tauri-apps/api/window", () => ({ getCurrentWindow: () => mocks }));
+it("ignores a stale native response after transparency accessibility policy changes", async () => {
+  const listeners = new Set<() => void>(),
+    policy = {
+      matches: false,
+      addEventListener: (_: string, cb: () => void) => listeners.add(cb),
+      removeEventListener: (_: string, cb: () => void) => listeners.delete(cb),
+    };
+  vi.stubGlobal("matchMedia", (name: string) =>
+    name === "(prefers-reduced-transparency: reduce)"
+      ? policy
+      : {
+          matches: false,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        },
+  );
+  const pending: ((result: { mode: string; error: null }) => void)[] = [];
+  mocks.invoke.mockImplementation((_cmd, args) =>
+    args.allow
+      ? new Promise((resolve) => pending.push(resolve))
+      : Promise.resolve({ mode: "off", error: null }),
+  );
+  renderHook(() =>
+    useTheme({ desktop_glass: true, desktop_material: "clear" } as Settings),
+  );
+  await act(async () => {});
+  expect(pending.length).toBeGreaterThan(0);
+  act(() => {
+    policy.matches = true;
+    listeners.forEach((cb) => cb());
+  });
+  await waitFor(() =>
+    expect(document.documentElement.dataset.desktopGlass).toBe("off"),
+  );
+  await act(async () =>
+    pending.forEach((resolve) => resolve({ mode: "clear", error: null })),
+  );
+  expect(document.documentElement.dataset.desktopGlass).toBe("off");
+  expect(document.documentElement.classList.contains("glass-scope")).toBe(
+    false,
+  );
+});
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();

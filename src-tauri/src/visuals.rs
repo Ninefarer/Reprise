@@ -139,6 +139,9 @@ pub fn visual_preferences(
     patch.apply(&mut s)?;
     d.set_settings(&s)?;
     drop(d);
+    // Hidden Capture suspends worker refreshes. Update its settings-only view
+    // before the next reveal rather than showing a stale material for one frame.
+    let _ = app.emit_to("capture", "visual-refresh", ());
     app.emit("refresh", ()).map_err(|e| e.to_string())
 }
 #[tauri::command]

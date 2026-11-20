@@ -63,8 +63,10 @@ export function useTheme(
     ].map((query) => matchMedia(query));
     const mode = effectiveAppearance(visual.theme_family, visual.theme);
     const root = document.documentElement;
+    let requestRevision = 0;
     const apply = async (theme: string) => {
       if (disposed) return;
+      const request = ++requestRevision;
       const resolved = mode === "system" ? theme : mode;
       root.dataset.theme = resolved;
       try {
@@ -75,7 +77,7 @@ export function useTheme(
             allow: !accessibility.some((query) => query.matches),
           },
         );
-        if (!disposed) {
+        if (!disposed && request === requestRevision) {
           root.dataset.desktopGlass = result?.mode ?? "off";
           root.classList.toggle(
             "glass-scope",
@@ -84,7 +86,7 @@ export function useTheme(
           root.dataset.desktopGlassError = result?.error ?? "";
         }
       } catch {
-        if (!disposed) {
+        if (!disposed && request === requestRevision) {
           root.dataset.desktopGlass = "off";
           root.classList.remove("glass-scope");
         }
