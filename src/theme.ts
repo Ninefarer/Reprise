@@ -10,10 +10,11 @@ import {
 export function useTheme(
   settings?: Settings,
   system?: Snapshot["system_visuals"],
+  onFallback?: (message: string) => void,
 ) {
   const visual = visualPreferences(settings),
     visualKey = JSON.stringify([visual, system]),
-    key = `${visual.theme_family}/${visual.theme}/${visual.desktop_glass}/${visual.desktop_material}/${system?.advanced_effects}`;
+    key = `${visual.theme_family}/${visual.theme}/${visual.aesthetic}/${visual.desktop_material}/${system?.advanced_effects}`;
   const [readyKey, setReadyKey] = useState("");
   useLayoutEffect(() => {
     const update = () => {
@@ -35,6 +36,7 @@ export function useTheme(
     const root = document.documentElement;
     root.dataset.density = visual.density;
     root.dataset.family = visual.theme_family;
+    root.dataset.aesthetic = visual.aesthetic;
     root.dataset.accent = effectiveAccent(visual.theme_family, visual.accent);
     root.dataset.motion =
       system?.animations_enabled === false ? "off" : visual.animation;
@@ -49,7 +51,9 @@ export function useTheme(
     // Tint adjusts the selected material; it must never silently replace Clear
     // with an effectively opaque material at the upper end of the slider.
     root.dataset.glassVariant =
-      visual.desktop_material === "clear" ? "clear" : "regular";
+      visual.desktop_material === "acrylic"
+        ? "regular"
+        : visual.desktop_material;
   }, [visualKey]);
   useLayoutEffect(() => {
     const w = getCurrentWindow();
@@ -84,11 +88,19 @@ export function useTheme(
             result?.mode === "clear" || result?.mode === "acrylic",
           );
           root.dataset.desktopGlassError = result?.error ?? "";
+          onFallback?.(
+            visual.aesthetic === "glass" ? (result?.error ?? "") : "",
+          );
         }
       } catch {
         if (!disposed && request === requestRevision) {
           root.dataset.desktopGlass = "off";
           root.classList.remove("glass-scope");
+          root.dataset.desktopGlassError =
+            "Glass is unavailable; solid surfaces are active.";
+          onFallback?.(
+            visual.aesthetic === "glass" ? root.dataset.desktopGlassError : "",
+          );
         }
       }
     };
@@ -123,6 +135,6 @@ export function useTheme(
         query.removeEventListener("change", preferencesChanged),
       );
     };
-  }, [key]);
+  }, [key, onFallback]);
   return readyKey === key;
 }

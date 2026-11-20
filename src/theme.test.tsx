@@ -59,6 +59,32 @@ afterEach(() => {
   document.documentElement.classList.remove("glass-scope");
   mocks.invoke.mockReset();
 });
+it("keeps the selected Glass aesthetic and Tinted recipe during an unsupported-backdrop fallback", async () => {
+  vi.stubGlobal("matchMedia", () => ({
+    matches: false,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+  mocks.invoke.mockResolvedValue({
+    mode: "off",
+    error: "Unsupported backdrop",
+  });
+  const fallback = vi.fn(),
+    settings = {
+      aesthetic: "glass",
+      theme_family: "pitch-black",
+      desktop_material: "tinted",
+      desktop_tint: 90,
+      animation: "expressive",
+    } as Settings;
+  const view = renderHook(() => useTheme(settings, undefined, fallback));
+  await waitFor(() => expect(view.result.current).toBe(true));
+  expect(document.documentElement.dataset.aesthetic).toBe("glass");
+  expect(document.documentElement.dataset.glassVariant).toBe("tinted");
+  expect(document.documentElement.dataset.desktopGlass).toBe("off");
+  expect(fallback).toHaveBeenCalledWith("Unsupported backdrop");
+  expect(settings.aesthetic).toBe("glass");
+});
 it("updates native eligibility when transparency policy changes and removes listeners", async () => {
   const queries = new Map<
     string,

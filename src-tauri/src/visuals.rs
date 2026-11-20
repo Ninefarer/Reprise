@@ -1,4 +1,7 @@
-use crate::{domain::Settings, Db};
+use crate::{
+    domain::{Aesthetic, Settings},
+    Db,
+};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, sync::Mutex};
 use tauri::{Emitter, Manager};
@@ -21,6 +24,7 @@ pub struct VisualPatch {
     pub scrollbars: Option<String>,
     pub accent: Option<String>,
     pub animation: Option<String>,
+    pub aesthetic: Option<Aesthetic>,
     pub desktop_glass: Option<bool>,
     pub desktop_material: Option<String>,
     pub desktop_tint: Option<u8>,
@@ -39,6 +43,21 @@ impl VisualPatch {
         }
         if let Some(value) = self.desktop_glass {
             s.desktop_glass = value;
+            s.aesthetic = Some(if value {
+                Aesthetic::Glass
+            } else {
+                Aesthetic::Solid
+            });
+        }
+        if let Some(value) = self.aesthetic {
+            if self
+                .desktop_glass
+                .is_some_and(|legacy| legacy != (value == Aesthetic::Glass))
+            {
+                return Err("Conflicting aesthetic and legacy window appearance".into());
+            }
+            s.aesthetic = Some(value);
+            s.desktop_glass = value == Aesthetic::Glass;
         }
         if let Some(value) = self.desktop_tint {
             if !(35..=90).contains(&value) {
@@ -46,7 +65,7 @@ impl VisualPatch {
             }
             s.desktop_tint = value;
         }
-        value!(desktop_material, ["clear", "acrylic"]);
+        value!(desktop_material, ["clear", "acrylic", "tinted"]);
         value!(theme, ["system", "light", "dark"]);
         value!(
             accent,
@@ -242,7 +261,8 @@ pub fn native_glass(
     let contrast = windows::UI::ViewManagement::AccessibilitySettings::new()
         .and_then(|v| v.HighContrast())
         .unwrap_or(true);
-    let enabled = s.desktop_glass && allowed && !contrast && allow;
+    let glass_selected = s.selected_aesthetic() == Aesthetic::Glass;
+    let enabled = glass_selected && allowed && !contrast && allow;
     if enabled {
         window
             .set_background_color(Some(tauri::utils::config::Color(0, 0, 0, 0)))
@@ -260,7 +280,14 @@ pub fn native_glass(
             });
         }
         Ok(NativeGlassResult {
-            mode: s.desktop_material,
+            // Native eligibility is distinct from the CSS material recipe.
+            // Regular's legacy mode name remains compatible with older WebViews.
+            mode: if s.desktop_material == "clear" {
+                "clear"
+            } else {
+                "acrylic"
+            }
+            .into(),
             error: None,
         })
     } else {
@@ -270,7 +297,7 @@ pub fn native_glass(
             .map_err(|e| e.to_string())?;
         Ok(NativeGlassResult {
             mode: "off".into(),
-            error: if s.desktop_glass {
+            error: if glass_selected {
                 Some("Windows or accessibility preferences require opaque surfaces.".into())
             } else {
                 None

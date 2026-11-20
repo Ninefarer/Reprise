@@ -8,7 +8,7 @@ for the latest verification and outstanding manual checks.
 
 Reprise remains React + Tauri 2 + WebView2. `src-tauri/src/visuals.rs` uses the
 documented Windows 11 `DWMWA_SYSTEMBACKDROP_TYPE` API, selecting transient-window
-Desktop Acrylic. Both shipping glass variants use that native foundation.
+Desktop Acrylic. All three glass variants use that native foundation.
 WebView2 and the HTML/body/app backgrounds must remain transparent while native
 glass is active. Each visible region supplies exactly one canvas tint.
 
@@ -26,9 +26,9 @@ fallback. Windows can change Acrylic's appearance independently when inactive.
 bounded in-app surfaces. These layers have different purposes, not competing
 global opacity settings. Never put another tinted `.app` behind the canvas.
 
-Shipping preferences expose **Clear and Regular**. The internal material lab
-also has a **Tinted** recipe, but Tinted has no shipping setting or persisted
-native selection. Do not describe that prototype as a released third variant.
+Appearance preferences expose **Clear, Regular and Tinted** under Glass.
+Theme, Aesthetic and Motion are independent. See [Appearance architecture](APPEARANCE-ARCHITECTURE.md)
+for the migration and Tinted canvas recipe introduced in Pass 4.
 
 Tint progress is `clamp((tint / 100 - .35) / .55, 0, 1)`:
 
@@ -46,7 +46,7 @@ opaque black mask. Inactive canvas coverage is bounded at .88; DWM can still
 reduce native translucency while inactive.
 
 In-app recipes use coverage/diffusion Clear .74/12px, Regular .82/18px,
-lab-only Tinted .94/22px. Readable menus/popovers deliberately use .94 coverage;
+Tinted .94/22px. Readable menus/popovers deliberately use .94 coverage;
 notifications use one bounded 24px blur and .96 fill. Task cards, dense settings
 sections and capture inputs remain stable reading surfaces. A control inside
 an elevated container uses a thin fill without a second blur.

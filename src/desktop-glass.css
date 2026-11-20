@@ -23,6 +23,13 @@
     calc(var(--glass-contrast-floor) + 0.1 + var(--glass-tint-progress) * 0.06)
   );
 }
+/* Tinted adds body without modifying Clear or Regular's contrast/tint recipes. */
+:root[data-glass-variant="tinted"] {
+  --glass-content-alpha: min(
+    0.95,
+    calc(var(--glass-contrast-floor) + 0.18 + var(--glass-tint-progress) * 0.06)
+  );
+}
 :root:is([data-desktop-glass="clear"], [data-desktop-glass="acrylic"]) body {
   background: transparent;
 }
@@ -98,6 +105,9 @@
   /* Recede without replacing Clear with an opaque CSS curtain. Windows may
      independently alter Acrylic when inactive; that policy remains native. */
   --glass-content-alpha: min(0.88, calc(var(--glass-contrast-floor) + 0.12));
+}
+:root[data-window-active="false"][data-glass-variant="tinted"] {
+  --glass-content-alpha: min(0.95, calc(var(--glass-contrast-floor) + 0.2));
 }
 @media (forced-colors: active),
   (prefers-reduced-transparency: reduce),

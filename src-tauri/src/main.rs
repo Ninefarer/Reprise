@@ -230,6 +230,7 @@ fn save_settings(
     settings.notification_panel_pinned = current.notification_panel_pinned;
     settings.accent = current.accent;
     settings.animation = current.animation;
+    settings.aesthetic = current.aesthetic;
     settings.desktop_glass = current.desktop_glass;
     settings.desktop_material = current.desktop_material;
     settings.desktop_tint = current.desktop_tint;

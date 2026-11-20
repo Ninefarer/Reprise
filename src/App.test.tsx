@@ -121,6 +121,7 @@ beforeEach(() => {
     }
     if (cmd === "visual_preferences") {
       Object.assign(data.settings, args.patch);
+      if (args.patch.aesthetic) data.settings.desktop_glass = args.patch.aesthetic === "glass";
       return;
     }
     if (cmd === "acknowledge_release" && data.release) {
@@ -943,7 +944,7 @@ describe("workspace UI", () => {
     await openSettings(user);
     await selectOption(
       user,
-      screen.getByLabelText("Window appearance"),
+      screen.getByLabelText("Aesthetic"),
       "glass",
     );
     await selectOption(
@@ -954,16 +955,12 @@ describe("workspace UI", () => {
     await waitFor(() => expect(data.settings.desktop_material).toBe("acrylic"));
     expect(data.settings.desktop_glass).toBe(true);
     expect(data.settings.theme).toBe("system");
-    await selectOption(
-      user,
-      screen.getByLabelText("Glass treatment"),
-      "balanced",
-    );
+    fireEvent.change(screen.getByLabelText(/Glass tint:/), { target: { value: "60" } });
     await waitFor(() => expect(data.settings.desktop_tint).toBe(60));
     await selectOption(
       user,
-      screen.getByLabelText("Window appearance"),
-      "default",
+      screen.getByLabelText("Aesthetic"),
+      "solid",
     );
     await waitFor(() => expect(data.settings.desktop_glass).toBe(false));
     expect(data.settings.desktop_material).toBe("acrylic");
@@ -999,7 +996,7 @@ describe("workspace UI", () => {
     render(<App />);
     await openSettings(user);
     await selectOption(user, screen.getByLabelText("Accent color"), "lavender");
-    await selectOption(user, screen.getByLabelText("Animation"), "expressive");
+    await selectOption(user, screen.getByLabelText("Motion"), "expressive");
     await waitFor(() =>
       expect(document.documentElement.dataset.accent).toBe("lavender"),
     );

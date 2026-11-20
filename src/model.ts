@@ -32,6 +32,9 @@ export type Material = "flat" | "frosted" | "glass";
 export type Accent =
   "theme" | "lavender" | "sage" | "icy-blue" | "rose" | "neutral";
 export type AnimationPreference = "off" | "subtle" | "expressive";
+export type Aesthetic = "solid" | "glass";
+/** acrylic is the persisted legacy identifier for the Regular recipe. */
+export type GlassMaterial = "clear" | "acrylic" | "tinted";
 export type ProfileCardFinish =
   | "classic"
   | "holographic"
@@ -45,8 +48,10 @@ export interface VisualPreferences {
   scrollbars: "system" | "always";
   accent: Accent;
   animation: AnimationPreference;
+  aesthetic: Aesthetic;
+  /** Compatibility mirror, derived from aesthetic. */
   desktop_glass: boolean;
-  desktop_material: "clear" | "acrylic";
+  desktop_material: GlassMaterial;
   desktop_tint: number;
 }
 export interface Task {
@@ -109,8 +114,9 @@ export interface Settings {
   notification_panel_pinned?: boolean;
   accent?: Accent;
   animation?: AnimationPreference;
+  aesthetic?: Aesthetic | null;
   desktop_glass?: boolean;
-  desktop_material?: "clear" | "acrylic";
+  desktop_material?: GlassMaterial;
   desktop_tint?: number;
 }
 export interface Notice {

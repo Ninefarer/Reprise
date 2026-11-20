@@ -1,5 +1,7 @@
 import type { Settings, Theme, ThemeFamily, VisualPreferences } from "./model";
 export function visualPreferences(settings?: Settings): VisualPreferences {
+  const aesthetic =
+    settings?.aesthetic ?? (settings?.desktop_glass ? "glass" : "solid");
   return {
     theme: settings?.theme ?? "system",
     theme_family: settings?.theme_family ?? "classic",
@@ -8,7 +10,8 @@ export function visualPreferences(settings?: Settings): VisualPreferences {
     scrollbars: settings?.scrollbars ?? "system",
     accent: settings?.accent ?? "theme",
     animation: settings?.animation ?? "subtle",
-    desktop_glass: settings?.desktop_glass ?? false,
+    aesthetic,
+    desktop_glass: aesthetic === "glass",
     desktop_material: settings?.desktop_material ?? "clear",
     desktop_tint: settings?.desktop_tint ?? 65,
   };

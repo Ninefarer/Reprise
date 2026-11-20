@@ -77,6 +77,7 @@ export function observeMotionPolicy(callback: () => void) {
         "data-motion",
         "data-window-active",
         "data-family",
+        "data-aesthetic",
         "data-theme",
         "data-effects",
         "data-glass-variant",

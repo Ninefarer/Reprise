@@ -96,6 +96,13 @@ pub enum ProfileCardFinish {
     Prismatic,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Aesthetic {
+    Solid,
+    Glass,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
@@ -132,6 +139,8 @@ pub struct Settings {
     pub notification_panel_pinned: bool,
     pub accent: String,
     pub animation: String,
+    /// None denotes a legacy record; desktop_glass supplies its deterministic migration.
+    pub aesthetic: Option<Aesthetic>,
     pub desktop_glass: bool,
     pub desktop_material: String,
     pub desktop_tint: u8,
@@ -179,10 +188,27 @@ impl Default for Settings {
             notification_panel_pinned: false,
             accent: "theme".into(),
             animation: "subtle".into(),
+            aesthetic: None,
             desktop_glass: false,
             desktop_material: "clear".into(),
             desktop_tint: 65,
         }
+    }
+}
+impl Settings {
+    pub fn selected_aesthetic(&self) -> Aesthetic {
+        self.aesthetic.unwrap_or(if self.desktop_glass {
+            Aesthetic::Glass
+        } else {
+            Aesthetic::Solid
+        })
+    }
+
+    pub fn normalize_appearance(&mut self) {
+        let selected = self.selected_aesthetic();
+        self.aesthetic = Some(selected);
+        // Compatibility mirror for older clients; never a second preference.
+        self.desktop_glass = selected == Aesthetic::Glass;
     }
 }
 pub fn local_time<T: TimeZone>(tz: &T, date: chrono::NaiveDate, time: &str) -> Result<i64, String> {

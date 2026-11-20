@@ -45,6 +45,10 @@ const backdrop = () =>
 try {
   const disclosure = page.getByRole("button", { name: "Continue to Nightly" });
   if (await disclosure.count()) await disclosure.click();
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Home", exact: true })
+    .click();
   await page.bringToFront();
   await ipc("visual_preferences", {
     patch: {

@@ -168,7 +168,12 @@ function Application({
     legacy = useRef(new Map<string, number>());
   const suspended = useRef(false),
     mounted = useRef(true);
-  const themeReady = useTheme(data?.settings, data?.system_visuals);
+  const [surfaceFallback, setSurfaceFallback] = useState("");
+  const themeReady = useTheme(
+    data?.settings,
+    data?.system_visuals,
+    setSurfaceFallback,
+  );
   useScrollActivity();
   const windowShown = useRef(false),
     lastActivity = useRef(Date.now());
@@ -1236,6 +1241,7 @@ function Application({
               onSave={preferences}
               onVisual={visual}
               system={data.system_visuals}
+              surfaceFallback={surfaceFallback}
               version={data.release?.version ?? releases[0].version}
               onReleaseNotes={setReleaseDialog}
               updateCheckMessage={updateCheckMessage}

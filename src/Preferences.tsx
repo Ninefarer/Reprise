@@ -40,6 +40,7 @@ export function Preferences({
   onOpenProfileCard,
   onVisual,
   system,
+  surfaceFallback,
   version,
   onReleaseNotes,
   avatar,
@@ -57,6 +58,7 @@ export function Preferences({
   onSave: (s: Partial<Settings>) => Promise<boolean>;
   onVisual: (patch: Partial<VisualPreferences>) => Promise<void>;
   system?: Snapshot["system_visuals"];
+  surfaceFallback?: string;
   version: string;
   onReleaseNotes: (mode: "new" | "history") => void;
   onCheckUpdates: () => Promise<void>;
@@ -306,6 +308,7 @@ export function Preferences({
         <AppearanceSettings
           settings={settings}
           system={system}
+          surfaceFallback={surfaceFallback}
           onChange={onVisual}
         />
       </div>
