@@ -431,8 +431,8 @@ it("opens the optional profile card, persists the finish and restores focus", as
   ).toBeTruthy();
   expect(
     card.getAllByRole("radio").map((radio) => radio.parentElement?.textContent),
-  ).toEqual(["Classic", "Holographic", "Polychrome", "Prismatic"]);
-  await user.click(card.getByRole("radio", { name: "Prismatic" }));
+  ).toEqual(["Classic", "Holographic", "Polychrome", "Foil"]);
+  await user.click(card.getByRole("radio", { name: "Foil" }));
   await waitFor(() =>
     expect(data.settings.profile_card_finish).toBe("prismatic"),
   );
@@ -449,7 +449,7 @@ it("opens the optional profile card, persists the finish and restores focus", as
   await openSettings(user);
   await user.click(screen.getByRole("button", { name: "Namecards" }));
   expect(
-    (screen.getByRole("radio", { name: "Prismatic" }) as HTMLInputElement).checked,
+    (screen.getByRole("radio", { name: "Foil" }) as HTMLInputElement).checked,
   ).toBe(true);
 });
 

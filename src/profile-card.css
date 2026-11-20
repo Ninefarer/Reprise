@@ -29,196 +29,368 @@
 }
 
 :where(.profile-card, .profile-card-option i) {
-  --card-metal: #536c61;
   --card-finish: linear-gradient(145deg, #3e574f, #233631 61%, #54594c);
   --card-light: rgb(255 238 198 / 11%);
 }
 
 :is(.profile-card, .profile-card-option i)[data-finish="holographic"] {
-  --card-metal: #a8a7ee;
-  --card-finish:
-    repeating-linear-gradient(
-      115deg,
-      #ffddeb25 0 1px,
-      #1c15342e 2px 4px,
-      transparent 5px 8px
-    ),
-    linear-gradient(
-      140deg,
-      #56418a 4%,
-      #8c74d1 23%,
-      #5588a6 38%,
-      #57a995 49%,
-      #d7bb83 62%,
-      #a86c9c 77%,
-      #4b4179 96%
-    );
-  --card-light: rgb(239 223 255 / 55%);
+  --card-finish: linear-gradient(
+    140deg,
+    #4a3669,
+    #544e83 37%,
+    #3b6370 67%,
+    #544365
+  );
+  --card-light: #b88af65c;
+  --rim-light: #fff0ff;
+  --rim-mid: #bda2fd;
+  --rim-dark: #63579a;
+  --rim-glow: #b38eff9e;
+  --avatar-sheen: linear-gradient(
+    113deg,
+    transparent 24%,
+    #a094ff 41%,
+    #c5f9ff 48%,
+    #ffe0fa 57%,
+    transparent 73%
+  );
+  --foil-duration: 6s;
 }
 
 :is(.profile-card, .profile-card-option i)[data-finish="polychrome"] {
-  --card-metal: #80c8c0;
-  --card-finish: linear-gradient(
-    145deg,
-    #2a3b6c,
-    #59558c 25%,
-    #548c99 43%,
-    #4f8e7c 54%,
-    #a4776e 77%,
-    #694c79
+  --card-finish: linear-gradient(145deg, #333a63, #42616d 46%, #52516e);
+  --card-light: #82dfed66;
+  --rim-light: #f5fffa;
+  --rim-mid: #91dcd3;
+  --rim-dark: #8268a1;
+  --rim-glow: #8beed29c;
+  --avatar-sheen: linear-gradient(
+    122deg,
+    transparent 17%,
+    #a994ff 34%,
+    #8af5e8 45%,
+    #fff4c5 56%,
+    #f6a4dc 66%,
+    transparent 82%
   );
-  --card-light: rgb(249 234 208 / 49%);
+  --foil-duration: 8s;
 }
 
 :is(.profile-card, .profile-card-option i)[data-finish="prismatic"] {
-  --card-metal: #a1c3dd;
-  --card-finish:
-    conic-gradient(
-      from 26deg at 22% 66%,
-      #d9f2ff30 0 37deg,
-      #0f1f5f4d 38deg 99deg,
-      transparent 100deg 168deg,
-      #c1a2ef55 169deg 212deg,
-      transparent 213deg 289deg,
-      #67e9d666 290deg 360deg
-    ),
-    conic-gradient(
-      from 18deg at 76% 34%,
-      #6377b8 0 44deg,
-      #3a4978 45deg 84deg,
-      #647cb0 85deg 127deg,
-      #5b5282 128deg 188deg,
-      #7c9dba 189deg 238deg,
-      #53558a 239deg 290deg,
-      #386276 291deg 360deg
-    );
-  --card-light: rgb(221 246 255 / 61%);
+  --card-finish: linear-gradient(
+    145deg,
+    #2c415e,
+    #536e91 46%,
+    #354966 79%,
+    #2f3f5b
+  );
+  --card-light: #a6ceff63;
+  --rim-light: #f4f9ff;
+  --rim-mid: #adc7f3;
+  --rim-dark: #6076ab;
+  --rim-glow: #8cbcffad;
+  --avatar-sheen: linear-gradient(
+    115deg,
+    transparent 24%,
+    #7296ea 42%,
+    #e5f4ff 50%,
+    #a4c2ff 58%,
+    transparent 76%
+  );
+  --foil-duration: 7s;
 }
 
 .profile-card {
   --light-x: 50%;
   --light-y: 40%;
+  --rim-light: #bdd0bb;
+  --rim-mid: #7c9786;
+  --rim-dark: #435a50;
+  --rim-glow: transparent;
+  --panel-outline: color-mix(in srgb, var(--rim-mid) 56%, #151e25);
+  position: relative;
+  isolation: isolate;
   display: grid;
   gap: 7px;
-  padding: 7px;
-  border: 1px solid var(--card-metal);
-  border-radius: 17px;
-  background: var(--card-finish), #263331;
+  padding: 8px;
+  border: 1px solid var(--rim-mid);
+  border-radius: 18px;
+  background:
+    radial-gradient(
+      130% 95% at var(--light-x) var(--light-y),
+      var(--rim-light),
+      transparent 74%
+    ),
+    linear-gradient(
+      146deg,
+      var(--rim-light),
+      var(--rim-mid) 24%,
+      var(--rim-dark) 57%,
+      var(--rim-mid) 82%,
+      var(--rim-light)
+    );
   color: #f9f5ef;
   box-shadow:
-    0 10px 25px #080e1b59,
-    inset 0 0 0 2px #0c12235c;
+    inset 0 0 0 1px #ffffff8c,
+    0 0 16px -2px var(--rim-glow),
+    0 0 42px -16px var(--rim-glow),
+    0 12px 23px -8px #070e246e;
   transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
   backface-visibility: hidden;
   pointer-events: none;
 }
 
+.profile-card[data-finish="holographic"] {
+  --rainbow-aura: conic-gradient(
+    from -32deg,
+    #ce71ff,
+    #ed6d94 14%,
+    #ffb761 28%,
+    #92ed81 43%,
+    #61e1ff 60%,
+    #7b88ff 77%,
+    #ce71ff
+  );
+}
+
+.profile-card[data-finish="polychrome"] {
+  --rainbow-aura: conic-gradient(
+    from 18deg,
+    #a58cfa,
+    #71d7ff 19%,
+    #79e8b8 34%,
+    #ffe390 51%,
+    #f7a593 66%,
+    #e58dd1 83%,
+    #a58cfa
+  );
+}
+
+.profile-card:is([data-finish="holographic"], [data-finish="polychrome"])::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -3px;
+  border-radius: inherit;
+  background: var(--rainbow-aura);
+  filter: blur(14px);
+  opacity: 0.58;
+}
+
+/* The finish drifts independently of the card transform. Pointer tilt shifts
+   the light source and offsets this layer without restarting its animation. */
+.profile-card-foil {
+  position: absolute;
+  inset: -28%;
+  translate: var(--foil-x, 0px) var(--foil-y, 0px);
+  animation: profile-foil-drift var(--foil-duration) ease-in-out infinite
+    alternate;
+}
+
+.profile-card[data-finish="holographic"] .profile-card-foil {
+  background:
+    repeating-linear-gradient(
+      30deg,
+      transparent calc(50% - 12px) calc(50% - 1px),
+      #ffeaff54 calc(50% - 0.6px),
+      #e0c9ff5c 50%,
+      transparent calc(50% + 1px) calc(50% + 12px)
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent calc(50% - 12px) calc(50% - 1px),
+      #f7efff40 calc(50% - 0.5px),
+      #d4bfff4c 50%,
+      transparent calc(50% + 0.8px) calc(50% + 12px)
+    ),
+    repeating-linear-gradient(
+      150deg,
+      transparent calc(50% - 12px) calc(50% - 1px),
+      #ecfcff54 calc(50% - 0.6px),
+      #a5eef05c 50%,
+      transparent calc(50% + 1px) calc(50% + 12px)
+    ),
+    linear-gradient(
+      111deg,
+      transparent 22%,
+      #a37bffad 30%,
+      #f18beda8 36%,
+      #ff937fba 42%,
+      #ffe77bc9 48%,
+      #a4ef8ac1 53%,
+      #69e8eac5 58%,
+      #7facffb5 64%,
+      #c093ffa3 70%,
+      transparent 79%
+    );
+  mask-image: radial-gradient(
+    ellipse at 52% 50%,
+    #000 27%,
+    #000b 51%,
+    transparent 76%
+  );
+}
+
+.profile-card[data-finish="polychrome"] .profile-card-foil {
+  background:
+    radial-gradient(ellipse at 65% 42%, #f6f4ffa3, transparent 33%),
+    linear-gradient(
+      122deg,
+      transparent 17%,
+      #ad91f480 28%,
+      #a9b6ffb3 36%,
+      #72e0dfc2 45%,
+      #dff6d4bc 53%,
+      #f6c5a8a4 61%,
+      #ca8feb90 68%,
+      transparent 82%
+    );
+}
+
+.profile-card[data-finish="prismatic"] .profile-card-foil {
+  animation-name: profile-foil-orbit;
+  background:
+    conic-gradient(
+      from 36deg at 49% 51%,
+      transparent,
+      #a9d8ff1c 29deg,
+      #e9f6ff82 48deg,
+      #b7d5ff38 57deg,
+      transparent 79deg 165deg,
+      #b3c0ff32 191deg,
+      #e9f8ff74 207deg,
+      #9fd0ff39 219deg,
+      transparent 241deg
+    ),
+    linear-gradient(
+      126deg,
+      transparent 21%,
+      #b8d8ff38 39%,
+      #e5efff88 50%,
+      #bad0ff42 61%,
+      transparent 76%
+    );
+  mask-image: radial-gradient(
+    ellipse at 49% 51%,
+    #000 28%,
+    #000e 48%,
+    transparent 76%
+  );
+}
+
+/* Keep the fine diffraction marks round and visible only inside the glint. */
+.profile-card[data-finish="prismatic"] .profile-card-foil::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-radial-gradient(
+    circle at 49% 51%,
+    transparent 0 9px,
+    #e7f0ff48 10px,
+    transparent 11px 13px
+  );
+  mask-image:
+    radial-gradient(
+      circle at 49% 51%,
+      transparent 28px,
+      #000 51px 79px,
+      transparent 116px
+    ),
+    conic-gradient(
+      from 36deg at 49% 51%,
+      transparent 22deg,
+      #000 49deg,
+      transparent 78deg 169deg,
+      #000 207deg,
+      transparent 245deg
+    );
+  mask-composite: intersect;
+}
+
+@keyframes profile-foil-drift {
+  from {
+    transform: translate(-7%, -4%) rotate(-11deg);
+  }
+  to {
+    transform: translate(7%, 4%) rotate(11deg);
+  }
+}
+
+@keyframes profile-foil-orbit {
+  from {
+    transform: translate(-3%, -2%) rotate(-16deg);
+  }
+  to {
+    transform: translate(3%, 2%) rotate(22deg);
+  }
+}
+
+@media (forced-colors: active) {
+  .profile-card::before,
+  .profile-card-foil,
+  .profile-card-avatar-sheen {
+    display: none;
+  }
+}
+
 .profile-card-portrait {
   position: relative;
   display: grid;
-  grid-template-rows: auto 1fr;
-  justify-items: center;
-  align-items: center;
-  gap: 12px;
-  min-height: 186px;
-  padding: 15px 10px 22px;
-  border: 1px solid #f4eee855;
-  border-radius: 11px 11px 5px 5px;
+  place-items: center;
+  min-height: 210px;
+  padding: 15px;
+  overflow: hidden;
+  border: 1px solid var(--panel-outline);
+  border-radius: 9px 9px 5px 5px;
   background:
     radial-gradient(
       ellipse at var(--light-x) var(--light-y),
       var(--card-light),
-      transparent 65%
+      transparent 69%
     ),
-    repeating-radial-gradient(
-      circle at 50% 58%,
-      transparent 0 17px,
-      #ffffff19 18px,
-      transparent 19px 25px
-    ),
-    linear-gradient(155deg, #070f2659, transparent 52%, #080e2366);
+    var(--card-finish);
 }
 
-.profile-card[data-finish="classic"] .profile-card-portrait {
-  background:
-    radial-gradient(
-      ellipse at var(--light-x) var(--light-y),
-      var(--card-light),
-      transparent 72%
-    ),
-    linear-gradient(155deg, #0b211d55, transparent);
+.profile-card-avatar {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--rim-mid) 58%, transparent),
+    0 0 25px 3px var(--rim-glow);
 }
 
-.profile-card[data-finish="holographic"] .profile-card-portrait {
-  background:
-    radial-gradient(
-      ellipse at var(--light-x) var(--light-y),
-      var(--card-light),
-      #ffcf9550 20%,
-      #81efff38 35%,
-      #d999ff30 49%,
-      transparent 65%
-    ),
-    repeating-radial-gradient(
-      circle at 50% 58%,
-      transparent 0 17px,
-      #ffffff19 18px,
-      transparent 19px 25px
-    ),
-    linear-gradient(155deg, #070f2659, transparent 52%, #080e2366);
+.profile-card-avatar-sheen {
+  position: absolute;
+  inset: 2px;
+  border-radius: inherit;
+  background: var(--avatar-sheen) no-repeat;
+  background-size: 180% 145%;
+  background-position: var(--light-x) var(--light-y);
+  opacity: 0.22;
+  mix-blend-mode: screen;
+  animation: profile-avatar-sheen var(--foil-duration) ease-in-out infinite
+    alternate;
 }
 
-.profile-card[data-finish="polychrome"] .profile-card-portrait {
-  background:
-    radial-gradient(
-      ellipse at var(--light-x) var(--light-y),
-      var(--card-light),
-      #78dfca38 35%,
-      transparent 70%
-    ),
-    linear-gradient(155deg, #1218315c, transparent 45%, #1b17274f);
-}
-
-.profile-card[data-finish="prismatic"] .profile-card-portrait {
-  background:
-    conic-gradient(
-      from 38deg at var(--light-x) var(--light-y),
-      transparent 26deg,
-      #eaf7ff30 28deg 45deg,
-      transparent 47deg 147deg,
-      #c3eaff33 149deg 166deg,
-      transparent 168deg 278deg,
-      #ebe0ff3d 280deg 298deg,
-      transparent 300deg
-    ),
-    radial-gradient(
-      ellipse at var(--light-x) var(--light-y),
-      var(--card-light),
-      transparent 54%
-    ),
-    linear-gradient(155deg, #070f2659, transparent 52%, #080e2366);
-}
-
-.profile-card-wordmark {
-  border-radius: 4px;
-  padding: 3px 6px 3px 8px;
-  background: #151e25;
-  color: #f2efe8;
-  font-size: 10px;
-  font-weight: 650;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+@keyframes profile-avatar-sheen {
+  from {
+    background-position-x: calc(var(--light-x) - 40%);
+  }
+  to {
+    background-position-x: calc(var(--light-x) + 40%);
+  }
 }
 
 .profile-card .avatar {
-  width: 86px;
-  height: 86px;
-  border: 2px solid #f6f0e5;
+  width: 96px;
+  height: 96px;
+  border: 2px solid var(--rim-light);
   background: #202b31;
   color: #faf4ea;
-  box-shadow:
-    0 0 0 5px #0d162650,
-    0 8px 24px #080e2066;
   font-size: 35px;
   font-weight: 600;
 }
@@ -226,8 +398,8 @@
 .profile-card-identity {
   min-width: 0;
   padding: 13px 13px 15px;
-  border: 1px solid #f4eee845;
-  border-radius: 5px 5px 11px 11px;
+  border: 1px solid var(--panel-outline);
+  border-radius: 5px 5px 9px 9px;
   background: #151e25;
 }
 
@@ -304,9 +476,58 @@
 .profile-card-option i {
   width: 22px;
   height: 12px;
-  border: 1px solid var(--card-metal);
+  box-shadow: inset 0 0 0 1px #ffffff38;
   border-radius: 3px;
   background: var(--card-finish);
+}
+
+.profile-card-option i[data-finish="holographic"] {
+  background: linear-gradient(
+    110deg,
+    #7763b2,
+    #9cb7ca 46%,
+    #d9a8ba 68%,
+    #79639d
+  );
+}
+
+.profile-card-option i[data-finish="polychrome"] {
+  background: linear-gradient(
+    110deg,
+    #8f80ca,
+    #77b9c9 40%,
+    #badbbf 63%,
+    #b58aa9
+  );
+}
+
+.profile-card-option i[data-finish="prismatic"] {
+  background: linear-gradient(
+    110deg,
+    #4c6389,
+    #b4d0f4 46%,
+    #dde9ff 51%,
+    #5d759a 66%
+  );
+}
+
+.profile-card-dialog .profile-card-share {
+  width: 100%;
+  min-height: 32px;
+  margin-top: 10px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.profile-card-share[aria-disabled="true"] {
+  cursor: progress;
+}
+
+.profile-card-share-status {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .profile-card-option:hover > span {

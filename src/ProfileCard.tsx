@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { writeImage } from "@tauri-apps/plugin-clipboard-manager";
 import { clamp } from "./avatarCrop";
 import type { ProfileCardFinish } from "./model";
 import { Avatar } from "./Profile";
@@ -9,7 +10,7 @@ const finishes: Record<ProfileCardFinish, string> = {
   classic: "Classic",
   holographic: "Holographic",
   polychrome: "Polychrome",
-  prismatic: "Prismatic",
+  prismatic: "Foil",
 };
 const maxTilt = 12;
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
@@ -40,6 +41,8 @@ function useCardTilt(enabled: boolean) {
       face.style.removeProperty("--tilt-y");
       face.style.removeProperty("--light-x");
       face.style.removeProperty("--light-y");
+      face.style.removeProperty("--foil-x");
+      face.style.removeProperty("--foil-y");
     }
     function animate(time: number) {
       frame = null;
@@ -62,6 +65,8 @@ function useCardTilt(enabled: boolean) {
       face.style.setProperty("--tilt-y", `${-x * maxTilt}deg`);
       face.style.setProperty("--light-x", `${50 + x * 42}%`);
       face.style.setProperty("--light-y", `${40 + y * 38}%`);
+      face.style.setProperty("--foil-x", `${x * 19}px`);
+      face.style.setProperty("--foil-y", `${y * 16}px`);
       lastTime = settled ? null : time;
       if (!settled) schedule();
     }
@@ -136,9 +141,13 @@ export function ProfileCardDialog({
   const [selection, setSelection] = useState(finish);
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+  const [shareState, setShareState] = useState<
+    "ready" | "copying" | "copied" | "failed"
+  >("ready");
   const [count, setCount] = useState<number | "unavailable" | null>(null);
   const today = new Date(now * 1000);
   const displayName = name.trim() || "Reprise user";
+  const reflective = selection !== "classic";
 
   useEffect(() => {
     const modal = dialog.current!;
@@ -177,6 +186,27 @@ export function ProfileCardDialog({
     setSaving(false);
   }
 
+  async function shareCard() {
+    const face = card.current;
+    if (!face || shareState === "copying") return;
+    setShareState("copying");
+    try {
+      const { toBlob } = await import("html-to-image");
+      if (!face.isConnected) return;
+      const png = await toBlob(face, {
+        pixelRatio: 3,
+        skipFonts: true,
+        style: { transform: "none", boxShadow: "none" },
+      });
+      if (!png) throw new Error("Could not render the profile card.");
+      if (!face.isConnected) return;
+      await writeImage(new Uint8Array(await png.arrayBuffer()));
+      setShareState("copied");
+    } catch {
+      setShareState("failed");
+    }
+  }
+
   return (
     <dialog
       ref={dialog}
@@ -196,8 +226,18 @@ export function ProfileCardDialog({
       <div ref={stage} className="profile-card-stage">
         <article ref={card} className="profile-card" data-finish={selection}>
           <div className="profile-card-portrait">
-            <span className="profile-card-wordmark">Reprise</span>
-            <Avatar src={avatar} name={name} />
+            {reflective && (
+              <div className="profile-card-foil" aria-hidden="true" />
+            )}
+            <div className="profile-card-avatar">
+              <Avatar src={avatar} name={name} />
+              {reflective && avatar && (
+                <span
+                  className="profile-card-avatar-sheen"
+                  aria-hidden="true"
+                />
+              )}
+            </div>
           </div>
           <div className="profile-card-identity">
             <h3>{displayName}</h3>
@@ -245,6 +285,31 @@ export function ProfileCardDialog({
           ))}
         </div>
       </fieldset>
+      <button
+        type="button"
+        className="profile-card-share"
+        disabled={count === null}
+        aria-disabled={shareState === "copying"}
+        title="Copy the profile card as an image"
+        onClick={() => void shareCard()}
+      >
+        Share
+      </button>
+      <span
+        className={
+          shareState === "ready" ? "sr-only" : "profile-card-share-status"
+        }
+        role="status"
+      >
+        {
+          {
+            ready: "",
+            copying: "Copying image…",
+            copied: "Card image copied to the clipboard.",
+            failed: "Couldn’t copy the card image. Try again.",
+          }[shareState]
+        }
+      </span>
       {saveFailed && (
         <p className="error" role="alert">
           Couldn’t save the card finish.
