@@ -83,11 +83,17 @@ are not successful validation. Process samples collected during harness developm
 do not constitute a controlled before/after benchmark.
 
 Local installer: `artifacts/nightly-motion-3.4.5-nightly.20261120.1/`.
-Installation is currently waiting for the Windows administrator consent prompt.
-The installed executable remains the previous glass build until consent succeeds.
-Installed motion validation, CPU/GPU comparison, native capture responsiveness,
-resize/restore and the theme/material matrix therefore remain **pending**. Do not
-describe this pass as visually or performance certified. Real mixed-DPI/multi-monitor
+The administrator retry succeeded: the installed executable and visible Nightly
+badge both report `3.4.5-nightly.20261120.1`. Native-window smoke checks confirmed
+restore from minimized state, material-popup opening and Escape dismissal with a
+visible focus ring, and Quick Capture opening through the global shortcut. Typing
+arrived in the capture input without an extra focus click; the draft was cleared
+without saving and Escape hid the native window. The original task-table fingerprint
+was unchanged after installation and SQLite integrity remained `ok`.
+
+Full installed motion validation, CPU/GPU comparison, resize stress and the
+theme/material matrix remain **pending**. These smoke checks do not establish
+performance or certify all visual transitions. Real mixed-DPI/multi-monitor
 coverage is also pending. Clear and Regular are the saved desktop-material variants;
 there is no separate Tinted selector to test without changing the completed glass
 system. Strong tint settings should be included in the installed matrix.
