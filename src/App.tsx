@@ -55,6 +55,7 @@ import "./notification-sidebar.css";
 import "./accents.css";
 import "./motion.css";
 import "./desktop-glass.css";
+import "./glass-material.css";
 import "./density.css";
 import "./context-menu.css";
 import "./presentation.css";

@@ -936,7 +936,7 @@ describe("workspace UI", () => {
     expect(data.settings.theme).toBe("system");
     await selectOption(
       user,
-      screen.getByLabelText("Glass intensity"),
+      screen.getByLabelText("Glass treatment"),
       "balanced",
     );
     await waitFor(() => expect(data.settings.desktop_tint).toBe(60));

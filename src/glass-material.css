@@ -1,0 +1,118 @@
+/* One optical recipe. No desktop sampling or refraction is implied by CSS blur. */
+.glass-scope {
+  --material-coverage: 0.82;
+  --material-diffusion: 18px;
+  --material-edge: color-mix(in srgb, var(--text) 22%, transparent);
+  --material-light: #ffffff24;
+  --material-shadow: 0 8px 24px #00000024;
+  --material-inner: inset 0 1px 0 #ffffff70, inset 0 -1px 0 #00000012;
+  --material-response: 1;
+}
+.glass-scope[data-glass-variant="clear"] {
+  --material-coverage: 0.74;
+  --material-diffusion: 12px;
+  --material-light: #ffffff30;
+}
+.glass-scope[data-glass-variant="tinted"] {
+  --material-coverage: 0.94;
+  --material-diffusion: 22px;
+  --material-light: #ffffff18;
+}
+.glass-scope .glass-surface {
+  background:
+    linear-gradient(145deg, var(--material-light), transparent 42%, #00000006),
+    rgba(var(--surface-rgb), var(--material-coverage));
+  color: var(--text);
+  border: 1px solid var(--material-edge);
+  box-shadow: var(--material-inner), var(--material-shadow);
+}
+@supports (backdrop-filter: blur(1px)) {
+  .glass-scope .glass-surface {
+    backdrop-filter: blur(var(--material-diffusion)) saturate(1.12);
+  }
+}
+/* A solid baseline in engines without backdrop filtering. */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-scope .glass-surface {
+    background: var(--surface);
+  }
+}
+.glass-scope .glass-control {
+  transition:
+    box-shadow 150ms var(--motion-ease),
+    border-color 150ms var(--motion-ease),
+    scale 110ms var(--motion-ease);
+}
+.glass-scope .glass-control:where(:hover, :focus-visible):not(:disabled) {
+  border-color: color-mix(in srgb, var(--text) 38%, transparent);
+  box-shadow:
+    var(--material-inner),
+    0 5px 16px #00000028,
+    inset 0 0 18px #ffffff16;
+}
+.glass-scope .glass-control:active:not(:disabled) {
+  scale: calc(1 - 0.012 * var(--material-response));
+  box-shadow:
+    inset 0 1px 3px #00000020,
+    inset 0 -1px 0 #ffffff55;
+}
+.glass-scope .glass-control[aria-expanded="true"] {
+  border-color: var(--focus);
+}
+/* Controls on an already elevated surface are thin fills, never a second blur. */
+.glass-scope
+  :is(.material-floating, .settings-section, .material-menu, .notification-dock)
+  .glass-surface {
+  background: var(--surface);
+  backdrop-filter: none;
+  box-shadow: inset 0 1px 0 #ffffff18;
+}
+.glass-scope .glass-surface:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.glass-scope[data-glass-solid="true"] .glass-surface,
+:root[data-effects="reduced"].glass-scope .glass-surface,
+:root[data-effects="reduced"] .glass-scope .glass-surface {
+  background: var(--surface);
+  backdrop-filter: none;
+}
+:root[data-window-active="false"].glass-scope,
+:root[data-window-active="false"] .glass-scope {
+  --material-coverage: 0.96;
+  --material-light: #ffffff0c;
+  --material-response: 0;
+}
+.glass-scope[data-glass-motion="off"] *,
+.glass-scope[data-glass-motion="off"] *::before,
+.glass-scope[data-glass-motion="off"] *::after {
+  transition: none !important;
+  animation: none !important;
+  scale: none !important;
+}
+:root[data-motion="off"].glass-scope,
+:root[data-motion="off"] .glass-scope {
+  --material-response: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-scope {
+    --material-response: 0;
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .glass-scope .glass-surface {
+    background: var(--surface) !important;
+    backdrop-filter: none !important;
+    border-color: var(--text) !important;
+    box-shadow: none !important;
+  }
+}
+@media (forced-colors: active) {
+  .glass-scope .glass-surface {
+    background: Canvas !important;
+    color: CanvasText !important;
+    border: 1px solid CanvasText !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+}

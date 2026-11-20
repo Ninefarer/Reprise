@@ -176,6 +176,9 @@ pub fn request_dashboard(app: &tauri::AppHandle) {
         return;
     }
     if let Some(w) = app.get_webview_window("main") {
+        // show()/set_focus() do not restore an iconified HWND on Windows.
+        // Dashboard requests (tray and second instance) must restore it first.
+        let _ = w.unminimize();
         let _ = w.show();
         let _ = w.set_focus();
     }
@@ -186,6 +189,38 @@ pub struct NativeGlassResult {
     mode: String,
     error: Option<String>,
 }
+// Documented Windows 11 system backdrop. Older Windows returns an error and
+// stays opaque; never fall back to SetWindowCompositionAttribute accent hacks.
+fn system_backdrop(window: &tauri::WebviewWindow, enabled: bool) -> Result<(), String> {
+    #[link(name = "dwmapi")]
+    extern "system" {
+        fn DwmSetWindowAttribute(
+            hwnd: *mut std::ffi::c_void,
+            attribute: u32,
+            value: *const std::ffi::c_void,
+            size: u32,
+        ) -> i32;
+    }
+    let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+    // DWMWA_SYSTEMBACKDROP_TYPE = 38; TRANSIENTWINDOW = 3, NONE = 1.
+    let backdrop: i32 = if enabled { 3 } else { 1 };
+    // SAFETY: Tauri owns a live HWND. DWM reads this stack value synchronously.
+    let status = unsafe {
+        DwmSetWindowAttribute(
+            hwnd.0,
+            38,
+            (&backdrop as *const i32).cast(),
+            std::mem::size_of::<i32>() as u32,
+        )
+    };
+    if status < 0 {
+        Err(format!(
+            "Windows system backdrop unavailable (HRESULT {status:#x}); using solid material."
+        ))
+    } else {
+        Ok(())
+    }
+}
 #[tauri::command]
 pub fn native_glass(
     window: tauri::WebviewWindow,
@@ -193,40 +228,36 @@ pub fn native_glass(
     dark: bool,
     allow: bool,
 ) -> Result<NativeGlassResult, String> {
-    let s = db.lock().map_err(|e| e.to_string())?.settings()?;
+    let mut s = db.lock().map_err(|e| e.to_string())?.settings()?;
+    // Resolve System appearance for every opaque error/fallback path as well.
+    s.theme = if dark { "dark".into() } else { "light".into() };
     let allowed = system_visuals().advanced_effects != Some(false);
     let contrast = windows::UI::ViewManagement::AccessibilitySettings::new()
         .and_then(|v| v.HighContrast())
         .unwrap_or(true);
     let enabled = s.desktop_glass && allowed && !contrast && allow;
-    window
-        .set_effects(None::<tauri::utils::config::WindowEffectsConfig>)
-        .map_err(|e| e.to_string())?;
     if enabled {
         window
             .set_background_color(Some(tauri::utils::config::Color(0, 0, 0, 0)))
             .map_err(|e| e.to_string())?;
-        if s.desktop_material == "acrylic" {
-            if let Err(error) = window.set_effects(tauri::utils::config::WindowEffectsConfig {
-                effects: vec![tauri::utils::WindowEffect::Acrylic],
-                ..Default::default()
-            }) {
-                window
-                    .set_background_color(Some(native_background(&s)))
-                    .map_err(|e| e.to_string())?;
-                return Ok(NativeGlassResult {
-                    mode: "off".into(),
-                    error: Some(error.to_string()),
-                });
-            }
+        // Both variants need diffusion. Clear changes the surface recipe, never
+        // disables the native material or reduces the HWND to bare transparency.
+        if let Err(error) = system_backdrop(&window, true) {
+            let _ = system_backdrop(&window, false);
+            window
+                .set_background_color(Some(native_background(&s)))
+                .map_err(|e| e.to_string())?;
+            return Ok(NativeGlassResult {
+                mode: "off".into(),
+                error: Some(error),
+            });
         }
         Ok(NativeGlassResult {
             mode: s.desktop_material,
             error: None,
         })
     } else {
-        let mut s = s;
-        s.theme = if dark { "dark".into() } else { "light".into() };
+        let _ = system_backdrop(&window, false);
         window
             .set_background_color(Some(native_background(&s)))
             .map_err(|e| e.to_string())?;

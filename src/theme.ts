@@ -46,12 +46,21 @@ export function useTheme(
     root.dataset.effects =
       system?.advanced_effects === false ? "reduced" : "allowed";
     root.style.setProperty("--desktop-tint", String(visual.desktop_tint / 100));
+    // Tint adjusts the selected material; it must never silently replace Clear
+    // with an effectively opaque material at the upper end of the slider.
+    root.dataset.glassVariant =
+      visual.desktop_material === "clear" ? "clear" : "regular";
   }, [visualKey]);
   useLayoutEffect(() => {
     const w = getCurrentWindow();
     let disposed = false;
     let unlisten: (() => void) | undefined;
     const media = matchMedia("(prefers-color-scheme: dark)");
+    const accessibility = [
+      "(forced-colors: active)",
+      "(prefers-reduced-transparency: reduce)",
+      "(prefers-contrast: more)",
+    ].map((query) => matchMedia(query));
     const mode = effectiveAppearance(visual.theme_family, visual.theme);
     const root = document.documentElement;
     const apply = async (theme: string) => {
@@ -63,17 +72,22 @@ export function useTheme(
           "native_glass",
           {
             dark: resolved === "dark",
-            allow:
-              !matchMedia("(forced-colors: active)").matches &&
-              !matchMedia("(prefers-reduced-transparency: reduce)").matches,
+            allow: !accessibility.some((query) => query.matches),
           },
         );
         if (!disposed) {
           root.dataset.desktopGlass = result?.mode ?? "off";
+          root.classList.toggle(
+            "glass-scope",
+            result?.mode === "clear" || result?.mode === "acrylic",
+          );
           root.dataset.desktopGlassError = result?.error ?? "";
         }
       } catch {
-        if (!disposed) root.dataset.desktopGlass = "off";
+        if (!disposed) {
+          root.dataset.desktopGlass = "off";
+          root.classList.remove("glass-scope");
+        }
       }
     };
     const changed = () => {
@@ -81,6 +95,11 @@ export function useTheme(
     };
     apply(media.matches ? "dark" : "light");
     media.addEventListener("change", changed);
+    const preferencesChanged = () =>
+      void apply(media.matches ? "dark" : "light");
+    accessibility.forEach((query) =>
+      query.addEventListener("change", preferencesChanged),
+    );
     void (async () => {
       try {
         await w.setTheme(mode === "system" ? null : mode);
@@ -98,6 +117,9 @@ export function useTheme(
       disposed = true;
       unlisten?.();
       media.removeEventListener("change", changed);
+      accessibility.forEach((query) =>
+        query.removeEventListener("change", preferencesChanged),
+      );
     };
   }, [key]);
   return readyKey === key;

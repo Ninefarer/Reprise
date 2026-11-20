@@ -91,7 +91,7 @@ export function Select({
         value={String(value)}
         type="button"
         role="combobox"
-        className="select-trigger"
+        className="select-trigger glass-surface glass-control"
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}

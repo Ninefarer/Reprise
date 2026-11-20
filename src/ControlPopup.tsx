@@ -33,6 +33,11 @@ export function ControlPopup({
     box.style.minWidth = `${Math.min(rect.width, innerWidth - 16)}px`;
     box.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - box.offsetWidth - 8))}px`;
     box.style.top = `${Math.max(8, Math.min(rect.bottom + 4, innerHeight - box.offsetHeight - 8))}px`;
+    // Expansion stays connected to its trigger even when clamped above it.
+    box.style.setProperty(
+      "--popup-origin",
+      `${Math.max(0, Math.min(box.offsetWidth, rect.left + rect.width / 2 - parseFloat(box.style.left)))}px ${parseFloat(box.style.top) < rect.top ? "100%" : "0px"}`,
+    );
     if (!box.contains(document.activeElement))
       box.querySelector<HTMLElement>("button:not(:disabled), input")?.focus();
     const dismiss = () => callback.current();
@@ -88,7 +93,7 @@ export function ControlPopup({
     >
       <div
         ref={panel}
-        className="control-popup material-menu"
+        className="control-popup material-menu glass-surface"
         data-control-popup
       >
         {children}

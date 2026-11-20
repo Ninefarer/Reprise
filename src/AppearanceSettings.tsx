@@ -42,7 +42,7 @@ export function AppearanceSettings({
                 }
               >
                 <option value="clear">Clear</option>
-                <option value="acrylic">Acrylic</option>
+                <option value="acrylic">Regular (Acrylic)</option>
               </Select>
             </label>
           )}
@@ -50,7 +50,7 @@ export function AppearanceSettings({
         {v.desktop_glass && (
           <>
             <label>
-              Glass intensity
+              Glass treatment
               <Select
                 value={
                   v.desktop_tint === 82
@@ -73,9 +73,9 @@ export function AppearanceSettings({
                   })
                 }
               >
-                <option value="subtle">Subtle</option>
-                <option value="balanced">Balanced</option>
-                <option value="crystal">Crystal</option>
+                <option value="subtle">Strong tint</option>
+                <option value="balanced">Balanced tint</option>
+                <option value="crystal">Light tint</option>
                 <option value="custom" disabled>
                   Custom tint
                 </option>
@@ -94,8 +94,11 @@ export function AppearanceSettings({
               />
             </label>
             <p className="hint">
-              Background tint only; Windows controls Acrylic blur. High contrast
-              and reduced transparency use opaque surfaces.
+              Tint adjusts the selected material within a bounded range. Clear
+              retains desktop translucency even at 90%; Regular has more body.
+              Task cards and form controls stay stable for reading. Windows
+              controls desktop diffusion and may use a solid fallback when
+              effects or transparency are unavailable.
             </p>
           </>
         )}
