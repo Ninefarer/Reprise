@@ -192,6 +192,34 @@ const taskEditorCleanup: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "3.4.6-nightly.20261121.1",
+    date: "2026-11-21",
+    title: "Glass, motion and visual hotfixes",
+    sections: [
+      {
+        heading: "CHANGES",
+        accent: "little",
+        entries: [
+          {
+            text: "Includes the glass and motion overhaul, separate Theme/Aesthetic/Motion preferences, and namecard finishes and image sharing from Stable 3.4.5.",
+          },
+        ],
+      },
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Remove the clipped rectangular shadow beneath task action notifications.",
+          },
+          {
+            text: "Fix mismatched rounded corners and button edging in the profile menu.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.4.6",
     date: "2026-11-21",
     title: "Notification and profile menu hotfix",
