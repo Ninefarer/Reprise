@@ -174,3 +174,22 @@ html:has(.app) {
 .notification-dock .notice:not(.unread) h3 {
   font-weight: 500;
 }
+
+/* The height-animation wrapper clips outer toast shadows into a rectangle.
+   Keep the toast edge inside its own rounded surface. */
+:root .undo-toast {
+  box-shadow: inset 0 1px 0 #ffffff08;
+}
+
+/* Match the profile popup to its rounded controls, without opaque button
+   fills showing scalloped seams against the glass menu. */
+:root .profile-footer [role="menu"] {
+  border-radius: 16px;
+  overflow: hidden;
+}
+.profile-footer [role="menu"] button {
+  background: transparent;
+}
+.profile-footer [role="menu"] button:is(:hover, :focus-visible) {
+  background: var(--selected);
+}
