@@ -1,4 +1,5 @@
 import { ShortcutRecorder } from "./ShortcutRecorder";
+import { BackupSettings } from "./BackupSettings";
 import { DateTimeField } from "./DateTimeField";
 import { Select } from "./Select";
 import { isNightly } from "./Nightly";
@@ -27,6 +28,7 @@ const sections = {
     "notifications",
     "categories",
     "close_to_tray",
+    "startup",
   ],
   Keyboard: ["command_shortcut"],
   About: [],
@@ -422,6 +424,14 @@ export function Preferences({
             />
             Keep running in the tray when I close the window
           </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={draft.startup}
+              onChange={(e) => set("startup", e.target.checked)}
+            />
+            Start Reprise with Windows
+          </label>
         </section>
       </div>
       <div
@@ -482,6 +492,7 @@ export function Preferences({
           </div>
         </section>
       </div>
+      {section === "About" && <BackupSettings />}
     </form>
   );
 }

@@ -1,6 +1,6 @@
 # Reprise changelog
 
-Published Stable notes through 3.4.3. The installed app reads `src/changelog.ts`. GitHub descriptions are the version files in `docs/releases/`. Installer checksums are in [docs/RELEASE-HISTORY.md](docs/RELEASE-HISTORY.md).
+This is the historical changelog through 3.4.3. Current published Stable notes live in [docs/releases/](docs/releases/); the installed app reads `src/changelog.ts`. Installer checksums are in [docs/RELEASE-HISTORY.md](docs/RELEASE-HISTORY.md). Stable version metadata is checked by `node scripts/check-release.mjs`.
 
 ## 3.4.3 / 3.4.3-nightly.20261115.1 - November 15, 2026
 

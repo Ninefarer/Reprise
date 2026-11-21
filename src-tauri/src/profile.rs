@@ -44,7 +44,7 @@ pub fn avatar(app: &tauri::AppHandle, name: &Option<String>) -> Option<String> {
     let bytes = std::fs::read(app.path().app_data_dir().ok()?.join("profile").join(name)).ok()?;
     Some(format!("data:image/png;base64,{}", STANDARD.encode(bytes)))
 }
-fn safe_name(name: &str) -> bool {
+pub(crate) fn safe_name(name: &str) -> bool {
     name.ends_with(".png") && uuid::Uuid::parse_str(name.trim_end_matches(".png")).is_ok()
 }
 #[tauri::command]
@@ -83,7 +83,7 @@ pub fn save_avatar(
     app.emit("refresh", ()).map_err(|e| e.to_string())
 }
 
-fn write_crop(dir: &std::path::Path, encoded: &str) -> Result<String, String> {
+pub(crate) fn write_crop(dir: &std::path::Path, encoded: &str) -> Result<String, String> {
     if encoded.len() > 750_000 {
         return Err("Image is too large".into());
     }
