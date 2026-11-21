@@ -192,6 +192,25 @@ const taskEditorCleanup: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "3.4.6",
+    date: "2026-11-21",
+    title: "Notification and profile menu hotfix",
+    sections: [
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Remove the clipped rectangular shadow beneath task action notifications.",
+          },
+          {
+            text: "Fix mismatched rounded corners and button edging in the profile menu.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.4.5",
     date: "2026-11-20",
     title: "Glass, motion and namecards",
