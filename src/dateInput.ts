@@ -15,6 +15,10 @@ const months = [
 ];
 const pad = (n: number) => String(n).padStart(2, "0");
 export function parseClock(text: string): string | null {
+  if (/^noon$/i.test(text.trim())) return "12:00";
+  if (/^midnight$/i.test(text.trim())) return "00:00";
+  const compact = text.trim().match(/^(\d{2})(\d{2})$/);
+  if (compact) return parseClock(`${compact[1]}:${compact[2]}`);
   const match = text
     .trim()
     .toLowerCase()
@@ -40,11 +44,12 @@ export function validLocalValue(value: string, kind: DateInputKind) {
     date.getUTCDate() === day
   );
 }
-/** Explicit English month names or ISO dates; never guess ambiguous numeric dates. */
+/** Local wall-time input, including relative phrases; ambiguous numeric dates are rejected. */
 export function parseDateInput(
   text: string,
   kind: DateInputKind,
   previous = "",
+  now = new Date(),
 ): string | null {
   if (!text.trim()) return "";
   if (kind === "time") return parseClock(text);
@@ -54,7 +59,90 @@ export function parseDateInput(
     .toLowerCase()
     .replace(/(\d)(st|nd|rd|th)\b/g, "$1")
     .replace(/,/g, " ")
+    .replace(/\s*@\s*/g, " at ")
     .replace(/\s+/g, " ");
+  const local = (date: Date) =>
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const relative = normalized.match(
+    /^in (\d+) (minutes?|mins?|hours?|hrs?|days?|weeks?)$/,
+  );
+  if (relative) {
+    const amount = Number(relative[1]);
+    if (!Number.isSafeInteger(amount) || amount < 1 || amount > 10000)
+      return null;
+    const date = new Date(now);
+    if (/^(day|week)/.test(relative[2]))
+      date.setDate(
+        date.getDate() + amount * (relative[2].startsWith("week") ? 7 : 1),
+      );
+    else
+      date.setTime(
+        date.getTime() +
+          amount * (/^(hour|hr)/.test(relative[2]) ? 3600000 : 60000),
+      );
+    const result = local(date);
+    return validLocalValue(result, kind) ? result : null;
+  }
+  const named = normalized.match(
+    /^(today|tomorrow|(?:next )?(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday))(?: (?:at )?(.+))?$/,
+  );
+  if (named) {
+    const date = new Date(now);
+    const weekdays = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+    const word = named[1].replace(/^next /, "");
+    const offset =
+      word === "today"
+        ? 0
+        : word === "tomorrow"
+          ? 1
+          : (weekdays.indexOf(word) - now.getDay() + 7) % 7 || 7;
+    date.setDate(date.getDate() + offset);
+    const clock = named[2]
+      ? parseClock(named[2])
+      : validLocalValue(previous, kind)
+        ? previous.slice(-5)
+        : "09:00";
+    return clock ? `${local(date).slice(0, 10)}T${clock}` : null;
+  }
+  // Month names without a year refer to the current calendar year.
+  const short = normalized.match(
+    /^([a-z]+\.? \d{1,2}|\d{1,2} [a-z]+\.?)(?: (?:at )?(.+))?$/,
+  );
+  if (
+    short &&
+    (!short[2] ||
+      (!/^\d{1,4}(?: |$)/.test(short[2]) && parseClock(short[2]) !== null))
+  )
+    return parseDateInput(
+      `${short[1]} ${now.getFullYear()}${short[2] ? " at " + short[2] : ""}`,
+      kind,
+      previous,
+      now,
+    );
+  const numeric = normalized.match(
+    /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?: (?:at )?(.+))?$/,
+  );
+  if (numeric) {
+    const a = Number(numeric[1]),
+      b = Number(numeric[2]);
+    if (a <= 12 && b <= 12 && a !== b) return null;
+    const month = a > 12 ? b : a,
+      day = a > 12 ? a : b;
+    return parseDateInput(
+      `${numeric[3]}-${pad(month)}-${pad(day)}${numeric[4] ? " at " + numeric[4] : ""}`,
+      kind,
+      previous,
+      now,
+    );
+  }
   let year: number, month: number, day: number, time: string | undefined;
   const iso = normalized.match(
     /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[t ](?:at )?(.+))?$/,

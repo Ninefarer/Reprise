@@ -882,3 +882,28 @@ fn receipt_collision_rolls_back_entire_deletion() {
     d.restore_deletion("same").unwrap();
     assert!(d.task(&a.id).is_ok());
 }
+
+#[test]
+fn schedules_must_be_future_but_existing_overdue_plans_remain_editable() {
+    let mut d = db();
+    for at in [99, 100] {
+        let mut t = Task::new("Invalid plan".into(), 100);
+        t.status = Status::Scheduled;
+        t.scheduled_at = Some(at);
+        assert!(d.save(t, "Created", 100).unwrap_err().contains("future"));
+    }
+    assert!(d.tasks().unwrap().is_empty());
+    let mut t = Task::new("Future plan".into(), 100);
+    t.status = Status::Scheduled;
+    t.scheduled_at = Some(101);
+    let mut t = d.save(t, "Created", 100).unwrap();
+    t.description = "Edited after the start".into();
+    let mut t = d.save(t, "Edited", 200).unwrap();
+    let history = d.history(&t.id).unwrap().len();
+    t.scheduled_at = Some(199);
+    assert!(d.save(t.clone(), "Edited", 200).is_err());
+    assert_eq!(d.task(&t.id).unwrap().scheduled_at, Some(101));
+    assert_eq!(d.history(&t.id).unwrap().len(), history);
+    t.scheduled_at = Some(201);
+    assert!(d.save(t, "Edited", 200).is_ok());
+}
