@@ -54,7 +54,7 @@ it("allows replacing the calendar year and retains invalid partial text without 
   );
   await user.clear(screen.getByLabelText("Calendar year"));
   await user.type(screen.getByLabelText("Calendar year"), "2030");
-  await user.click(screen.getByLabelText("Time (24-hour)"));
+  await user.click(screen.getByLabelText("Time"));
   expect(
     screen.getByRole("button", { name: "November 13, 2030" }),
   ).toBeTruthy();
@@ -115,10 +115,40 @@ it("keeps the picker open for invalid or earlier times", async () => {
     />,
   );
   await user.click(screen.getByRole("button", { name: "Choose time" }));
-  await user.clear(screen.getByLabelText("Time (24-hour)"));
-  await user.type(screen.getByLabelText("Time (24-hour)"), "09:00");
+  await user.clear(screen.getByLabelText("Time"));
+  await user.type(screen.getByLabelText("Time"), "09:00");
   expect(
     (screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement)
       .disabled,
   ).toBe(true);
+});
+
+it("disables past calendar days and accepts a meridiem time inside the picker", async () => {
+  const user = userEvent.setup(),
+    change = vi.fn();
+  render(
+    <DateTimeField
+      type="datetime-local"
+      value="2027-03-23T12:00"
+      min="2027-03-23T13:00"
+      onChange={change}
+    />,
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Choose date and time" }),
+  );
+  expect(
+    (
+      screen.getByRole("button", {
+        name: "March 22, 2027",
+      }) as HTMLButtonElement
+    ).disabled,
+  ).toBe(true);
+  const time = screen.getByLabelText("Time");
+  await user.clear(time);
+  await user.type(time, "2:30pm");
+  await user.click(screen.getByRole("button", { name: "Apply" }));
+  expect(change).toHaveBeenCalledWith({
+    target: { value: "2027-03-23T14:30" },
+  });
 });

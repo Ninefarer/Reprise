@@ -64,6 +64,17 @@ export function TaskDialog({
       ref.current?.querySelector("input")?.focus();
       return;
     }
+    const scheduleChanged =
+      draft.scheduled_at !== task.scheduled_at ||
+      ((status ?? draft.status) === "Scheduled" && task.status !== "Scheduled");
+    if (
+      scheduleChanged &&
+      draft.scheduled_at != null &&
+      draft.scheduled_at <= Math.floor(Date.now() / 1000)
+    ) {
+      setError("Choose a scheduled start in the future.");
+      return;
+    }
     if (!ref.current?.querySelector("form")?.reportValidity()) return;
     setBusy(true);
     setError("");
@@ -219,6 +230,12 @@ export function TaskDialog({
                 aria-label="Scheduled start"
                 type="datetime-local"
                 required={draft.status === "Scheduled"}
+                min={
+                  draft.scheduled_at !== task.scheduled_at ||
+                  (draft.status === "Scheduled" && task.status !== "Scheduled")
+                    ? localInput(Math.floor(Date.now() / 1000) + 60)
+                    : undefined
+                }
                 value={localInput(draft.scheduled_at)}
                 onChange={(e) =>
                   set("scheduled_at", parseInput(e.target.value))
