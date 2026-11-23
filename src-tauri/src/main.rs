@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod actions;
+mod backups;
 mod deletion;
 mod diagnostics;
 mod domain;
@@ -13,6 +14,7 @@ mod preferences;
 mod profile;
 mod releases;
 mod scheduler;
+mod startup;
 mod store;
 #[cfg(test)]
 mod tests;
@@ -149,6 +151,7 @@ fn snapshot(
     };
     let d = db.lock().map_err(|e| e.to_string())?;
     let locked = clock();
+    startup::synchronize(&app, &d)?;
     let capture = window.label() == "capture";
     let view = view_data::read(&d, capture, started.is_some())?;
     let data_done = clock();
@@ -222,6 +225,7 @@ fn save_settings(
     preferences::validate_command_shortcut(&settings.command_shortcut)?;
     let d = db.lock().map_err(|e| e.to_string())?;
     let current = d.settings()?;
+    settings.startup = current.startup;
     settings.profile_image = current.profile_image;
     settings.profile_card_finish = current.profile_card_finish;
     settings.sidebar_width = current.sidebar_width;
@@ -249,13 +253,25 @@ fn save_settings(
 }
 #[tauri::command]
 fn save_preference_patch(
-    patch: serde_json::Map<String, serde_json::Value>,
+    mut patch: serde_json::Map<String, serde_json::Value>,
     db: tauri::State<Db>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    db.lock()
-        .map_err(|e| e.to_string())?
-        .preference_patch(patch)?;
+    let d = db.lock().map_err(|e| e.to_string())?;
+    let startup = patch
+        .remove("startup")
+        .map(|v| v.as_bool().ok_or("Invalid startup preference"))
+        .transpose()?;
+    // Validate all other fields before changing Windows registration.
+    let previous = d.settings()?;
+    d.preference_patch(patch)?;
+    if let Some(enabled) = startup {
+        if let Err(error) = startup::save(&app, &d, enabled) {
+            d.set_settings(&previous)?;
+            return Err(error);
+        }
+    }
+    drop(d);
     let _ = app.emit("refresh", ());
     Ok(())
 }
@@ -304,6 +320,8 @@ fn main() {
             capture,
             save_task,
             save_settings,
+            backups::create_backup,
+            backups::restore_backup,
             save_preference_patch,
             profile::profile_completion_count,
             task_history,

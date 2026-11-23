@@ -9,6 +9,7 @@ import { join, resolve } from "node:path";
 import { stageManifest, validateVersion } from "./manifest.mjs";
 import { acceptanceFingerprint, requireAcceptance } from "./acceptance.mjs";
 const channel = process.argv[2];
+execFileSync(process.execPath, ["scripts/check-release.mjs"], { stdio: "inherit" });
 const base = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8"));
 const config =
   channel === "nightly"
