@@ -1,4 +1,9 @@
-import { displayDateInput, parseDateInput, validLocalValue } from "./dateInput";
+import {
+  displayDateInput,
+  parseClock,
+  parseDateInput,
+  validLocalValue,
+} from "./dateInput";
 export { validLocalValue } from "./dateInput";
 import { useEffect, useId, useRef, useState } from "react";
 import { ControlPopup } from "./ControlPopup";
@@ -41,7 +46,7 @@ export function DateTimeField({
         ? "Choose a later time."
         : type === "time"
           ? "Enter a time such as 9am or 2:30pm."
-          : "Enter a date such as March 3, 2027 at 9am."
+          : "Try tomorrow at 2pm, Friday 14:30, or March 23, 2027."
       : required && !text.trim()
         ? type === "time"
           ? "Choose a time."
@@ -60,7 +65,7 @@ export function DateTimeField({
         value={text}
         required={required}
         spellCheck={false}
-        placeholder={type === "time" ? "9:00 AM" : "March 3, 2027 at 9am"}
+        placeholder={type === "time" ? "9:00 AM" : "Tomorrow at 2pm"}
         aria-invalid={!!error}
         aria-describedby={error ? errorId : undefined}
         onChange={(event) => {
@@ -168,7 +173,8 @@ function DateTimePicker({
   const [time, setTime] = useState(initial.slice(-5));
   const [focused, setFocused] = useState(selected);
   const grid = useRef<HTMLDivElement>(null);
-  const output = type === "time" ? time : `${selected}T${time}`;
+  const clock = parseClock(time) ?? "";
+  const output = type === "time" ? clock : `${selected}T${clock}`;
   const valid = validLocalValue(output, type) && (!min || output >= min);
   const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const offset = new Date(month.getFullYear(), month.getMonth(), 1).getDay();
@@ -245,6 +251,7 @@ function DateTimePicker({
                     month: "long",
                     day: "numeric",
                   })}
+                  disabled={!!min && key < min.slice(0, 10)}
                   aria-pressed={selected === key}
                   tabIndex={
                     focused.slice(0, 7) === key.slice(0, 7)
@@ -314,12 +321,11 @@ function DateTimePicker({
         </>
       )}
       <label>
-        Time (24-hour)
+        Time
         <input
           type="text"
-          inputMode="numeric"
+          inputMode="text"
           value={time}
-          maxLength={5}
           onChange={(e) => setTime(e.target.value)}
         />
       </label>
@@ -334,7 +340,7 @@ function DateTimePicker({
         <p role="alert">
           {validLocalValue(output, type)
             ? "Choose a later time."
-            : "Enter a valid time as HH:mm."}
+            : "Enter a time such as 14:30 or 2:30pm."}
         </p>
       )}
       <div className="picker-actions">

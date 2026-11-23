@@ -148,6 +148,15 @@ impl Store {
             }
             t.created_at = b.created_at;
         }
+        // Validate a newly chosen schedule at save time, without blocking edits
+        // to an overdue plan or restoring its historical state through Undo.
+        let schedule_changed = before.as_ref().is_none_or(|b| {
+            b.scheduled_at != t.scheduled_at
+                || (b.status != Status::Scheduled && t.status == Status::Scheduled)
+        });
+        if action != "Undone" && schedule_changed && t.scheduled_at.is_some_and(|at| at <= now) {
+            return Err("Choose a scheduled start in the future.".into());
+        }
         t.updated_at = before
             .as_ref()
             .map(|b| (b.updated_at + 1).max(now))
