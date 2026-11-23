@@ -192,6 +192,43 @@ const taskEditorCleanup: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "3.4.7",
+    date: "2026-11-23",
+    title: "Scheduling and readable dates",
+    sections: [
+      {
+        heading: "ADDITIONS",
+        accent: "new",
+        entries: [
+          {
+            text: "Create and restore local backups from About, with a safety backup before restoration. Backup files contain unencrypted personal data.",
+          },
+          {
+            text: "Choose whether Reprise starts with Windows from Reminders settings.",
+          },
+        ],
+      },
+      {
+        heading: "CHANGES",
+        accent: "little",
+        entries: [
+          {
+            text: "Type dates such as today @ noon, tomorrow at 2pm, Friday 14:30, in 2 hours, or 3/23/2027. The picker also accepts noon, midnight and compact times such as 1430.",
+          },
+        ],
+      },
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "New or changed scheduled starts must be in the future. Existing overdue tasks remain editable.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.4.6-nightly.20261121.1",
     date: "2026-11-21",
     title: "Glass, motion and visual hotfixes",
