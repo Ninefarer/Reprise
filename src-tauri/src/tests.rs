@@ -907,3 +907,64 @@ fn schedules_must_be_future_but_existing_overdue_plans_remain_editable() {
     t.scheduled_at = Some(201);
     assert!(d.save(t, "Edited", 200).is_ok());
 }
+
+#[test]
+fn capture_routes_are_atomic_and_create_the_expected_reminders() {
+    let mut store = db();
+    let now = 1_800_000_000;
+    for invalid in [
+        Status::Dropped,
+        Status::Finished,
+        Status::Scheduled,
+        Status::Snoozed,
+    ] {
+        assert!(store
+            .capture_task("Invalid".into(), Some(invalid), None, None, None, now)
+            .is_err());
+    }
+    assert!(store.tasks().unwrap().is_empty());
+
+    let scheduled = store
+        .capture_task(
+            "Plan".into(),
+            Some(Status::Scheduled),
+            Some(now + 60),
+            None,
+            None,
+            now,
+        )
+        .unwrap();
+    let waiting = store
+        .capture_task(
+            "Dependency".into(),
+            Some(Status::Waiting),
+            None,
+            Some(now + 60),
+            Some(" Reply ".into()),
+            now,
+        )
+        .unwrap();
+    let settled = store
+        .capture_task("Pause".into(), Some(Status::Settled), None, None, None, now)
+        .unwrap();
+    assert_eq!(waiting.reason, "Reply");
+    assert_eq!(settled.settled_at, Some(now));
+    assert!(settled.wake_at.unwrap() > now);
+    assert_eq!(
+        store.history(&scheduled.id).unwrap()[0]["action"],
+        "Created"
+    );
+
+    store.reconcile(now + 60).unwrap();
+    let notices = store.notices().unwrap();
+    assert!(notices
+        .iter()
+        .any(|notice| notice.task_id.as_ref() == Some(&scheduled.id)
+            && notice.category == "Scheduled"));
+    assert!(
+        notices
+            .iter()
+            .any(|notice| notice.task_id.as_ref() == Some(&waiting.id)
+                && notice.category == "Waiting")
+    );
+}

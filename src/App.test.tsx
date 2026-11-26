@@ -121,7 +121,8 @@ beforeEach(() => {
     }
     if (cmd === "visual_preferences") {
       Object.assign(data.settings, args.patch);
-      if (args.patch.aesthetic) data.settings.desktop_glass = args.patch.aesthetic === "glass";
+      if (args.patch.aesthetic)
+        data.settings.desktop_glass = args.patch.aesthetic === "glass";
       return;
     }
     if (cmd === "acknowledge_release" && data.release) {
@@ -365,7 +366,7 @@ describe("native-window snapshot suspension", () => {
     expect(
       (screen.getByLabelText("Display name") as HTMLInputElement).value,
     ).toBe("Test unsaved");
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+    expect(screen.getByText("You have unsaved changes!")).toBeTruthy();
   });
   it("retains the background gate when a refresh is queued behind initialization", async () => {
     let resolve!: (value: Snapshot) => void;
@@ -485,7 +486,7 @@ describe("Settings draft protection", () => {
     await openSettings(user);
     await user.clear(screen.getByLabelText("Display name"));
     await user.type(screen.getByLabelText("Display name"), "Unsaved name");
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+    expect(screen.getByText("You have unsaved changes!")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Home" }));
     let dialog = screen.getByRole("dialog", {
       name: "Save your Settings changes?",
@@ -912,13 +913,14 @@ describe("Nightly channel", () => {
   });
 });
 describe("workspace UI", () => {
-  it("saves Peach with both appearances and retains it after remounting", async () => {
-    const user = userEvent.setup();
-    const view = render(<App />);
-    await openSettings(user);
-    await selectOption(user, screen.getByLabelText("Theme"), "peach");
-    for (const mode of ["light", "dark", "system"]) {
-      await selectOption(user, screen.getByLabelText("Appearance mode"), mode);
+  it.each(["light", "dark", "system"])(
+    "retains Peach with saved %s appearance after remounting",
+    async (mode) => {
+      data.settings.theme = mode as typeof data.settings.theme;
+      const user = userEvent.setup();
+      const view = render(<App />);
+      await openSettings(user);
+      await selectOption(user, screen.getByLabelText("Theme"), "peach");
       await waitFor(() => expect(data.settings.theme).toBe(mode));
       expect(data.settings.theme_family).toBe("peach");
       expect(document.documentElement.dataset.accent).toBe("peach");
@@ -926,27 +928,28 @@ describe("workspace UI", () => {
         await waitFor(() =>
           expect(document.documentElement.dataset.theme).toBe(mode),
         );
-    }
-    view.unmount();
-    render(<App />);
-    await openSettings(user);
-    expect(data.settings.theme_family).toBe("peach");
-    expect(document.documentElement.dataset.family).toBe("peach");
-    await selectOption(user, screen.getByLabelText("Accent color"), "lavender");
-    await waitFor(() =>
-      expect(document.documentElement.dataset.accent).toBe("lavender"),
-    );
-  });
+      expect(screen.queryByLabelText("Appearance mode")).toBeNull();
+      view.unmount();
+      render(<App />);
+      await openSettings(user);
+      expect(data.settings.theme_family).toBe("peach");
+      expect(document.documentElement.dataset.family).toBe("peach");
+      await selectOption(
+        user,
+        screen.getByLabelText("Accent color"),
+        "lavender",
+      );
+      await waitFor(() =>
+        expect(document.documentElement.dataset.accent).toBe("lavender"),
+      );
+    },
+  );
 
   it("saves native Glass options and intensity without changing palette preferences", async () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await selectOption(
-      user,
-      screen.getByLabelText("Aesthetic"),
-      "glass",
-    );
+    await selectOption(user, screen.getByLabelText("Aesthetic"), "glass");
     await selectOption(
       user,
       screen.getByLabelText("Glass material"),
@@ -955,13 +958,11 @@ describe("workspace UI", () => {
     await waitFor(() => expect(data.settings.desktop_material).toBe("acrylic"));
     expect(data.settings.desktop_glass).toBe(true);
     expect(data.settings.theme).toBe("system");
-    fireEvent.change(screen.getByLabelText(/Glass tint:/), { target: { value: "60" } });
+    fireEvent.change(screen.getByLabelText(/Glass tint:/), {
+      target: { value: "60" },
+    });
     await waitFor(() => expect(data.settings.desktop_tint).toBe(60));
-    await selectOption(
-      user,
-      screen.getByLabelText("Aesthetic"),
-      "solid",
-    );
+    await selectOption(user, screen.getByLabelText("Aesthetic"), "solid");
     await waitFor(() => expect(data.settings.desktop_glass).toBe(false));
     expect(data.settings.desktop_material).toBe("acrylic");
   });
@@ -1112,9 +1113,7 @@ describe("workspace UI", () => {
       expect(document.documentElement.dataset.theme).toBe("dark"),
     );
     expect(data.settings.theme).toBe("system");
-    expect(
-      screen.getByLabelText("Appearance mode").getAttribute("readonly"),
-    ).not.toBeNull();
+    expect(screen.queryByLabelText("Appearance mode")).toBeNull();
     expect(screen.queryByLabelText("Material")).toBeNull();
     expect(screen.queryByLabelText("Glass coverage")).toBeNull();
     expect(screen.queryByText("Experimental Glass")).toBeNull();
@@ -1123,10 +1122,8 @@ describe("workspace UI", () => {
       expect(document.documentElement.dataset.theme).toBe("light"),
     );
     await selectOption(user, screen.getByLabelText("Theme"), "classic");
-    expect(
-      ((await screen.findByLabelText("Appearance mode")) as HTMLSelectElement)
-        .value,
-    ).toBe("system");
+    expect(screen.queryByLabelText("Appearance mode")).toBeNull();
+    expect(data.settings.theme).toBe("system");
   });
   it("reports notification submission honestly and recovers after failure", async () => {
     data.release = {
@@ -1468,21 +1465,17 @@ describe("workspace UI", () => {
       screen.queryByText("Local to this device · No account needed"),
     ).toBeNull();
   });
-  it("persists appearance immediately and uses the native window theme API", async () => {
+  it("persists theme family immediately and uses the native window theme API", async () => {
     const user = userEvent.setup();
     render(<App />);
     await openSettings(user);
-    await selectOption(user, screen.getByLabelText("Appearance mode"), "dark");
+    await selectOption(user, screen.getByLabelText("Theme"), "pitch-black");
     await waitFor(() =>
       expect(document.documentElement.dataset.theme).toBe("dark"),
     );
-    expect(data.settings.theme).toBe("dark");
+    expect(data.settings.theme_family).toBe("pitch-black");
     expect(mocks.setTheme).toHaveBeenCalledWith("dark");
-    await selectOption(
-      user,
-      screen.getByLabelText("Appearance mode"),
-      "system",
-    );
+    await selectOption(user, screen.getByLabelText("Theme"), "classic");
     await waitFor(() => expect(mocks.setTheme).toHaveBeenLastCalledWith(null));
   });
   it("responds to native theme change events in System mode", async () => {
@@ -1524,6 +1517,26 @@ function closedTask(status: "Finished" | "Dropped") {
     parent_task_id: null,
   };
 }
+it("drops an active Inbox task from its task menu", async () => {
+  const task = {
+    ...closedTask("Dropped"),
+    title: "Inbox intention",
+    status: "Inbox" as const,
+  };
+  data.tasks = [task];
+  const user = userEvent.setup();
+  render(<App />);
+  await user.click(
+    await screen.findByRole("button", { name: /^Inbox\s*1 items$/ }),
+  );
+  await user.click(screen.getByRole("button", { name: "More actions for Inbox intention" }));
+  await user.click(await screen.findByRole("menuitem", { name: /Drop$/ }));
+  expect(mocks.invoke).toHaveBeenCalledWith("save_task", {
+    task: { ...task, status: "Dropped" },
+    action: "Dropped",
+  });
+});
+
 describe("closed tasks and deletion", () => {
   it.each(["Finished", "Dropped"] as const)(
     "shows only relevant right-click actions for %s tasks",
@@ -1627,7 +1640,7 @@ describe("closed tasks and deletion", () => {
     await openSettings(user);
     await user.click(screen.getByRole("tab", { name: "About" }));
     expect(
-      screen.getByRole("heading", { name: "About / Updates" }),
+      screen.getByRole("heading", { name: "Version and updates" }),
     ).toBeTruthy();
     await user.click(
       screen.getByRole("button", { name: "Release Notes history" }),
@@ -2464,7 +2477,7 @@ describe("semantic task presentation", () => {
     expect(
       screen.getByRole("heading", { name: /Notifications/, level: 2 }),
     ).toBeTruthy();
-    expect(screen.getByText("Reminders and app updates")).toBeTruthy();
+    expect(screen.getByRole("searchbox", { name: "Search notifications" })).toBeTruthy();
     expect(commandDestinations).toContain("Notification History");
     expect(navigation.flatMap((g) => g.items)).not.toContain(
       "Notification History",

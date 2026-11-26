@@ -1,0 +1,5 @@
+{
+  "identifier": "backup-dialogs",
+  "windows": ["main"],
+  "permissions": ["dialog:allow-open", "dialog:allow-save"]
+}

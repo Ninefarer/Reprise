@@ -1,3 +1,4 @@
+import { CaptureDestination, type CaptureRoute } from "./CaptureDestination";
 import { UndoToastStack, type UndoNotice } from "./UndoToast";
 import { greeting } from "./greeting";
 import { matchesShortcut } from "./shortcuts";
@@ -737,14 +738,14 @@ function Application({
       intent: !isOpen(t) && intent === "edit" ? "history" : intent,
     });
   }
-  async function add() {
+  async function add(route?: CaptureRoute) {
     if (!title.trim() || busy || captureSaving.current) return;
     captureSaving.current = true;
     const started = traceStart();
     try {
       const ok = await run(async () => {
         const saving = traceStart();
-        await invoke("capture", { title: title.trim() });
+        await invoke("capture", { title: title.trim(), ...route });
         trace("capture.persist", saving);
       });
       if (ok) {
@@ -905,10 +906,18 @@ function Application({
             setCaptureError("");
           }}
         />
-        <button disabled={busy} className="primary">
-          {busy ? "Saving..." : quick ? "Save" : "Add to Inbox"}{" "}
-          <span aria-hidden="true">↵</span>
-        </button>
+        {quick ? (
+          <button disabled={busy} className="primary">
+            {busy ? "Saving..." : "Save"}{" "}
+            <span aria-hidden="true">&crarr;</span>
+          </button>
+        ) : (
+          <CaptureDestination
+            valid={!!title.trim()}
+            busy={busy}
+            onChoose={(route) => void add(route)}
+          />
+        )}
       </form>
       {captureError && (
         <p id="capture-error" className="capture-validation" role="alert">
@@ -927,7 +936,7 @@ function Application({
     return (
       <main className="loading">
         <h1>Reprise</h1>
-        <p role="status">{error || "Opening Reprise…"}</p>
+        <p role="status">{error || `Opening $Reprise…`}</p>
         <button onClick={() => void load()}>Try again</button>
       </main>
     );
@@ -1040,32 +1049,44 @@ function Application({
               </span>
             )}
           </div>
-          {paused && (
+          {t.status === "Settled" && t.settlement_mode === "auto" ? (
             <div className="pause-info">
-              {t.status === "Settled" && (
-                <>
-                  <span>
-                    <b>Settled</b>
-                    {date(t.settled_at)}
-                  </span>
-                  <span>
-                    <b>Mode</b>
-                    {t.settlement_mode === "24h"
-                      ? "24 hours"
-                      : t.settlement_mode === "next_day"
-                        ? "Next calendar day"
-                        : "Not recorded for this older task"}
-                  </span>
-                </>
-              )}
               <span>
-                <b>
-                  {t.status === "Settled" ? "Resurfaces" : "Snooze expires"}
-                </b>
-                {date(t.wake_at)}
+                <b>Auto-settled by Reprise</b>
+                {date(t.settled_at)}
               </span>
-              <span className="remaining">{remaining(t.wake_at, now)}</span>
+              <span>
+                Moved from Inbox without a next step. Stays here until resumed.
+              </span>
             </div>
+          ) : (
+            paused && (
+              <div className="pause-info">
+                {t.status === "Settled" && (
+                  <>
+                    <span>
+                      <b>Settled</b>
+                      {date(t.settled_at)}
+                    </span>
+                    <span>
+                      <b>Mode</b>
+                      {t.settlement_mode === "24h"
+                        ? "24 hours"
+                        : t.settlement_mode === "next_day"
+                          ? "Next calendar day"
+                          : "Not recorded for this older task"}
+                    </span>
+                  </>
+                )}
+                <span>
+                  <b>
+                    {t.status === "Settled" ? "Resurfaces" : "Snooze expires"}
+                  </b>
+                  {date(t.wake_at)}
+                </span>
+                <span className="remaining">{remaining(t.wake_at, now)}</span>
+              </div>
+            )
           )}
         </div>
         <div className="task-actions">
@@ -1141,7 +1162,7 @@ function Application({
           setReplayingSetup(false);
           setError("");
         }}
-        onFinish={async (patch, firstTitle) => {
+        onFinish={async (patch, firstTitle, backup) => {
           const ok = await run(async () => {
             if (firstTitle && !setupCaptured.current) {
               await invoke("capture", { title: firstTitle });
@@ -1155,6 +1176,7 @@ function Application({
             setView("Home");
             setQuery("");
             setReplayingSetup(false);
+            if (backup) await run(() => invoke("create_backup"));
           }
         }}
       />
@@ -1218,7 +1240,10 @@ function Application({
           </div>
         )}
         <>
-          <div className="page-heading">
+          <div
+            className="page-heading"
+            data-task-view={view !== "Home" && view !== "Settings"}
+          >
             <h1>
               {pageTitle}
               {!["Home", "Settings", "Daily Review"].includes(view) && (
@@ -1274,19 +1299,17 @@ function Application({
               {view === "Daily Review" ? (
                 <div className="review-groups">
                   {groups.map((g) => (
-                    <section className="review-section" key={g.title}>
+                    <section
+                      className="review-section"
+                      key={g.title}
+                      data-empty={!g.tasks.length}
+                    >
                       <div
                         className="section-heading"
                         data-status={reviewCategory(g.title)}
                       >
-                        <div>
-                          <h2>
-                            {g.title}
-                            <span className="count-badge">
-                              {g.tasks.length}
-                            </span>
-                          </h2>
-                        </div>
+                        <h2>{g.title}</h2>
+                        <span className="count-badge">{g.tasks.length}</span>
                       </div>
                       {g.tasks.length ? (
                         g.tasks.map(taskCard)
@@ -1302,22 +1325,17 @@ function Application({
                 </div>
               ) : (
                 <>
-                  <div
-                    className="section-heading"
-                    hidden={view !== "Home"}
-                    data-status={taskCategory(view)}
-                  >
-                    <h2>
-                      {view === "Home" ? "In focus" : null}
-                      <span className="count-badge">
-                        {
-                          tasksForView(tasks, view, now).filter((t) =>
-                            matches(t, query),
-                          ).length
-                        }
-                      </span>
-                    </h2>
-                  </div>
+                  {view === "Home" && (
+                    <div
+                      className="section-heading"
+                      data-status={taskCategory(view)}
+                    >
+                      <h2>
+                        In focus{" "}
+                        <span className="count-badge">{visible.length}</span>
+                      </h2>
+                    </div>
+                  )}
                   {visible.length
                     ? visible
                         .sort((a, b) =>

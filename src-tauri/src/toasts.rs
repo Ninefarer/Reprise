@@ -27,6 +27,7 @@ fn category(category: &str) -> &str {
         "Scheduled" => "Scheduled",
         "Snoozed" => "Snooze ended",
         "Settled" => "Ready to revisit",
+        "AutoSettled" => "Auto-Settle",
         "Waiting" => "Follow-up",
         "Deadline" => "Deadline",
         "DailyReview" => "Daily Review",
@@ -102,7 +103,7 @@ fn content_at(notices: &[Notice], tasks: &[Task], now: i64) -> Content {
                     }
                 });
                 let heading = clean(
-                    if n.category == "DailyReview" {
+                    if matches!(n.category.as_str(), "DailyReview" | "AutoSettled") {
                         &n.message
                     } else {
                         &n.title

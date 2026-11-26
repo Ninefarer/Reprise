@@ -23,11 +23,17 @@ fn check(conn: &Connection) -> Result<(), String> {
     }
     Ok(())
 }
+fn has_backup_extension(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("reprise-backup"))
+}
+
 fn snapshot(store: &Store, dir: &Path, destination: &Path) -> Result<(), String> {
     if !destination.is_absolute() {
         return Err("Enter an absolute backup path".into());
     }
-    if destination.extension().and_then(|s| s.to_str()) != Some("reprise-backup") {
+    if !has_backup_extension(destination) {
         return Err("Choose a .reprise-backup filename".into());
     }
     // Never overwrite an existing file, including the active database.
@@ -158,19 +164,74 @@ fn restore(store: &mut Store, dir: &Path, source: &Path) -> Result<String, Strin
     result
 }
 
+fn local_destination(dir: &Path) -> Result<std::path::PathBuf, String> {
+    let folder = dir.join("backups");
+    std::fs::create_dir_all(&folder).map_err(error)?;
+    Ok(folder.join(format!(
+        "Reprise-{}-{}.reprise-backup",
+        chrono::Local::now().format("%Y-%m-%d"),
+        uuid::Uuid::new_v4()
+    )))
+}
+
+#[derive(serde::Serialize)]
+pub struct LocalBackup {
+    path: String,
+    name: String,
+    modified: u64,
+}
+
+#[tauri::command]
+pub fn list_backups(app: tauri::AppHandle) -> Result<Vec<LocalBackup>, String> {
+    let dir = app.path().app_data_dir().map_err(error)?.join("backups");
+    let entries = match std::fs::read_dir(dir) {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) => return Err(error(e)),
+    };
+    let mut backups = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(error)?;
+        let path = entry.path();
+        if !has_backup_extension(&path) || !entry.file_type().map_err(error)?.is_file() {
+            continue;
+        }
+        let modified = entry
+            .metadata()
+            .map_err(error)?
+            .modified()
+            .map_err(error)?
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(error)?
+            .as_secs();
+        backups.push(LocalBackup {
+            path: path.to_string_lossy().into_owned(),
+            name: entry.file_name().to_string_lossy().into_owned(),
+            modified,
+        });
+    }
+    backups.sort_by(|a, b| {
+        b.modified
+            .cmp(&a.modified)
+            .then_with(|| a.name.cmp(&b.name))
+    });
+    Ok(backups)
+}
+
 #[tauri::command]
 pub fn create_backup(
-    path: String,
+    path: Option<String>,
     db: tauri::State<Db>,
     app: tauri::AppHandle,
 ) -> Result<String, String> {
+    let dir = app.path().app_data_dir().map_err(error)?;
+    let destination = match path {
+        Some(path) => std::path::PathBuf::from(path),
+        None => local_destination(&dir)?,
+    };
     let store = db.lock().map_err(error)?;
-    snapshot(
-        &store,
-        &app.path().app_data_dir().map_err(error)?,
-        Path::new(&path),
-    )?;
-    Ok(format!("Backup saved: {path}"))
+    snapshot(&store, &dir, &destination)?;
+    Ok(format!("Backup saved: {}", destination.display()))
 }
 #[tauri::command]
 pub fn restore_backup(
@@ -220,9 +281,13 @@ mod tests {
                 100,
             )
             .unwrap();
-        let backup = dir.join("manual.reprise-backup");
+        let backup = local_destination(&dir).unwrap();
+        assert_eq!(backup.parent().unwrap(), dir.join("backups"));
+        assert_ne!(backup, local_destination(&dir).unwrap());
         snapshot(&store, &dir, &backup).unwrap();
         assert!(snapshot(&store, &dir, &backup).is_err());
+        let export = dir.join("Takeout.REPRISE-BACKUP");
+        snapshot(&store, &dir, &export).unwrap();
         store
             .save(
                 crate::domain::Task::new("Later".into(), 101),
@@ -230,7 +295,7 @@ mod tests {
                 101,
             )
             .unwrap();
-        restore(&mut store, &dir, &backup).unwrap();
+        restore(&mut store, &dir, &export).unwrap();
         assert_eq!(store.tasks().unwrap().len(), 1);
         let restored_name = store.settings().unwrap().profile_image.unwrap();
         assert_ne!(restored_name, original_name);

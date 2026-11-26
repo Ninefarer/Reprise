@@ -1,6 +1,8 @@
 use chrono::{DateTime, Duration, LocalResult, NaiveTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
+pub const AUTO_SETTLED_MODE: &str = "auto";
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Status {
     Inbox,
@@ -64,6 +66,10 @@ impl Task {
             settlement_mode: None,
         }
     }
+    pub fn is_auto_settled(&self) -> bool {
+        self.status == Status::Settled && self.settlement_mode.as_deref() == Some(AUTO_SETTLED_MODE)
+    }
+
     pub fn validate(&self) -> Result<(), String> {
         if self.title.trim().is_empty() || self.title.len() > 500 {
             return Err("Title must contain 1–500 characters".into());
@@ -77,6 +83,7 @@ impl Task {
         if matches!(self.status, Status::Snoozed | Status::Settled)
             && self.wake_at.is_none()
             && self.review_at.is_none()
+            && !self.is_auto_settled()
         {
             return Err("Choose a return time".into());
         }
@@ -114,6 +121,9 @@ pub struct Settings {
     pub onboarded: bool,
     pub settlement_mode: String,
     pub return_time: String,
+    pub auto_settle_days: u8,
+    pub auto_settle_since: Option<i64>,
+    pub auto_settle_explained: bool,
     pub review_time: String,
     pub daily_review: bool,
     pub quiet_start: String,
@@ -156,6 +166,9 @@ impl Default for Settings {
             onboarded: false,
             settlement_mode: "next_day".into(),
             return_time: "09:00".into(),
+            auto_settle_days: 0,
+            auto_settle_since: None,
+            auto_settle_explained: false,
             review_time: "09:00".into(),
             daily_review: true,
             quiet_start: "22:00".into(),

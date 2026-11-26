@@ -90,6 +90,7 @@ impl Store {
   CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY,task_id TEXT REFERENCES tasks(id),category TEXT NOT NULL,at INTEGER NOT NULL,processed INTEGER NOT NULL DEFAULT 0);
   CREATE INDEX IF NOT EXISTS due_events ON events(processed,at);
   CREATE TABLE IF NOT EXISTS history(id INTEGER PRIMARY KEY,task_id TEXT NOT NULL REFERENCES tasks(id),at INTEGER NOT NULL,action TEXT NOT NULL,before_data TEXT,after_data TEXT NOT NULL);
+  CREATE INDEX IF NOT EXISTS task_history_by_task ON history(task_id, id);
   CREATE TABLE IF NOT EXISTS notifications(id TEXT PRIMARY KEY,task_id TEXT REFERENCES tasks(id),category TEXT NOT NULL,title TEXT NOT NULL,message TEXT NOT NULL,created_at INTEGER NOT NULL,scheduled_at INTEGER NOT NULL,submitted_at INTEGER,state TEXT NOT NULL DEFAULT 'Pending',unread INTEGER NOT NULL DEFAULT 1,interaction_at INTEGER,action TEXT);
   COMMIT;").map_err(err)?;
         if version < 2 {
@@ -166,7 +167,10 @@ impl Store {
         } else if action != "Undone" {
             if let Some(b) = &before {
                 t.settled_at = b.settled_at;
-                t.settlement_mode = b.settlement_mode.clone();
+                t.settlement_mode = b
+                    .settlement_mode
+                    .clone()
+                    .filter(|mode| mode != AUTO_SETTLED_MODE || t.status == Status::Settled);
             }
         }
         if action != "Undone" {

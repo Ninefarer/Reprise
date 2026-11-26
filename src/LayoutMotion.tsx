@@ -55,7 +55,6 @@ export function NavigationSelection({
             return {
               transform: `translate(${left.current}px, ${y - flex / 2}px)`,
               height: `${height + flex}px`,
-              borderRadius: `${6 + energy * 1.5}px`,
               boxShadow: `inset 0 1px 0 rgb(255 255 255 / ${energy * 0.18})`,
             };
           },

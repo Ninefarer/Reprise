@@ -304,7 +304,7 @@ export function Sidebar({
                       });
                     }}
                   >
-                    <Icon name={v} />
+                    <Icon name={v} sidebar />
                     <span className="sidebar-label">{label(v)}</span>
                     {!collapsed && (count(v) ?? 0) > 0 && (
                       <span

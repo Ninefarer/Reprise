@@ -94,6 +94,7 @@
   content: "↻";
   font-size: 13px;
 }
+.capture-destinations button[data-status] > svg,
 .overview button[data-status] > svg,
 .overview button[data-status] > strong {
   color: var(--task-accent);

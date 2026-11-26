@@ -1,6 +1,6 @@
 {
   "name": "reprise",
-  "version": "3.4.7",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,7 +15,8 @@
     "@tauri-apps/plugin-clipboard-manager": "^2.5.0",
     "html-to-image": "1.11.13",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "@tauri-apps/plugin-dialog": "^2.8.4"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.10.0",

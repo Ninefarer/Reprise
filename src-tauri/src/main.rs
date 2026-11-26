@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod actions;
+mod auto_settle;
 mod backups;
 mod deletion;
 mod diagnostics;
@@ -180,12 +181,19 @@ fn snapshot(
     Ok(Some(result))
 }
 #[tauri::command]
-fn capture(title: String, db: tauri::State<Db>, app: tauri::AppHandle) -> Result<Task, String> {
+fn capture(
+    title: String,
+    destination: Option<Status>,
+    scheduled_at: Option<i64>,
+    wake_at: Option<i64>,
+    reason: Option<String>,
+    db: tauri::State<Db>,
+    app: tauri::AppHandle,
+) -> Result<Task, String> {
     let now = chrono::Utc::now().timestamp();
-    let task = db
-        .lock()
-        .map_err(|e| e.to_string())?
-        .save(Task::new(title, now), "Created", now)?;
+    let mut store = db.lock().map_err(|e| e.to_string())?;
+    let task = store.capture_task(title, destination, scheduled_at, wake_at, reason, now)?;
+    drop(store);
     let _ = app.emit("refresh", ());
     Ok(task)
 }
@@ -194,7 +202,11 @@ fn save_task(mut task: Task, action: String, db: tauri::State<Db>) -> Result<Tas
     let now = chrono::Utc::now().timestamp();
     let mut d = db.lock().unwrap();
     // An editor left open in another window must never recreate a deleted task.
-    d.task(&task.id)?;
+    let current = d.task(&task.id)?;
+    if action == "AutoSettled" {
+        return Err("Auto-Settle is managed by Reprise.".into());
+    }
+    task.settlement_mode = current.settlement_mode.clone();
     if action == "Settled" {
         let s = d.settings()?;
         task.status = Status::Settled;
@@ -226,6 +238,9 @@ fn save_settings(
     let d = db.lock().map_err(|e| e.to_string())?;
     let current = d.settings()?;
     settings.startup = current.startup;
+    settings.auto_settle_days = current.auto_settle_days;
+    settings.auto_settle_since = current.auto_settle_since;
+    settings.auto_settle_explained = current.auto_settle_explained;
     settings.profile_image = current.profile_image;
     settings.profile_card_finish = current.profile_card_finish;
     settings.sidebar_width = current.sidebar_width;
@@ -276,6 +291,11 @@ fn save_preference_patch(
     Ok(())
 }
 #[tauri::command]
+fn auto_settle_preview(db: tauri::State<Db>) -> Result<usize, String> {
+    db.lock().map_err(|e| e.to_string())?.auto_settle_preview()
+}
+
+#[tauri::command]
 fn task_history(id: String, db: tauri::State<Db>) -> Result<Vec<serde_json::Value>, String> {
     db.lock().unwrap().history(&id)
 }
@@ -297,6 +317,7 @@ fn main() {
             visuals::request_dashboard(app);
         }))
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_autostart::Builder::new().build())
@@ -321,10 +342,12 @@ fn main() {
             save_task,
             save_settings,
             backups::create_backup,
+            backups::list_backups,
             backups::restore_backup,
             save_preference_patch,
             profile::profile_completion_count,
             task_history,
+            auto_settle_preview,
             read_notice,
             delete_task,
             undo_deletion,

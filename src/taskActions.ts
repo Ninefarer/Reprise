@@ -60,56 +60,30 @@ export function taskActions(t: Task): TaskAction[] {
       "snooze",
       "settle",
       "finish",
-      "drop",
       "edit",
-      "delete",
     ];
   else
     switch (t.status) {
       case "Inbox":
-        ids = [
-          "start",
-          "schedule",
-          "snooze",
-          "settle",
-          "finish",
-          "edit",
-          "delete",
-        ];
+        ids = ["start", "schedule", "snooze", "settle", "finish", "edit"];
         break;
       case "DoNow":
-        ids = [
-          "settle",
-          "snooze",
-          "schedule",
-          "inbox",
-          "finish",
-          "edit",
-          "delete",
-        ];
+        ids = ["settle", "snooze", "schedule", "inbox", "finish", "edit"];
         break;
       case "Scheduled":
-        ids = [
-          "start",
-          "schedule",
-          "snooze",
-          "settle",
-          "finish",
-          "edit",
-          "delete",
-        ];
+        ids = ["start", "schedule", "snooze", "settle", "finish", "edit"];
         break;
       case "Settled":
         ids = [
           "resume",
           "start",
-          "surface",
-          "return",
+          ...(t.settlement_mode === "auto"
+            ? []
+            : (["surface", "return"] as const)),
           "snooze",
           "schedule",
           "finish",
           "edit",
-          "delete",
         ];
         break;
       case "Snoozed":
@@ -121,22 +95,14 @@ export function taskActions(t: Task): TaskAction[] {
           "settle",
           "finish",
           "edit",
-          "delete",
         ];
         break;
       case "Waiting":
-        ids = [
-          "resume",
-          "start",
-          "followup",
-          "schedule",
-          "finish",
-          "edit",
-          "delete",
-        ];
+        ids = ["resume", "start", "followup", "schedule", "finish", "edit"];
         break;
     }
-  return ids.map((id) => ({
+  const actions: ActionId[] = [...ids, "drop", "history", "delete"];
+  return actions.map((id) => ({
     id,
     label:
       id === "surface" && t.status === "Snoozed"

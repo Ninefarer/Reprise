@@ -1,4 +1,5 @@
-﻿import { createRoot } from "react-dom/client";
+import { WindowControls } from "./WindowControls";
+import { createRoot } from "react-dom/client";
 import { App } from "./App";
 const root = createRoot(document.getElementById("root")!);
 if (
@@ -14,5 +15,12 @@ if (
 ) {
   void import("./GlassLab").then(({ GlassLab }) => root.render(<GlassLab />));
 } else {
-  root.render(<App />);
+  root.render(
+    <>
+      {new URLSearchParams(location.search).get("capture") !== "1" && (
+        <WindowControls />
+      )}
+      <App />
+    </>,
+  );
 }
