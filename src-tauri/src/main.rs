@@ -254,6 +254,7 @@ fn save_settings(
     settings.desktop_material = current.desktop_material;
     settings.desktop_tint = current.desktop_tint;
     settings.theme = current.theme;
+    settings.frameless = current.frameless;
     settings.theme_family = current.theme_family;
     settings.density = current.density;
     settings.material = current.material;
@@ -386,6 +387,11 @@ fn main() {
             };
             for config in &app.config().app.windows {
                 tauri::WebviewWindowBuilder::from_config(app, config)?
+                    .decorations(if config.label == "main" {
+                        !initial.frameless
+                    } else {
+                        config.decorations
+                    })
                     .transparent(true)
                     .theme(visuals::effective_theme(&initial))
                     .background_color(visuals::native_background(&initial))

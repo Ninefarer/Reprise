@@ -192,6 +192,38 @@ const taskEditorCleanup: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "4.0.1",
+    date: "2026-11-26",
+    title: "Choose your window frame",
+    sections: [
+      {
+        heading: "ADDITIONS",
+        accent: "new",
+        entries: [
+          {
+            text: "Turn Frameless window on or off in Appearance settings. Changes apply immediately and your choice is saved across restarts.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "4.0.1-nightly.20261126.1",
+    date: "2026-11-26",
+    title: "Choose your window frame",
+    sections: [
+      {
+        heading: "ADDITIONS",
+        accent: "new",
+        entries: [
+          {
+            text: "Turn Frameless window on or off in Appearance settings. Changes apply immediately and your choice is saved across restarts.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "4.0.0",
     date: "2026-11-26",
     title: "A new workspace for your intentions",

@@ -41,6 +41,7 @@ export type ProfileCardFinish =
   | "polychrome"
   | "prismatic";
 export interface VisualPreferences {
+  frameless: boolean;
   theme: Theme;
   theme_family: ThemeFamily;
   density: Density;
@@ -78,6 +79,7 @@ export interface Task {
   settlement_mode?: string | null;
 }
 export interface Settings {
+  frameless?: boolean;
   name: string;
   profile_card_finish?: ProfileCardFinish;
   workspace: string;

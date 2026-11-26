@@ -17,6 +17,14 @@ export function AppearanceSettings({
     <>
       <section className="settings-section" id="appearance-section">
         <h3>Theme and controls</h3>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={v.frameless}
+            onChange={(e) => void onChange({ frameless: e.target.checked })}
+          />
+          Frameless window
+        </label>
         <div className="fields">
           <label>
             Theme
