@@ -60,6 +60,7 @@ impl Store {
             "profile_card_finish",
             "settlement_mode",
             "return_time",
+            "auto_settle_days",
             "review_time",
             "daily_review",
             "quiet_start",
@@ -72,7 +73,8 @@ impl Store {
         if patch.keys().any(|key| !ALLOWED.contains(&key.as_str())) {
             return Err("Unknown preference field".into());
         }
-        let mut value = serde_json::to_value(self.settings()?).map_err(|e| e.to_string())?;
+        let previous = self.settings()?;
+        let mut value = serde_json::to_value(&previous).map_err(|e| e.to_string())?;
         value
             .as_object_mut()
             .ok_or("Invalid settings")?
@@ -94,6 +96,13 @@ impl Store {
             if time.len() != 5 || chrono::NaiveTime::parse_from_str(time, "%H:%M").is_err() {
                 return Err("Enter times as HH:mm".into());
             }
+        }
+        if ![0, 3, 5, 7].contains(&settings.auto_settle_days) {
+            return Err("Choose Off, 3, 5 or 7 days".into());
+        }
+        if settings.auto_settle_days != previous.auto_settle_days {
+            settings.auto_settle_since =
+                (settings.auto_settle_days != 0).then(|| chrono::Utc::now().timestamp());
         }
         validate_command_shortcut(&settings.command_shortcut)?;
         self.set_settings(&settings)

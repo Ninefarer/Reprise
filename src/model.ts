@@ -85,6 +85,7 @@ export interface Settings {
   density: Density;
   onboarded: boolean;
   settlement_mode: string;
+  auto_settle_days?: number;
   return_time: string;
   review_time: string;
   daily_review: boolean;

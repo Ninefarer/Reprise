@@ -12,13 +12,11 @@ export function AppearanceSettings({
   surfaceFallback?: string;
   onChange: (patch: Partial<VisualPreferences>) => Promise<void>;
 }) {
-  const v = visualPreferences(settings),
-    fixed =
-      v.theme_family === "pitch-black" || v.theme_family === "ashen-white";
+  const v = visualPreferences(settings);
   return (
     <>
       <section className="settings-section" id="appearance-section">
-        <h2>Appearance</h2>
+        <h3>Theme and controls</h3>
         <div className="fields">
           <label>
             Theme
@@ -37,39 +35,7 @@ export function AppearanceSettings({
               <option value="ashen-white">Ashen White</option>
             </Select>
           </label>
-          <label>
-            Appearance mode
-            {fixed ? (
-              <input
-                readOnly
-                value={
-                  v.theme_family === "pitch-black"
-                    ? "Dark — fixed by Pitch Black"
-                    : "Light — fixed by Ashen White"
-                }
-              />
-            ) : (
-              <Select
-                value={v.theme}
-                onChange={(e) =>
-                  void onChange({
-                    theme: e.target.value as VisualPreferences["theme"],
-                  })
-                }
-              >
-                <option value="system">System — follow Windows</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </Select>
-            )}
-          </label>
         </div>
-        {fixed && (
-          <p className="hint">
-            This family has a fixed appearance. Your saved Classic preference (
-            {v.theme}) is retained and will return with Reprise Classic.
-          </p>
-        )}
         <div className="fields">
           <label>
             Accent color
@@ -146,21 +112,12 @@ export function AppearanceSettings({
                 }
               />
             </label>
-            <p className="hint">
-              Tint adjusts the selected material within a bounded range. Clear
-              retains desktop translucency even at 90%; Regular balances
-              diffusion and readability; Tinted adds stronger separation. Task
-              cards and form controls stay stable for reading. Windows controls
-              desktop diffusion and may use a solid fallback when effects or
-              transparency are unavailable.
-            </p>
           </>
         )}
 
         {v.aesthetic === "glass" && surfaceFallback && (
           <p className="hint" role="status">
-            Glass is currently unavailable. Solid surfaces are active; your
-            Glass selection and material settings are retained.
+            Windows is using a solid surface.
           </p>
         )}
         <div className="fields">

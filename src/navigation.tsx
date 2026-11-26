@@ -17,7 +17,16 @@ const paths: Record<string, string> = {
   Settings:
     "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2",
 };
-export function Icon({ name }: { name: View }) {
+const waitingSidebarPath =
+  "M4 5h16v11h-9l-4 4v-4H4z M8 10.5h.1 M12 10.5h.1 M16 10.5h.1";
+
+export function Icon({
+  name,
+  sidebar = false,
+}: {
+  name: View;
+  sidebar?: boolean;
+}) {
   return (
     <svg
       aria-hidden="true"
@@ -30,7 +39,9 @@ export function Icon({ name }: { name: View }) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <path d={paths[name]} />
+      <path
+        d={sidebar && name === "Waiting" ? waitingSidebarPath : paths[name]}
+      />
     </svg>
   );
 }

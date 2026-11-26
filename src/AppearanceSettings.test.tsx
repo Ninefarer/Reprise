@@ -59,7 +59,7 @@ it("explains a temporary solid fallback without replacing Glass controls", () =>
     />,
   );
   expect(screen.getByRole("status").textContent).toContain(
-    "your Glass selection",
+    "Windows is using a solid surface.",
   );
   expect(screen.getByLabelText("Glass material")).toBeTruthy();
 });

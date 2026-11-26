@@ -24,13 +24,14 @@ html {
 }
 .notification-dock {
   position: fixed;
-  top: 0;
-  right: 0;
-  height: 100vh;
+  top: 8px;
+  right: 8px;
+  height: calc(100dvh - 16px);
   width: min(350px, calc(100vw - 30px));
   padding: 0;
-  border: 0;
-  border-left: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
   background: var(--sidebar);
   z-index: 25;
   box-shadow: -12px 0 28px var(--shadow);
@@ -41,6 +42,8 @@ html {
 }
 .notification-dock[data-pinned="true"] {
   position: sticky;
+  top: 8px;
+  margin: 8px 8px 8px 0;
   width: clamp(280px, 28vw, 350px);
   box-shadow: none;
 }
@@ -48,8 +51,8 @@ html {
   display: flex;
   align-items: flex-start;
   gap: 5px;
-  padding: 18px 16px 13px;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 12px 10px;
+
   flex-shrink: 0;
 }
 .notification-head > div {
@@ -75,11 +78,7 @@ html {
   color: var(--muted);
   font-weight: 400;
 }
-.notification-head p {
-  font-size: 11px;
-  color: var(--muted);
-  margin: 5px 0 0;
-}
+
 .notification-head > button {
   display: inline-flex;
   padding: 6px;
@@ -99,9 +98,13 @@ html {
   color: var(--accent);
   background: var(--selected);
 }
+.notification-toolbar {
+  flex-shrink: 0;
+  padding: 0 12px 6px;
+}
 .notification-filters {
-  padding: 13px 16px;
-  border-bottom: 1px solid var(--border);
+  padding: 0;
+
 }
 .notification-filters label {
   font-size: 10px;
@@ -220,15 +223,16 @@ html {
 }
 .notification-dock .notice {
   background: var(--surface);
-  padding: 11px;
-  margin: 8px 0;
+  padding: 12px;
+  margin: 4px 0;
+  border-radius: var(--radius-panel);
 }
 .notification-management {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 8px 0 0;
+
 }
 .notification-management button {
   font-size: 11px;

@@ -13,16 +13,12 @@
   padding: var(--task-padding);
   margin-block: var(--task-gap);
 }
-:root[data-density="compact"]
-  .sidebar
-  .nav-group
-  button:not(.nav-group-toggle) {
-  min-height: 30px;
-  padding-block: 5px;
-  margin-block: 1px;
-}
-:root[data-density="compact"] .nav-group {
-  margin-bottom: 10px;
+:root[data-density="compact"] .sidebar {
+  --nav-row-size: 26px;
+  --nav-row-gap: 0px;
+  --nav-group-gap: 6px;
+  --nav-heading-size: 22px;
+  --nav-rail-row-size: 28px;
 }
 :root[data-density="compact"] .overview {
   gap: 8px;
@@ -72,9 +68,6 @@
 :root[data-density="compact"] .notification-head {
   padding: 12px;
 }
-:root[data-density="compact"] .notification-filters {
-  padding: 10px 12px;
-}
 :root[data-density="compact"] .capture {
   margin-bottom: 16px;
   padding-block: 6px;
@@ -91,13 +84,6 @@
 :root[data-density="compact"] .select-options button {
   min-height: 30px;
   padding-block: 5px;
-}
-:root[data-density="compact"] .settings-tabs {
-  gap: 12px;
-}
-:root[data-density="compact"] .settings-tabs button {
-  min-height: 32px;
-  padding: 7px 4px 9px;
 }
 :root[data-density="compact"] .editor-section {
   margin: 14px 0;

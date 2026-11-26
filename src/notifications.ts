@@ -4,6 +4,7 @@ export const notificationCategories: Record<string, string> = {
   Deadline: "Deadline",
   Snoozed: "Snoozed",
   Settled: "Settled",
+  AutoSettled: "Auto-Settle",
   Waiting: "Waiting",
   DailyReview: "Daily Review",
   Diagnostic: "Diagnostic",

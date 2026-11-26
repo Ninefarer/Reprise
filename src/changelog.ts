@@ -192,6 +192,104 @@ const taskEditorCleanup: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "4.0.0",
+    date: "2026-11-26",
+    title: "A new workspace for your intentions",
+    sections: [
+      {
+        heading: "ADDITIONS",
+        accent: "new",
+        entries: [
+          {
+            text: "Hold Add to Inbox to choose a destination for a new task.",
+          },
+          {
+            text: "Opt in to Inbox Auto-Settle after 3, 5 or 7 days, with an eligibility preview and a fresh waiting period after Resume.",
+          },
+          {
+            text: "Export with Takeout, choose a local backup or browse to restore, and optionally back up after setup.",
+          },
+        ],
+      },
+      {
+        heading: "CHANGES",
+        accent: "little",
+        entries: [
+          {
+            text: "Task History reads chronologically and identifies automatic actions.",
+          },
+          {
+            text: "Refreshed Edit Task, Settings, onboarding, navigation, notifications and Daily Review layouts.",
+          },
+          {
+            text: "The frameless main window reveals controls at its top edge or on keyboard focus.",
+          },
+          {
+            text: "Drop is available from every active task menu.",
+          },
+        ],
+      },
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Backup filenames distinguish snapshots with matching timestamps, and backup extensions accept any capitalization.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "4.0.0-nightly.20261126.1",
+    date: "2026-11-26",
+    title: "A new workspace for your intentions",
+    sections: [
+      {
+        heading: "ADDITIONS",
+        accent: "new",
+        entries: [
+          {
+            text: "Hold Add to Inbox to choose a destination for a new task.",
+          },
+          {
+            text: "Opt in to Inbox Auto-Settle after 3, 5 or 7 days, with an eligibility preview and a fresh waiting period after Resume.",
+          },
+          {
+            text: "Export with Takeout, choose a local backup or browse to restore, and optionally back up after setup.",
+          },
+        ],
+      },
+      {
+        heading: "CHANGES",
+        accent: "little",
+        entries: [
+          {
+            text: "Task History reads chronologically and identifies automatic actions.",
+          },
+          {
+            text: "Refreshed Edit Task, Settings, onboarding, navigation, notifications and Daily Review layouts.",
+          },
+          {
+            text: "The frameless main window reveals controls at its top edge or on keyboard focus.",
+          },
+          {
+            text: "Drop is available from every active task menu.",
+          },
+        ],
+      },
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Backup filenames distinguish snapshots with matching timestamps, and backup extensions accept any capitalization.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "3.4.7",
     date: "2026-11-23",
     title: "Scheduling and readable dates",
@@ -223,6 +321,34 @@ export const releases: Release[] = [
         entries: [
           {
             text: "New or changed scheduled starts must be in the future. Existing overdue tasks remain editable.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "3.4.6-nightly.20261121.1",
+    date: "2026-11-21",
+    title: "Glass, motion and visual hotfixes",
+    sections: [
+      {
+        heading: "CHANGES",
+        accent: "little",
+        entries: [
+          {
+            text: "Includes the glass and motion overhaul, separate Theme/Aesthetic/Motion preferences, and namecard finishes and image sharing from Stable 3.4.5.",
+          },
+        ],
+      },
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Remove the clipped rectangular shadow beneath task action notifications.",
+          },
+          {
+            text: "Fix mismatched rounded corners and button edging in the profile menu.",
           },
         ],
       },

@@ -4,6 +4,47 @@ use crate::{
 };
 use rusqlite::params;
 impl Store {
+    pub fn capture_task(
+        &mut self,
+        title: String,
+        destination: Option<Status>,
+        scheduled_at: Option<i64>,
+        wake_at: Option<i64>,
+        reason: Option<String>,
+        now: i64,
+    ) -> Result<Task> {
+        let mut task = Task::new(title, now);
+        task.status = destination.unwrap_or(Status::Inbox);
+        match task.status {
+            Status::Inbox | Status::DoNow => {}
+            Status::Scheduled => task.scheduled_at = scheduled_at,
+            Status::Snoozed => {
+                task.wake_at = Some(
+                    wake_at
+                        .filter(|at| *at > now)
+                        .ok_or("Choose a future return time.")?,
+                );
+            }
+            Status::Waiting => {
+                task.wake_at = wake_at;
+                task.reason = reason.unwrap_or_default().trim().into();
+            }
+            Status::Settled => {
+                let settings = self.settings()?;
+                task.wake_at = Some(settlement(
+                    &chrono::Local,
+                    now,
+                    &settings.settlement_mode,
+                    &settings.return_time,
+                )?);
+                task.settlement_mode = Some(settings.settlement_mode);
+                task.settled_at = Some(now);
+            }
+            _ => return Err("Choose an active task destination.".into()),
+        }
+        self.save(task, "Created", now)
+    }
+
     pub fn resume(&mut self, id: &str, revision: i64, now: i64) -> Result<Task> {
         let current = self.task(id)?;
         if current.updated_at != revision {
@@ -14,6 +55,9 @@ impl Store {
         }
         let mut task = current.clone();
         task.status = Status::Inbox;
+        if current.is_auto_settled() {
+            return self.save(task, "Resumed", now);
+        }
         for h in self.history(id)? {
             if let Some(raw) = h["before"].as_str() {
                 if let Ok(old) = serde_json::from_str::<Task>(raw) {
@@ -39,7 +83,10 @@ impl Store {
         if task.updated_at != revision {
             return Err("Task changed. Reopen it and try again.".into());
         }
-        if !matches!(task.status, Status::Settled | Status::Snoozed) || task.review_at.is_some() {
+        if !matches!(task.status, Status::Settled | Status::Snoozed)
+            || task.wake_at.is_none()
+            || task.review_at.is_some()
+        {
             return Err("This task is not awaiting a return time.".into());
         }
         let before = serde_json::to_string(&task).map_err(|e| e.to_string())?;
@@ -93,7 +140,10 @@ impl Store {
             return Err("This task changed again; undo is no longer available.".into());
         }
         let (at,action,before):(i64,String,Option<String>)=self.conn.query_row("SELECT at,action,before_data FROM history WHERE task_id=?1 ORDER BY id DESC LIMIT 1",[id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?))).map_err(|e|e.to_string())?;
-        if now < at || ["Edited", "Created", "Undone", "Resurfaced"].contains(&action.as_str()) {
+        if now < at
+            || ["Edited", "Created", "Undone", "Resurfaced", "AutoSettled"]
+                .contains(&action.as_str())
+        {
             return Err("Undo is no longer available.".into());
         }
         let mut old: Task = serde_json::from_str(&before.ok_or("No previous task state")?)

@@ -26,7 +26,11 @@ export function Onboarding({
   error: string;
   onRefresh: () => Promise<void>;
   onVisual: (patch: Partial<VisualPreferences>) => Promise<void>;
-  onFinish: (patch: Partial<Settings>, title: string) => Promise<void>;
+  onFinish: (
+    patch: Partial<Settings>,
+    title: string,
+    backup?: boolean,
+  ) => Promise<void>;
   onCancel: () => void;
 }) {
   const [step, setStep] = useState(0);
@@ -65,6 +69,7 @@ export function Onboarding({
     quiet_end: settings.quiet_end,
   }));
   const [title, setTitle] = useState("");
+  const [backup, setBackup] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const submitting = useRef(false);
   useEffect(() => {
@@ -78,7 +83,11 @@ export function Onboarding({
     if (submitting.current) return;
     submitting.current = true;
     try {
-      await onFinish(skip ? {} : draft, skip ? "" : title.trim());
+      await onFinish(
+        skip ? {} : draft,
+        skip ? "" : title.trim(),
+        !skip && backup,
+      );
     } finally {
       submitting.current = false;
     }
@@ -86,10 +95,21 @@ export function Onboarding({
   return (
     <main className={`setup-screen${nightlyVersion ? " setup-nightly" : ""}`}>
       <div className="setup-shell">
-        <header className="setup-progress">
+        <div className="setup-progress">
           {!nightlyVersion && <span>Reprise</span>}
-          <span aria-label={`Step ${step + 1} of 3`}>{step + 1} / 3</span>
-        </header>
+          <ol aria-label={`Step ${step + 1} of 3`}>
+            {["Profile", "Reminders", "First task"].map((name, index) => (
+              <li
+                key={name}
+                aria-current={step === index ? "step" : undefined}
+                data-complete={index < step}
+              >
+                <span aria-hidden="true">{index + 1}</span>
+                {name}
+              </li>
+            ))}
+          </ol>
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -116,9 +136,9 @@ export function Onboarding({
               <p className="setup-intro">
                 {
                   [
-                    "Choose a name and appearance. You can change these in Settings.",
-                    "Set return times, daily review reminders, and quiet hours.",
-                    "Add a task now, or skip this step.",
+                    "Set your display name, avatar, and theme.",
+                    "Set when paused tasks return and when Reprise sends reminders.",
+                    "Capture something you want to come back to.",
                   ][step]
                 }
               </p>
@@ -155,25 +175,6 @@ export function Onboarding({
                         <option value="ashen-white">Ashen White</option>
                       </Select>
                     </label>
-                    {(settings.theme_family ?? "classic") === "classic" && (
-                      <label>
-                        Appearance mode
-                        <Select
-                          value={settings.theme}
-                          onChange={(e) =>
-                            void onVisual({
-                              theme: e.target.value as Settings["theme"],
-                            })
-                          }
-                        >
-                          <option value="system">
-                            System — follow Windows
-                          </option>
-                          <option value="light">Light</option>
-                          <option value="dark">Dark</option>
-                        </Select>
-                      </label>
-                    )}
                   </div>
                 </>
               ) : step === 1 ? (
@@ -269,6 +270,14 @@ export function Onboarding({
                       ? "This will be saved to Inbox when you open Reprise."
                       : "You can leave this blank and capture something later."}
                   </p>
+                  <label className="check">
+                    <input
+                      type="checkbox"
+                      checked={backup}
+                      onChange={(event) => setBackup(event.target.checked)}
+                    />
+                    Create a local backup after setup
+                  </label>
                 </>
               )}
             </section>

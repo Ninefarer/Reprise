@@ -5,6 +5,7 @@ fn tick(handle: &tauri::AppHandle, now: i64) -> Result<(), String> {
     let state = handle.state::<Db>();
     let mut db = state.lock().map_err(|e| e.to_string())?;
     db.reconcile(now)?;
+    db.auto_settle(now)?;
     db.daily_review(now)?;
     let s = db.settings()?;
     let time = chrono::Local::now().format("%H:%M").to_string();
@@ -32,7 +33,14 @@ fn tick(handle: &tauri::AppHandle, now: i64) -> Result<(), String> {
     let pending: Vec<_> = db
         .notices()?
         .into_iter()
-        .filter(|n| n.state == "Pending" && s.categories.contains(&n.category))
+        .filter(|n| {
+            let category = if n.category == "AutoSettled" {
+                "Settled"
+            } else {
+                &n.category
+            };
+            n.state == "Pending" && s.categories.iter().any(|value| value == category)
+        })
         .collect();
     if pending.is_empty() {
         return Ok(());

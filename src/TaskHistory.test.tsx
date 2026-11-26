@@ -22,7 +22,8 @@ it("loads only when expanded and distinguishes review membership from lifecycle"
   render(<TaskHistory taskId="one" />);
   expect(invoke).not.toHaveBeenCalled();
   await userEvent.click(screen.getByText("Task history"));
-  const entry = await screen.findByText("Resurfaced · Resurfaced");
+  const entry = await screen.findByText("Resurfaced by Reprise");
+  expect(screen.getByText("Returned on schedule.")).toBeTruthy();
   expect(entry.getAttribute("data-status")).toBe("Resurfaced");
   expect(invoke).toHaveBeenCalledWith("task_history", { id: "one" });
   expect(
@@ -41,4 +42,30 @@ it("loads only when expanded and distinguishes review membership from lifecycle"
       after: "bad legacy JSON",
     }),
   ).toBeUndefined();
+});
+
+it("shows the first event at the top, including events with matching timestamps", async () => {
+  vi.mocked(invoke).mockResolvedValueOnce([
+    {
+      at: 100,
+      action: "AutoSettled",
+      before: '{"status":"Inbox"}',
+      after: '{"status":"Settled","_auto_settle_days":5}',
+    },
+    {
+      at: 100,
+      action: "Edited",
+      before: '{"status":"Inbox","description":""}',
+      after: '{"status":"Inbox","description":"New note"}',
+    },
+  ]);
+
+  render(<TaskHistory taskId="timeline" standalone />);
+  expect(await screen.findByText("Auto-settled by Reprise")).toBeTruthy();
+  expect(screen.queryByText("Task history")).toBeNull();
+  const entries = screen.getAllByRole("listitem");
+  expect(entries[0].textContent).toContain("Changed description.");
+  expect(entries[1].textContent).toContain(
+    "Moved from Inbox after 5 days without a next step.",
+  );
 });

@@ -1,6 +1,6 @@
 [package]
 name = "reprise"
-version = "3.4.7"
+version = "4.0.0"
 edition = "2021"
 [features]
 updater-e2e = []
@@ -10,6 +10,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-notification = "2"
+tauri-plugin-dialog = "2"
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"

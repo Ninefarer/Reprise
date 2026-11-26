@@ -1,0 +1,58 @@
+.window-edge {
+  position: fixed;
+  inset: 0 2px auto;
+  height: 7px;
+  z-index: 120;
+  user-select: none;
+  touch-action: none;
+}
+.window-chrome {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 34px;
+  margin-inline: 4px;
+  padding-inline: 4px;
+  border: 1px solid var(--border);
+  border-radius: 0 0 12px 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 5px 16px var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+}
+.window-edge:hover .window-chrome,
+.window-edge:has(:focus-visible) .window-chrome {
+  opacity: 1;
+  pointer-events: auto;
+}
+.window-drag {
+  flex: 1 1 auto;
+  align-self: stretch;
+  min-inline-size: 28px;
+  touch-action: none;
+  app-region: drag;
+}
+.window-chrome button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+}
+.window-chrome button:hover {
+  background: var(--hover);
+}
+.window-chrome button:last-child:hover,
+.window-error {
+  color: var(--danger);
+}
+.window-chrome button:focus-visible {
+  outline-offset: -2px;
+}
+.window-error {
+  font-size: 12px;
+}

@@ -239,7 +239,6 @@ export function NotificationSidebar({
                   {notices.filter((n) => !n.read).length}
                 </span>
               </h2>
-              <p>Reminders and app updates</p>
             </div>
             <button
               className="notification-pin"
@@ -268,78 +267,80 @@ export function NotificationSidebar({
               </svg>
             </button>
           </header>
-          <div className="notification-filters">
-            <label className="notification-search">
-              Search notifications
-              <input
-                type="search"
-                value={query}
-                placeholder="Find a reminder…"
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </label>
-            <div>
-              <label>
-                Category
-                <Select
-                  value={activeCategory}
-                  onChange={(e) => setCategory(e.target.value)}
-                >
-                  {categories.map((c) => (
-                    <option key={c} value={c}>
-                      {categoryLabel(c)}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-              <label className="check">
+          <div className="notification-toolbar">
+            <div className="notification-filters">
+              <label className="notification-search">
                 <input
-                  type="checkbox"
-                  checked={unread}
-                  onChange={(e) => setUnread(e.target.checked)}
-                />{" "}
-                Unread only
+                  aria-label="Search notifications"
+                  type="search"
+                  value={query}
+                  placeholder="Find a reminder…"
+                  onChange={(e) => setQuery(e.target.value)}
+                />
               </label>
+              <div>
+                <label>
+                  <Select
+                    aria-label="Category"
+                    value={activeCategory}
+                    onChange={(e) => setCategory(e.target.value)}
+                  >
+                    {categories.map((c) => (
+                      <option key={c} value={c}>
+                        {categoryLabel(c)}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={unread}
+                    onChange={(e) => setUnread(e.target.checked)}
+                  />{" "}
+                  Unread only
+                </label>
+              </div>
             </div>
-          </div>
-          <div
-            className="notification-management"
-            aria-label="Manage notifications"
-          >
-            <button
-              disabled={busy || !notices.some((n) => !n.read)}
-              onClick={() =>
-                void manage(
-                  "read",
-                  notices.filter((n) => !n.read).map((n) => n.id),
-                )
-              }
+            <div
+              className="notification-management"
+              aria-label="Manage notifications"
             >
-              Mark all as read
-            </button>
-            <button
-              disabled={busy || !notices.some((n) => n.read)}
-              onClick={() =>
-                setConfirmation({
-                  action: "clear_read",
-                  ids: notices.filter((n) => n.read).map((n) => n.id),
-                })
-              }
-            >
-              Clear read
-            </button>
-            <button
-              disabled={busy || !notices.length}
-              onClick={() =>
-                setConfirmation({
-                  action: "clear_all",
-                  ids: notices.map((n) => n.id),
-                })
-              }
-            >
-              Clear all
-            </button>
-            {managementError && <p role="alert">{managementError}</p>}
+              <button
+                disabled={busy || !notices.some((n) => !n.read)}
+                onClick={() =>
+                  void manage(
+                    "read",
+                    notices.filter((n) => !n.read).map((n) => n.id),
+                  )
+                }
+              >
+                Mark all as read
+              </button>
+              <button
+                disabled={busy || !notices.some((n) => n.read)}
+                onClick={() =>
+                  setConfirmation({
+                    action: "clear_read",
+                    ids: notices.filter((n) => n.read).map((n) => n.id),
+                  })
+                }
+              >
+                Clear read
+              </button>
+              <button
+                disabled={busy || !notices.length}
+                onClick={() =>
+                  setConfirmation({
+                    action: "clear_all",
+                    ids: notices.map((n) => n.id),
+                  })
+                }
+              >
+                Clear all
+              </button>
+              {managementError && <p role="alert">{managementError}</p>}
+            </div>
           </div>
           <div
             className="notification-scroll"
