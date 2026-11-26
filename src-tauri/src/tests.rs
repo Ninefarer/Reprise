@@ -127,6 +127,37 @@ fn visual_preferences_preserve_classic_mode_and_survive_restart() {
     assert_eq!(s.desktop_tint, 70);
 }
 #[test]
+fn frameless_defaults_for_existing_profiles_and_persists_independently() {
+    let legacy: Settings = serde_json::from_str(r#"{"name":"Existing profile"}"#).unwrap();
+    assert!(legacy.frameless);
+    let d = db();
+    let mut settings = d.settings().unwrap();
+    crate::visuals::VisualPatch {
+        frameless: Some(false),
+        ..Default::default()
+    }
+    .apply(&mut settings)
+    .unwrap();
+    d.set_settings(&settings).unwrap();
+    let d = Store::init(d.conn).unwrap();
+    assert!(!d.settings().unwrap().frameless);
+    d.preference_patch(serde_json::Map::from_iter([(
+        "name".into(),
+        serde_json::json!("Updated"),
+    )]))
+    .unwrap();
+    let mut settings = d.settings().unwrap();
+    assert!(!settings.frameless);
+    crate::visuals::VisualPatch {
+        frameless: Some(true),
+        ..Default::default()
+    }
+    .apply(&mut settings)
+    .unwrap();
+    assert!(settings.frameless);
+    assert_eq!(settings.name, "Updated");
+}
+#[test]
 fn invalid_visual_preferences_are_rejected() {
     for json in [
         r#"{"theme_family":"rainbow"}"#,

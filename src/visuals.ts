@@ -3,6 +3,7 @@ export function visualPreferences(settings?: Settings): VisualPreferences {
   const aesthetic =
     settings?.aesthetic ?? (settings?.desktop_glass ? "glass" : "solid");
   return {
+    frameless: settings?.frameless ?? true,
     theme: settings?.theme ?? "system",
     theme_family: settings?.theme_family ?? "classic",
     density: settings?.density ?? "comfortable",

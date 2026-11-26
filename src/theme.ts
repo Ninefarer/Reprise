@@ -14,7 +14,7 @@ export function useTheme(
 ) {
   const visual = visualPreferences(settings),
     visualKey = JSON.stringify([visual, system]),
-    key = `${visual.theme_family}/${visual.theme}/${visual.aesthetic}/${visual.desktop_material}/${system?.advanced_effects}`;
+    key = `${visual.frameless}/${visual.theme_family}/${visual.theme}/${visual.aesthetic}/${visual.desktop_material}/${system?.advanced_effects}`;
   const [readyKey, setReadyKey] = useState("");
   useLayoutEffect(() => {
     const update = () => {
@@ -34,6 +34,7 @@ export function useTheme(
   }, []);
   useLayoutEffect(() => {
     const root = document.documentElement;
+    root.dataset.frameless = String(visual.frameless);
     root.dataset.density = visual.density;
     root.dataset.family = visual.theme_family;
     root.dataset.aesthetic = visual.aesthetic;

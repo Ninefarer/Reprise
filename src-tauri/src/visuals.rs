@@ -15,6 +15,7 @@ pub type ReadyWindows = Mutex<WindowReadiness>;
 #[serde(deny_unknown_fields)]
 pub struct VisualPatch {
     pub theme: Option<String>,
+    pub frameless: Option<bool>,
     pub theme_family: Option<String>,
     pub density: Option<String>,
     pub material: Option<String>,
@@ -40,6 +41,9 @@ impl VisualPatch {
                     s.$field = value;
                 }
             };
+        }
+        if let Some(value) = self.frameless {
+            s.frameless = value;
         }
         if let Some(value) = self.desktop_glass {
             s.desktop_glass = value;
@@ -154,9 +158,25 @@ pub fn visual_preferences(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let d = db.lock().map_err(|e| e.to_string())?;
-    let mut s = d.settings()?;
+    let previous = d.settings()?;
+    let mut s = previous.clone();
     patch.apply(&mut s)?;
-    d.set_settings(&s)?;
+    let main = app.get_webview_window("main");
+    let changed = s.frameless != previous.frameless;
+    if changed {
+        main.as_ref()
+            .ok_or("Main window is unavailable")?
+            .set_decorations(!s.frameless)
+            .map_err(|e| e.to_string())?;
+    }
+    if let Err(error) = d.set_settings(&s) {
+        if changed {
+            if let Some(window) = &main {
+                let _ = window.set_decorations(!previous.frameless);
+            }
+        }
+        return Err(error);
+    }
     drop(d);
     // Hidden Capture suspends worker refreshes. Update its settings-only view
     // before the next reveal rather than showing a stale material for one frame.

@@ -7,6 +7,26 @@ import { AppearanceSettings } from "./AppearanceSettings";
 import { selectOption } from "./testControls";
 import type { Settings } from "./model";
 afterEach(cleanup);
+it("defaults to frameless and lets users restore and hide the native frame", () => {
+  function Harness() {
+    const [settings, setSettings] = useState({} as Settings);
+    return (
+      <AppearanceSettings
+        settings={settings}
+        onChange={async (patch) => setSettings((s) => ({ ...s, ...patch }))}
+      />
+    );
+  }
+  render(<Harness />);
+  const toggle = screen.getByRole("checkbox", {
+    name: "Frameless window",
+  }) as HTMLInputElement;
+  expect(toggle.checked).toBe(true);
+  fireEvent.click(toggle);
+  expect(toggle.checked).toBe(false);
+  fireEvent.click(toggle);
+  expect(toggle.checked).toBe(true);
+});
 it("keeps palette, aesthetic, glass details and motion independent", async () => {
   function Harness() {
     const [settings, setSettings] = useState({
