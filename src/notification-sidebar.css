@@ -40,13 +40,7 @@ html {
   min-width: 0;
   flex-shrink: 0;
 }
-.notification-dock[data-pinned="true"] {
-  position: sticky;
-  top: 8px;
-  margin: 8px 8px 8px 0;
-  width: clamp(280px, 28vw, 350px);
-  box-shadow: none;
-}
+
 .notification-head {
   display: flex;
   align-items: flex-start;
@@ -104,7 +98,6 @@ html {
 }
 .notification-filters {
   padding: 0;
-
 }
 .notification-filters label {
   font-size: 10px;
@@ -207,14 +200,6 @@ html {
   line-height: 1.6;
   margin: 0;
 }
-/* On narrow windows pinning keeps the panel open without crushing task content. */
-@media (max-width: 1100px) {
-  .notification-dock[data-pinned="true"] {
-    position: fixed;
-    width: min(350px, calc(100vw - 30px));
-    box-shadow: -12px 0 28px var(--shadow);
-  }
-}
 
 /* The dock overlays application text. Its reading surfaces must stay opaque. */
 .notification-dock {
@@ -232,7 +217,6 @@ html {
   flex-wrap: wrap;
   gap: 6px;
   padding: 8px 0 0;
-
 }
 .notification-management button {
   font-size: 11px;
