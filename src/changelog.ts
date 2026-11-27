@@ -192,6 +192,38 @@ const taskEditorCleanup: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "4.0.2",
+    date: "2026-11-27",
+    title: "Floating pinned notifications",
+    sections: [
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Pinned Notifications keeps its floating appearance without shrinking the task area or exposing a frosted strip.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "4.0.2-nightly.20261127.1",
+    date: "2026-11-27",
+    title: "Floating pinned notifications",
+    sections: [
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Pinned Notifications keeps its floating appearance without shrinking the task area or exposing a frosted strip.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "4.0.1",
     date: "2026-11-26",
     title: "Choose your window frame",
