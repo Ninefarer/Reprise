@@ -801,7 +801,7 @@ legend {
 .quick .capture input {
   padding: 8px 10px;
 }
-.quick .capture button {
+.quick .capture > .capture-route > .primary {
   min-width: 64px;
 }
 .quick .capture-validation {
@@ -1486,21 +1486,6 @@ legend {
 .sidebar .profile-footer {
   border-top-color: var(--border);
 }
-.sidebar-tooltip {
-  position: fixed;
-  z-index: 90;
-  pointer-events: none;
-  transform: translateY(-50%);
-  max-width: 210px;
-  padding: 6px 9px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 3px 14px var(--shadow);
-  font-size: 11px;
-  line-height: 1.5;
-}
 .sidebar .nav-group .nav-group-toggle.contains-active {
   color: var(--text);
   background: var(--selected);
@@ -1962,9 +1947,6 @@ body {
 }
 .task-dialog .dialog-actions button {
   min-height: 34px;
-}
-.sidebar-tooltip {
-  max-width: min(240px, calc(100vw - 24px));
 }
 @media (max-width: 900px) {
   .fields {

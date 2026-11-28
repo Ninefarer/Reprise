@@ -45,7 +45,7 @@ export function WindowControls() {
                 setError("Could not maximize or restore.");
               });
           }}
-          title="Drag to move the window"
+          data-tooltip="Drag to move the window"
         />
         {error && (
           <span className="window-error" role="alert">
@@ -56,7 +56,7 @@ export function WindowControls() {
           <button
             type="button"
             key={label}
-            title={label}
+            data-tooltip={label}
             aria-label={label}
             onClick={async () => {
               setError("");

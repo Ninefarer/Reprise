@@ -1529,7 +1529,9 @@ it("drops an active Inbox task from its task menu", async () => {
   await user.click(
     await screen.findByRole("button", { name: /^Inbox\s*1 items$/ }),
   );
-  await user.click(screen.getByRole("button", { name: "More actions for Inbox intention" }));
+  await user.click(
+    screen.getByRole("button", { name: "More actions for Inbox intention" }),
+  );
   await user.click(await screen.findByRole("menuitem", { name: /Drop$/ }));
   expect(mocks.invoke).toHaveBeenCalledWith("save_task", {
     task: { ...task, status: "Dropped" },
@@ -1864,11 +1866,41 @@ describe("Quick Capture regression", () => {
       screen.getByRole("textbox", { name: "Capture a task" }),
       "   ",
     );
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Send to..." }));
     expect(screen.getByRole("alert").textContent).toBe("Enter a task title.");
     expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "capture")).toBe(
       false,
     );
+  });
+  it("holds Send to to choose a destination without submitting to Inbox", async () => {
+    const user = userEvent.setup();
+    render(<App captureMode />);
+    await user.type(
+      screen.getByRole("textbox", { name: "Capture a task" }),
+      "Route me",
+    );
+    const send = screen.getByRole("button", { name: "Send to..." });
+    await user.hover(send);
+    expect((await screen.findByRole("tooltip")).textContent).toBe(
+      "Hold for options.",
+    );
+    fireEvent.pointerDown(send, { button: 0, pointerType: "mouse" });
+    const chooser = await screen.findByRole("dialog", {
+      name: "Capture destination",
+    });
+    fireEvent.pointerUp(send);
+    fireEvent.click(send);
+    expect(mocks.invoke.mock.calls.some(([cmd]) => cmd === "capture")).toBe(
+      false,
+    );
+    await user.click(within(chooser).getByRole("button", { name: "Current" }));
+    await waitFor(() =>
+      expect(mocks.invoke).toHaveBeenCalledWith("capture", {
+        title: "Route me",
+        destination: "DoNow",
+      }),
+    );
+    await waitFor(() => expect(mocks.hide).toHaveBeenCalled());
   });
   it("supports the shared editing menu without losing its draft or closing capture on menu Escape", async () => {
     const user = userEvent.setup();
@@ -2022,10 +2054,10 @@ describe("personal sidebar navigation", () => {
     for (let i = 0; i < 30 && document.activeElement !== inbox; i++)
       await user.tab();
     expect(document.activeElement).toBe(inbox);
-    expect(screen.getByRole("tooltip").textContent).toBe(
+    expect((await screen.findByRole("tooltip")).textContent).toBe(
       "Captured tasks ready for a next step.",
     );
-    expect(inbox.getAttribute("aria-describedby")).toBe("sidebar-tooltip");
+    expect(inbox.getAttribute("aria-describedby")).toBe("app-tooltip");
     expect(within(nav).queryByRole("button", { name: "Settings" })).toBeNull();
   });
   it("preserves the preferred expanded width across collapse and expand", async () => {
@@ -2477,7 +2509,9 @@ describe("semantic task presentation", () => {
     expect(
       screen.getByRole("heading", { name: /Notifications/, level: 2 }),
     ).toBeTruthy();
-    expect(screen.getByRole("searchbox", { name: "Search notifications" })).toBeTruthy();
+    expect(
+      screen.getByRole("searchbox", { name: "Search notifications" }),
+    ).toBeTruthy();
     expect(commandDestinations).toContain("Notification History");
     expect(navigation.flatMap((g) => g.items)).not.toContain(
       "Notification History",

@@ -192,6 +192,44 @@ const taskEditorCleanup: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "4.0.3",
+    date: "2026-11-27",
+    title: "Quick Capture destinations",
+    sections: [
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Hold Send to... in Quick Capture to choose where a task goes.",
+          },
+          {
+            text: "Tooltips use a consistent hover delay and appearance.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "4.0.3-nightly.20261127.1",
+    date: "2026-11-27",
+    title: "Quick Capture destinations",
+    sections: [
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Hold Send to... in Quick Capture to choose where a task goes.",
+          },
+          {
+            text: "Tooltips use a consistent hover delay and appearance.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "4.0.2",
     date: "2026-11-27",
     title: "Floating pinned notifications",

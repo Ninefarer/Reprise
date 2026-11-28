@@ -9,7 +9,7 @@ export function NightlyBadge({ version }: { version: string }) {
     <div
       role="note"
       className="nightly-badge"
-      title={`Reprise Nightly ${version}`}
+      data-tooltip={`Reprise Nightly ${version}`}
       aria-label={`Nightly build ${version}`}
     >
       <svg

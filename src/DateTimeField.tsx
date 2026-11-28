@@ -16,12 +16,14 @@ export function DateTimeField({
   onChange,
   required,
   min,
+  inlinePicker = false,
   ...props
 }: {
   type: "time" | "datetime-local";
   value: string;
   onChange: (event: { target: { value: string } }) => void;
   required?: boolean;
+  inlinePicker?: boolean;
   min?: string;
   id?: string;
   "aria-label"?: string;
@@ -56,8 +58,32 @@ export function DateTimeField({
     input.current?.setCustomValidity(message);
     if (!message) setError("");
   }, [message]);
+  const picker = (
+    <DateTimePicker
+      type={type}
+      value={value}
+      min={min}
+      required={required}
+      onCancel={() => setOpen(false)}
+      onApply={(next) => {
+        setText(displayDateInput(next, type));
+        onChange({ target: { value: next } });
+        setOpen(false);
+        trigger.current?.focus();
+      }}
+    />
+  );
   return (
-    <span className="date-field">
+    <span
+      className="date-field"
+      onKeyDown={(event) => {
+        if (inlinePicker && open && event.key === "Escape") {
+          event.stopPropagation();
+          setOpen(false);
+          trigger.current?.focus();
+        }
+      }}
+    >
       <input
         {...props}
         ref={input}
@@ -124,21 +150,17 @@ export function DateTimeField({
           {error}
         </span>
       )}
-      <ControlPopup open={open} anchor={trigger} onClose={() => setOpen(false)}>
-        <DateTimePicker
-          type={type}
-          value={value}
-          min={min}
-          required={required}
-          onCancel={() => setOpen(false)}
-          onApply={(next) => {
-            setText(displayDateInput(next, type));
-            onChange({ target: { value: next } });
-            setOpen(false);
-            trigger.current?.focus();
-          }}
-        />
-      </ControlPopup>
+      {inlinePicker ? (
+        open && <span className="capture-inline-picker">{picker}</span>
+      ) : (
+        <ControlPopup
+          open={open}
+          anchor={trigger}
+          onClose={() => setOpen(false)}
+        >
+          {picker}
+        </ControlPopup>
+      )}
     </span>
   );
 }

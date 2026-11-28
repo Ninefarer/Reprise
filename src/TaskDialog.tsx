@@ -114,7 +114,7 @@ export function TaskDialog({
           <button
             type="button"
             aria-label="Close history"
-            title="Close history"
+            data-tooltip="Close history"
             onClick={close}
           >
             <span aria-hidden="true">&times;</span>

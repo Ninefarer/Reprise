@@ -1,0 +1,23 @@
+.app-tooltip {
+  position: fixed;
+  z-index: 150;
+  max-width: min(250px, calc(100vw - 12px));
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: 0 3px 10px var(--shadow);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+@media (forced-colors: active) {
+  .app-tooltip {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+  }
+}

@@ -193,7 +193,7 @@ export function NotificationSidebar({
         <button
           className="notification-edge"
           aria-label="Reveal notifications"
-          title="Notifications · Ctrl+Shift+N"
+          data-tooltip="Notifications · Ctrl+Shift+N"
           aria-controls="notification-panel"
           aria-expanded={false}
           onFocus={() => reveal(true)}
@@ -243,7 +243,7 @@ export function NotificationSidebar({
             <button
               className="notification-pin"
               aria-label={pinned ? "Unpin notifications" : "Pin notifications"}
-              title={pinned ? "Unpin notifications" : "Keep notifications open"}
+              data-tooltip={pinned ? "Unpin notifications" : "Keep notifications open"}
               aria-pressed={pinned}
               disabled={busy}
               onClick={async () => {
