@@ -162,6 +162,7 @@ export function CaptureDestination({
         <div
           ref={panel}
           className="capture-destinations"
+          data-choosing-destination={!details || undefined}
           role="dialog"
           aria-label="Capture destination"
         >
