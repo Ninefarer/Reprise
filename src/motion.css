@@ -79,8 +79,7 @@ textarea {
     color: inherit;
   }
 }
-.profile-footer[open] [role="menu"],
-.sidebar-tooltip {
+.profile-footer[open] [role="menu"] {
   animation: popover-enter var(--motion-popover) var(--motion-ease);
 }
 .task-dialog[open] {

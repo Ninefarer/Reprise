@@ -23,7 +23,9 @@ export function CaptureDestination({
   valid,
   busy,
   onChoose,
+  quick = false,
 }: {
+  quick?: boolean;
   valid: boolean;
   busy: boolean;
   onChoose: (route: CaptureRoute) => void;
@@ -77,6 +79,7 @@ export function CaptureDestination({
   }, [visible, details]);
   function choose(route: CaptureRoute) {
     setOpen(false);
+    trigger.current?.focus({ preventScroll: true });
     onChoose(route);
   }
   const time = parseInput(date);
@@ -114,7 +117,8 @@ export function CaptureDestination({
         disabled={busy}
         aria-haspopup="dialog"
         aria-expanded={visible}
-        title="Hold for destinations, or press Alt+Down"
+        data-tooltip="Hold for options."
+        aria-keyshortcuts="Alt+ArrowDown"
         onPointerDown={(event) => {
           if (event.button !== 0) return;
           held.current = false;
@@ -151,7 +155,7 @@ export function CaptureDestination({
           }
         }}
       >
-        {busy ? "Saving..." : "Add to Inbox"}{" "}
+        {busy ? "Saving..." : quick ? "Send to..." : "Add to Inbox"}{" "}
         <span aria-hidden="true">&crarr;</span>
       </button>
       {visible && (
@@ -178,7 +182,8 @@ export function CaptureDestination({
                   />
                 </label>
               )}
-              <label
+              <div
+                className="capture-route-time"
                 onKeyDown={(event) => {
                   if (
                     event.key === "Enter" &&
@@ -202,6 +207,7 @@ export function CaptureDestination({
                         ? "Return time"
                         : "Follow-up time"
                   }
+                  inlinePicker={quick}
                   type="datetime-local"
                   required={details !== "Waiting"}
                   min={
@@ -210,7 +216,7 @@ export function CaptureDestination({
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
                 />
-              </label>
+              </div>
               <div className="capture-route-actions">
                 <button
                   type="button"

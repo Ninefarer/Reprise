@@ -10,7 +10,6 @@ import {
   type NavigationGroup,
 } from "./navigation";
 import { Avatar } from "./Profile";
-import { createPortal } from "react-dom";
 import { taskCategory } from "./taskColors";
 import { PopupMenu, type MenuAction } from "./PopupMenu";
 import { NavigationSelection } from "./LayoutMotion";
@@ -43,15 +42,9 @@ export function Sidebar({
     group?: NavigationGroup;
     view?: View;
   } | null>(null);
-  const [tooltip, setTooltip] = useState<{
-    view: View;
-    x: number;
-    y: number;
-  } | null>(null);
   const draggingRef = useRef(false);
   const nav = useRef<HTMLElement>(null);
   const collapsed = settings.sidebar_collapsed ?? false;
-  useEffect(() => setTooltip(null), [collapsed]);
   useEffect(() => {
     if (!dragging) setWidth(settings.sidebar_width ?? 224);
   }, [settings.sidebar_width]);
@@ -210,7 +203,9 @@ export function Sidebar({
               {g.id === "general" && (
                 <button
                   className="collapse-toggle"
-                  title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                  data-tooltip={
+                    collapsed ? "Expand sidebar" : "Collapse sidebar"
+                  }
                   aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
                   onClick={() =>
                     void onPatch({ sidebar_collapsed: !collapsed })
@@ -247,42 +242,15 @@ export function Sidebar({
                     key={v}
                     data-status={taskCategory(v)}
 
-                    aria-describedby={
-                      tooltip?.view === v ? "sidebar-tooltip" : undefined
-                    }
-                    onMouseEnter={(e) => {
-                      {
-                        const r = e.currentTarget.getBoundingClientRect();
-                        setTooltip({
-                          view: v,
-                          x: r.right + 10,
-                          y: Math.max(
-                            16,
-                            Math.min(innerHeight - 16, r.top + r.height / 2),
-                          ),
-                        });
-                      }
-                    }}
-                    onMouseLeave={() => setTooltip(null)}
-                    onFocus={(e) => {
-                      {
-                        const r = e.currentTarget.getBoundingClientRect();
-                        setTooltip({
-                          view: v,
-                          x: r.right + 10,
-                          y: r.top + r.height / 2,
-                        });
-                      }
-                    }}
-                    onBlur={() => setTooltip(null)}
+                    data-tooltip={navigationHelp[v] ?? label(v)}
+                    data-tooltip-side="right"
                     onKeyDown={(e) => {
-                      if (e.key === "Escape") setTooltip(null);
                       if (
                         e.key === "ContextMenu" ||
                         (e.shiftKey && e.key === "F10")
                       ) {
                         e.preventDefault();
-                        setTooltip(null);
+
                         const r = e.currentTarget.getBoundingClientRect();
                         setMenu({ x: r.right, y: r.top, group: g.id, view: v });
                       }
@@ -290,7 +258,6 @@ export function Sidebar({
                     aria-current={view === v ? "page" : undefined}
                     className={view === v ? "active" : ""}
                     onClick={() => {
-                      setTooltip(null);
                       onNavigate(v);
                     }}
                     onContextMenu={(e) => {
@@ -326,7 +293,7 @@ export function Sidebar({
         onToggle={(e) => setProfileOpen(e.currentTarget.open)}
       >
         <summary
-          title="Profile menu"
+          data-tooltip="Profile menu"
           aria-label={`Profile menu for ${settings.name || "Your profile"}`}
         >
           <Avatar src={avatar} name={settings.name} />
@@ -430,19 +397,6 @@ export function Sidebar({
           onClose={() => setMenu(null)}
         />
       )}
-      {tooltip &&
-        !menu &&
-        createPortal(
-          <div
-            role="tooltip"
-            id="sidebar-tooltip"
-            className="sidebar-tooltip"
-            style={{ left: tooltip.x, top: tooltip.y }}
-          >
-            {navigationHelp[tooltip.view] ?? label(tooltip.view)}
-          </div>,
-          document.body,
-        )}
     </aside>
   );
 }

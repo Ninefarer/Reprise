@@ -1,3 +1,4 @@
+import { AppTooltips } from "./AppTooltips";
 import { CaptureDestination, type CaptureRoute } from "./CaptureDestination";
 import { UndoToastStack, type UndoNotice } from "./UndoToast";
 import { greeting } from "./greeting";
@@ -906,18 +907,12 @@ function Application({
             setCaptureError("");
           }}
         />
-        {quick ? (
-          <button disabled={busy} className="primary">
-            {busy ? "Saving..." : "Save"}{" "}
-            <span aria-hidden="true">&crarr;</span>
-          </button>
-        ) : (
-          <CaptureDestination
-            valid={!!title.trim()}
-            busy={busy}
-            onChoose={(route) => void add(route)}
-          />
-        )}
+        <CaptureDestination
+          valid={!!title.trim()}
+          busy={busy}
+          quick={quick}
+          onChoose={(route) => void add(route)}
+        />
       </form>
       {captureError && (
         <p id="capture-error" className="capture-validation" role="alert">
@@ -1563,6 +1558,7 @@ export function App(props: { captureMode?: boolean } = {}) {
     <>
       <Application {...props} />
       <TextContextMenus />
+      <AppTooltips />
     </>
   );
 }

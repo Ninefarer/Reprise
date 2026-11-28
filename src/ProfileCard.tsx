@@ -290,7 +290,7 @@ export function ProfileCardDialog({
         className="profile-card-share"
         disabled={count === null}
         aria-disabled={shareState === "copying"}
-        title="Copy the profile card as an image"
+        data-tooltip="Copy the profile card as an image"
         onClick={() => void shareCard()}
       >
         Share

@@ -167,13 +167,13 @@ html:has(.app) {
   background: var(--hover);
 }
 
-.capture-destinations label {
+.capture-destinations :is(label, .capture-route-time) {
   display: grid;
   gap: 4px;
   color: var(--muted);
   font-size: 12px;
 }
-.capture-destinations label input {
+.capture-destinations :is(label, .capture-route-time) input {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--border);
@@ -184,6 +184,31 @@ html:has(.app) {
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 6px;
+}
+
+.quick .capture {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.quick .capture-route {
+  display: contents;
+}
+.quick .capture-destinations {
+  position: static;
+  grid-column: 1 / -1;
+  justify-self: end;
+  width: min(320px, 100%);
+  max-height: 410px;
+  overflow: auto;
+}
+.capture-inline-picker .date-picker {
+  width: 100%;
+  padding-inline: 0;
+}
+.capture-inline-picker {
+  display: block;
+  grid-column: 1 / -1;
+  min-width: 0;
 }
 
 /* The section list and its pane share the Settings workspace. */

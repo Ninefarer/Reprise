@@ -95,7 +95,7 @@ export function QuickCapture({
     const resize = () => {
       const height = Math.max(
         96,
-        Math.min(360, Math.ceil(root.current?.offsetHeight ?? 0)),
+        Math.min(520, Math.ceil(root.current?.offsetHeight ?? 0)),
       );
       if (height === lastHeight) return;
       lastHeight = height;
@@ -143,7 +143,7 @@ export function QuickCapture({
           type="button"
           className="quick-close"
           aria-label="Close Quick Capture"
-          title="Close Quick Capture"
+          data-tooltip="Close Quick Capture"
           disabled={busy}
           onClick={() => void close()}
         >
