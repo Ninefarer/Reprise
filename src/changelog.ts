@@ -192,6 +192,44 @@ const taskEditorCleanup: ReleaseSection[] = [
 ];
 export const releases: Release[] = [
   {
+    version: "4.0.4",
+    date: "2026-11-28",
+    title: "Quick Capture layout",
+    sections: [
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Quick Capture uses the full width for destinations and keeps the space around the chooser transparent where supported.",
+          },
+          {
+            text: "The Keyboard tab in Settings is now called Keybinds.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "4.0.4-nightly.20261128.1",
+    date: "2026-11-28",
+    title: "Quick Capture layout",
+    sections: [
+      {
+        heading: "BUGFIXES",
+        accent: "fixes",
+        entries: [
+          {
+            text: "Quick Capture uses the full width for destinations and keeps the space around the chooser transparent where supported.",
+          },
+          {
+            text: "The Keyboard tab in Settings is now called Keybinds.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "4.0.3",
     date: "2026-11-27",
     title: "Quick Capture destinations",

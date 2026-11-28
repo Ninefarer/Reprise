@@ -50,24 +50,24 @@ describe("theme polish contrast", () => {
       ).toBeGreaterThanOrEqual(3);
     }
   });
-  it("packages v4.0.3 consistently with locally bundled release notes", () => {
-    expect(JSON.parse(read("../package.json")).version).toBe("4.0.3");
+  it("packages v4.0.4 consistently with locally bundled release notes", () => {
+    expect(JSON.parse(read("../package.json")).version).toBe("4.0.4");
     expect(JSON.parse(read("../package-lock.json")).packages[""].version).toBe(
-      "4.0.3",
+      "4.0.4",
     );
     const tauri = JSON.parse(read("../src-tauri/tauri.conf.json"));
     const nightly = JSON.parse(read("../src-tauri/tauri.nightly.conf.json"));
-    expect(tauri.version).toBe("4.0.3");
-    expect(nightly.version).toBe("4.0.3-nightly.20261127.1");
+    expect(tauri.version).toBe("4.0.4");
+    expect(nightly.version).toBe("4.0.4-nightly.20261128.1");
     expect(
       read("../src-tauri/Cargo.toml").match(/version = "([^"]+)"/)[1],
-    ).toBe("4.0.3");
+    ).toBe("4.0.4");
     expect(read("../src-tauri/Cargo.lock")).toMatch(
-      /name = "reprise"\r?\nversion = "4\.0\.3"/,
+      /name = "reprise"\r?\nversion = "4\.0\.4"/,
     );
-    expect(releaseFor("4.0.3")?.sections.length).toBeGreaterThan(0);
+    expect(releaseFor("4.0.4")?.sections.length).toBeGreaterThan(0);
     expect(
-      releaseFor("4.0.3-nightly.20261127.1")?.sections.length,
+      releaseFor("4.0.4-nightly.20261128.1")?.sections.length,
     ).toBeGreaterThan(0);
     expect(releaseFor("3.4.3")?.sections.length).toBeGreaterThan(0);
     expect(releaseFor("3.2.0")).toBeTruthy();

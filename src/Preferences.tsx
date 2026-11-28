@@ -32,7 +32,7 @@ const sections = {
     "close_to_tray",
     "startup",
   ],
-  Keyboard: ["command_shortcut"],
+  Keybinds: ["command_shortcut"],
   About: [],
 } satisfies Record<string, (keyof Settings)[]>;
 type Section = keyof typeof sections;
@@ -486,10 +486,10 @@ export function Preferences({
         </div>
         <div
           role="tabpanel"
-          data-settings-panel="Keyboard"
-          id="settings-panel-Keyboard"
-          aria-labelledby="settings-tab-Keyboard"
-          hidden={section !== "Keyboard"}
+          data-settings-panel="Keybinds"
+          id="settings-panel-Keybinds"
+          aria-labelledby="settings-tab-Keybinds"
+          hidden={section !== "Keybinds"}
         >
           <section className="settings-section">
             <h3>Shortcuts</h3>

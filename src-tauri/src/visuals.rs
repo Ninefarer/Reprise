@@ -312,8 +312,16 @@ pub fn native_glass(
         })
     } else {
         let _ = system_backdrop(&window, false);
+        // The capture shell paints its own surfaces. The gaps between them
+        // need a transparent webview even when those surfaces use Solid.
+        let background =
+            if window.label() == "capture" && !glass_selected && allowed && !contrast && allow {
+                tauri::utils::config::Color(0, 0, 0, 0)
+            } else {
+                native_background(&s)
+            };
         window
-            .set_background_color(Some(native_background(&s)))
+            .set_background_color(Some(background))
             .map_err(|e| e.to_string())?;
         Ok(NativeGlassResult {
             mode: "off".into(),

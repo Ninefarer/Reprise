@@ -1657,7 +1657,7 @@ describe("personalization and command palette", () => {
     const user = userEvent.setup();
     const app = render(<App />);
     await openSettings(user);
-    await user.click(screen.getByRole("tab", { name: "Keyboard" }));
+    await user.click(screen.getByRole("tab", { name: "Keybinds" }));
     await user.click(screen.getByLabelText("Command palette shortcut"));
     await user.keyboard("{Control>}f{/Control}");
     expect(screen.getByRole("alert").textContent).toContain("reserved");

@@ -193,13 +193,54 @@ html:has(.app) {
 .quick .capture-route {
   display: contents;
 }
+:root:has(.quick .capture-destinations),
+.quick:has(.capture-destinations) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.quick:has(.capture-destinations) .quick-head {
+  background: var(--bg);
+  border-radius: var(--radius-panel);
+  padding-inline: 9px 4px;
+}
+.quick .capture:has(.capture-destinations) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  isolation: isolate;
+}
+.quick .capture:has(.capture-destinations)::before {
+  content: "";
+  grid-area: 1 / 1 / 2 / -1;
+  align-self: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  z-index: -1;
+}
+.quick .capture > input {
+  grid-area: 1 / 1;
+}
+.quick .capture > .capture-route > .primary {
+  grid-area: 1 / 2;
+}
+.quick .capture:has(.capture-destinations) > .capture-route > .primary {
+  margin: 6px 9px 6px 0;
+}
 .quick .capture-destinations {
   position: static;
+  grid-row: 2;
   grid-column: 1 / -1;
-  justify-self: end;
-  width: min(320px, 100%);
+  width: auto;
+  min-width: 0;
   max-height: 410px;
   overflow: auto;
+}
+@media (min-width: 420px) {
+  .quick .capture-destinations[data-choosing-destination] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .capture-inline-picker .date-picker {
   width: 100%;
